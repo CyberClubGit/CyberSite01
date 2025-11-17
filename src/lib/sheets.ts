@@ -93,6 +93,7 @@ export const getCategories = unstable_cache(
     console.log('[Sheets] Fetching Master Sheet for categories...');
     const categoriesFromSheet = await fetchAndParseCsv<Category>(MASTER_SHEET_URL);
     
+    // This map is the temporary fix to ensure the correct GID is used.
     const gidCorrectionMap: { [key: string]: string } = {
         'Home': '177392102',
         'Projects': '153094389',
@@ -107,11 +108,14 @@ export const getCategories = unstable_cache(
     const baseUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=';
 
     const correctedCategories = categoriesFromSheet.map(category => {
-        const correctGid = gidCorrectionMap[category.Name];
-        if (correctGid) {
+        // Robust matching: trim whitespace and be case-insensitive for the lookup
+        const categoryName = category.Name ? category.Name.trim() : '';
+        const correctGid = Object.keys(gidCorrectionMap).find(key => key.toLowerCase() === categoryName.toLowerCase());
+
+        if (correctGid && gidCorrectionMap[correctGid]) {
             return {
                 ...category,
-                'Url Sheet': `${baseUrl}${correctGid}&single=true&output=csv`
+                'Url Sheet': `${baseUrl}${gidCorrectionMap[correctGid]}&single=true&output=csv`
             };
         }
         return category;
