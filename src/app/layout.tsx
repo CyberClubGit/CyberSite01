@@ -1,27 +1,42 @@
-import type { Metadata } from 'next';
+"use client";
+
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Header } from '@/components/header';
 import { getBrands, getCategories } from '@/lib/sheets';
+import { useEffect, useState } from 'react';
 
-export const metadata: Metadata = {
-  title: 'CYBER CLUB',
-  description: 'CYBER CLUB Portfolio',
-};
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const categories = await getCategories();
-  const brands = await getBrands();
+  const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [cats, brs] = await Promise.all([getCategories(), getBrands()]);
+        setCategories(cats as any);
+        setBrands(brs as any);
+      } catch (error) {
+        console.error("Failed to fetch initial data", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <title>CYBER CLUB</title>
+        <meta name="description" content="CYBER CLUB Portfolio" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"

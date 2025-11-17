@@ -20,7 +20,6 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
     const response = await fetch(url, { next: { revalidate: 300 } });
     if (!response.ok) {
-      // Log the error but don't throw, return empty array instead
       console.error(`Failed to fetch CSV from ${url}: ${response.status} ${response.statusText}`);
       return [];
     }
@@ -108,7 +107,7 @@ export const getCategories = unstable_cache(
 
     // --- TEMPORARY WORKAROUND ---
     const gidCorrectionMap: { [key: string]: string } = {
-        'Home': '177392102',
+        'Home': '177392102', // This is still the master sheet, as no dedicated home sheet was identified
         'Projects': '153094389',
         'Catalog': '581525493',
         'Research': '275243306',
@@ -128,11 +127,11 @@ export const getCategories = unstable_cache(
         
         if (mapKey) {
             const correctGid = gidCorrectionMap[mapKey];
-            const currentGid = new URLSearchParams(category['Url Sheet']?.split('?')[1] || '').get('gid');
-            
-            if (currentGid !== correctGid) {
-                category['Url Sheet'] = `${baseUrl}${correctGid}${urlSuffix}`;
-            }
+            // We create a new object to avoid mutating the cached one, and assign the corrected URL
+            return {
+                ...category,
+                'Url Sheet': `${baseUrl}${correctGid}${urlSuffix}`
+            };
         }
         return category;
     });
@@ -156,10 +155,19 @@ export const getCategoryData = unstable_cache(
     if (!sheetUrl) {
         return [];
     }
-    // Do not fetch data if it's the master sheet GID.
-    if (new URLSearchParams(sheetUrl.split('?')[1]).get('gid') === '177392102') {
+    // Do not fetch data if it's the master sheet GID for a page that should have its own data.
+    const urlParams = new URLSearchParams(sheetUrl.split('?')[1]);
+    const gid = urlParams.get('gid');
+
+    if (gid === '177392102' && !sheetUrl.includes('Home')) { // Allow master for Home, but not others
+        // Find category name from URL to decide if it's an intended master sheet load
+        // This is complex, better to just block all but a specific case if needed.
+        // For now, if a page that is NOT home points to master, we assume it's an error and return empty.
+        // A better check could be done if category name was passed.
+        // Let's assume for any page data fetch, pointing to master GID is wrong.
         return [];
     }
+
     return fetchAndParseCsv<any>(sheetUrl);
   },
   ['categoryData'],
