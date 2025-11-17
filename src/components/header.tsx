@@ -34,22 +34,32 @@ export function Header() {
       ]);
       setCategories(fetchedCategories);
       setBrands(fetchedBrands);
-      console.log('Fetched Categories:', fetchedCategories);
-      console.log('Fetched Brands:', fetchedBrands);
 
-      // Initialize brand from localStorage or URL after data is fetched
+      // Initialize from localStorage after data is fetched
       const storedBrand = localStorage.getItem('brandSelected');
       const brandFromUrl = pathname.split('/')[1];
       const brandObjectFromUrl = fetchedBrands.find(b => b.Activity === brandFromUrl);
 
+      let initialBrand = 'Cyber Club';
       if (brandObjectFromUrl) {
-          handleBrandChange(brandObjectFromUrl.Brand, true, fetchedBrands);
-      } else if (storedBrand) {
-        handleBrandChange(storedBrand, true, fetchedBrands);
-      } else {
-        handleBrandChange('Cyber Club', true, fetchedBrands);
+          initialBrand = brandObjectFromUrl.Brand;
+      } else if (storedBrand && fetchedBrands.some(b => b.Brand === storedBrand)) {
+        initialBrand = storedBrand;
+      }
+      
+      handleBrandChange(initialBrand, true, fetchedBrands);
+      
+      const pathParts = pathname.split('/').filter(p => p);
+      const currentCategorySlug = pathParts.length > 1 ? pathParts[1] : pathParts[0];
+
+      if (initialBrand !== 'Cyber Club' && !brandObjectFromUrl) {
+        const brandToApply = fetchedBrands.find(b => b.Brand === initialBrand);
+        if (brandToApply && currentCategorySlug) {
+            router.push(`/${brandToApply.Activity}/${currentCategorySlug}`);
+        }
       }
     }
+
     fetchData();
 
     const storedTheme = localStorage.getItem('darkMode');
@@ -65,24 +75,24 @@ export function Header() {
   }, [theme, isMounted]);
 
   useEffect(() => {
-    if (brands.length === 0) return;
+    if (!isMounted || brands.length === 0) return;
 
     const pathParts = pathname.split('/').filter(p => p);
-    const brandFromUrl = pathParts[0];
-    const categoryFromUrl = pathParts.length > 1 ? pathParts[1] : (pathParts.length === 1 ? pathParts[0] : null);
+    const brandActivityFromUrl = pathParts.length > 1 ? pathParts[0] : undefined;
+    
+    const brandFromUrl = brands.find(b => b.Activity === brandActivityFromUrl);
 
-    const brandObject = brands.find(b => b.Activity === brandFromUrl);
-
-    if (brandObject) { // URL has a brand
-        if (brandObject.Brand !== selectedBrand) {
-            handleBrandChange(brandObject.Brand, true, brands);
+    if (brandFromUrl) {
+        if (brandFromUrl.Brand !== selectedBrand) {
+            handleBrandChange(brandFromUrl.Brand, true, brands);
         }
-    } else if (categoryFromUrl && categories.some(c => c.Url === categoryFromUrl)) { // URL has only category
+    } else { // No brand in URL
         if (selectedBrand !== 'Cyber Club') {
             handleBrandChange('Cyber Club', true, brands);
         }
     }
-  }, [pathname, brands, categories]);
+
+  }, [pathname, brands, isMounted]);
 
 
   const handleBrandChange = (brandName: string, fromUrl = false, brandList: Brand[]) => {
@@ -91,21 +101,19 @@ export function Header() {
     if (!brand) return;
 
     setSelectedBrand(brand.Brand);
+
     if (isMounted) {
       localStorage.setItem('brandSelected', brand.Brand);
-      document.documentElement.style.setProperty('--brand-color', brand.Color);
+      document.documentElement.style.setProperty('--brand-color', brand.Color || '#000000');
     }
     
     if (!fromUrl) {
       const currentPathParts = pathname.split('/').filter(p => p);
-      let categorySlug = 'home'; // default
+      let categorySlug = 'home';
       
-      // Find current category from URL
-      if (currentPathParts.length > 0) {
-        const potentialCategory = currentPathParts[currentPathParts.length - 1];
-        if (categories.some(c => c.Url === potentialCategory)) {
-          categorySlug = potentialCategory;
-        }
+      const potentialCategorySlug = currentPathParts[currentPathParts.length - 1];
+      if (categories.some(c => c.Url === potentialCategorySlug)) {
+        categorySlug = potentialCategorySlug;
       }
       
       let newPath;
@@ -128,14 +136,24 @@ export function Header() {
 
   const getLinkHref = (categoryUrl: string) => {
     const brand = brands.find(b => b.Brand === selectedBrand);
-    if (brand && brand.Brand !== 'Cyber Club') {
+    if (brand && brand.Brand !== 'Cyber Club' && brand.Activity) {
       return `/${brand.Activity}/${categoryUrl}`;
     }
     return `/${categoryUrl}`;
   };
 
   if (!isMounted) {
-    return null; // or a loading skeleton
+    return (
+        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="container flex h-16 items-center">
+                 <div className="mr-4 flex">
+                    <Link href="/" className="mr-6 flex items-center space-x-2">
+                        <span className="font-bold font-headline text-lg">CYBER CLUB</span>
+                    </Link>
+                </div>
+            </div>
+        </header>
+    );
   }
 
   return (
@@ -168,7 +186,7 @@ export function Header() {
               .filter(category => category.Item && category.Url)
               .map((category) => {
                   const linkHref = getLinkHref(category.Url);
-                  const isActive = pathname === linkHref;
+                  const isActive = pathname === linkHref || (pathname.endsWith(category.Url) && pathname !== '/home' && category.Url !== 'home');
                   return (
                     <Link
                         key={category.Item}
