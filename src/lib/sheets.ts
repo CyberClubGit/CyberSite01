@@ -28,74 +28,70 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
 
     const headers = lines[0].split(',').map(h => h.trim());
     const data: T[] = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+        if (!lines[i] || lines[i].trim() === '') continue;
 
-    let i = 1;
-    while (i < lines.length) {
-        if (!lines[i].trim()) {
-            i++;
-            continue;
-        }
+        const row: any = {};
+        let currentLine = lines[i];
+        let inQuote = false;
+        let field = '';
+        let headerIndex = 0;
 
-        let currentLineContent = lines[i];
-        const obj: any = {};
-        
-        for (const header of headers) {
-            let value = '';
-            
-            if (currentLineContent.startsWith('"')) {
-                // Handle quoted fields that may contain newlines
-                let completeField = '';
-                let inQuote = true;
-                let searchIndex = i;
-                let lineSlice = currentLineContent.substring(1); // Skip initial quote
+        for (let j = 0; j < currentLine.length; j++) {
+            const char = currentLine[j];
 
-                while (inQuote) {
-                    const quoteIndex = lineSlice.indexOf('"');
-                    if (quoteIndex === -1) {
-                        // Newline is part of the field
-                        completeField += lineSlice + '\n';
-                        searchIndex++;
-                        if (searchIndex >= lines.length) {
-                             throw new Error('Unclosed quoted field in CSV');
-                        }
-                        lineSlice = lines[searchIndex];
-                    } else {
-                        // Quote found
-                        if (quoteIndex + 1 < lineSlice.length && lineSlice[quoteIndex + 1] === '"') {
-                            // Escaped quote
-                            completeField += lineSlice.substring(0, quoteIndex + 1);
-                            lineSlice = lineSlice.substring(quoteIndex + 2);
-                        } else {
-                            // End of quoted field
-                            completeField += lineSlice.substring(0, quoteIndex);
-                            currentLineContent = lineSlice.substring(quoteIndex + 1);
-                            if (currentLineContent.startsWith(',')) {
-                                currentLineContent = currentLineContent.substring(1);
-                            }
-                            inQuote = false;
-                        }
-                    }
-                }
-                value = completeField.replace(/""/g, '"');
-                i = searchIndex;
-
-            } else {
-                // Handle unquoted fields
-                const commaIndex = currentLineContent.indexOf(',');
-                if (commaIndex !== -1) {
-                    value = currentLineContent.substring(0, commaIndex);
-                    currentLineContent = currentLineContent.substring(commaIndex + 1);
+            if (char === '"') {
+                if (inQuote && j + 1 < currentLine.length && currentLine[j + 1] === '"') {
+                    field += '"';
+                    j++; // Skip the next quote
                 } else {
-                    value = currentLineContent;
-                    currentLineContent = '';
+                    inQuote = !inQuote;
+                }
+            } else if (char === ',' && !inQuote) {
+                row[headers[headerIndex]] = field.trim();
+                field = '';
+                headerIndex++;
+            } else if (char === '\n' && !inQuote) {
+                 //This should not happen with the split but as a safeguard
+                 row[headers[headerIndex]] = field.trim();
+                 field = '';
+                 headerIndex++;
+            }
+             else {
+                field += char;
+            }
+        }
+        
+        while (inQuote && i + 1 < lines.length) {
+            i++;
+            currentLine = lines[i];
+            field += '\n';
+
+            for (let j = 0; j < currentLine.length; j++) {
+                const char = currentLine[j];
+
+                if (char === '"') {
+                   if (inQuote && j + 1 < currentLine.length && currentLine[j + 1] === '"') {
+                        field += '"';
+                        j++; // Skip next quote
+                    } else {
+                        inQuote = !inQuote;
+                    }
+                } else {
+                    field += char;
                 }
             }
-            obj[header] = value.trim();
         }
-        data.push(obj as T);
-        i++;
+        
+        row[headers[headerIndex]] = field.trim();
+        
+        // Only add non-empty rows
+        if (Object.values(row).some(v => v !== '')) {
+            data.push(row as T);
+        }
     }
-
+    
     return data;
   } catch (error) {
     console.error(`Error fetching or parsing CSV from ${url}:`, error);
@@ -127,6 +123,11 @@ export const getCategoryData = unstable_cache(
     if (!sheetUrl) return [];
     return fetchAndParseCsv<any>(sheetUrl);
   },
-  ['categoryData'],
-  { revalidate: 300 }
+  ['categoryData'], // This key will be extended with the sheetUrl
+  { 
+    revalidate: 300,
+    // The `tags` option allows us to create dynamic cache keys.
+    // By adding the sheetUrl to the tags, we ensure each sheet has its own cache entry.
+    tags: ['categoryData'] 
+  }
 );
