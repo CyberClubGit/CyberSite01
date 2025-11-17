@@ -37,7 +37,7 @@ export const SHEET_LINKS: { [key: string]: string } = {
   catalog:  'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=581525493&single=true&output=csv',
   research: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=275243306&single=true&output=csv',
   tool:     'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=990396131&single=true&output=csv',
-  collabs:   'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l11/pub?gid=2055846949&single=true&output=csv',
+  collabs:   'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=2055846949&single=true&output=csv',
   events:    'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=376468249&single=true&output=csv',
   ressources:'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=1813804988&single=true&output=csv'
 };
@@ -117,13 +117,7 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
 export const getCategories = unstable_cache(
   async () => {
     console.log('[Sheets] Fetching Master Sheet for categories list...');
-    const categories = await fetchAndParseCsv<Category>(MASTER_SHEET_URL);
-    // We only use the master sheet to get the list of categories (for the menu), not their URLs.
-    return categories.map(category => ({
-      ...category,
-      // The 'Url Sheet' from the master sheet is now ignored.
-      // The correct URL will be picked from SHEET_LINKS in getCategoryData.
-    }));
+    return fetchAndParseCsv<Category>(MASTER_SHEET_URL);
   },
   ['categories'],
   { revalidate: 300 } // 5 minutes
