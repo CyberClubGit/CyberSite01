@@ -82,7 +82,7 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
       console.error(`[Sheets] Invalid or empty URL provided: ${url}`);
       return [];
     }
-    const response = await fetch(url);
+    const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) {
       console.error(`[Sheets] Failed to fetch CSV from ${url}: ${response.status} ${response.statusText}`);
       return [];
@@ -101,6 +101,9 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
       if (!line || line.trim() === '') continue;
 
       const values = parseCsvLine(line);
+
+      // Check for empty lines or lines with only commas
+      if (values.every(v => v === '')) continue;
 
       if (values.length >= headers.length) {
         const rowObject: { [key: string]: any } = {};
@@ -123,7 +126,7 @@ const gidCorrectionMap: { [key: string]: string } = {
   'projects': '153094389',
   'catalog': '581525493',
   'research': '275243306',
-  'tools': '990396131',
+  'tool': '990396131',
   'collabs': '2055846949',
   'events': '376468249',
   'ressources': '1813804988'
@@ -145,11 +148,11 @@ export const getCategories = unstable_cache(
            console.log(`[Sheets] Correcting GID for "${category.Name}" (normalized: "${normalizedName}"). New URL: ${newUrl}`);
            category['Url Sheet'] = newUrl;
         }
-      } else {
+      } else if (category.Name) { // only warn if a name was present
         console.warn(`[Sheets] No GID correction found for category "${category.Name}" (normalized: "${normalizedName}")`);
       }
       return category;
-    });
+    }).filter(category => category.Name && category.Slug); // Filter out empty/invalid rows
   },
   ['categories'],
   { revalidate: 300 } // 5 minutes
