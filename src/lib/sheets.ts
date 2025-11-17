@@ -77,20 +77,22 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
         }
         
         if (Object.values(row).some(v => v !== null && String(v).trim() !== '')) {
-            data.push(row as T);
+            // Rename 'Item' to 'Name' and 'Url' to 'Slug' for consistency
+            const renamedRow: any = {};
+            for (const key in row) {
+                if (key.toLowerCase().trim() === 'item') {
+                    renamedRow['Name'] = row[key];
+                } else if (key.toLowerCase().trim() === 'url') {
+                    renamedRow['Slug'] = row[key];
+                } else {
+                    renamedRow[key] = row[key];
+                }
+            }
+            data.push(renamedRow as T);
         }
     }
     
-    return data.map(item => {
-        const newItem: any = {};
-        for (const key in item) {
-            let newKey = key;
-            if (key.toLowerCase().trim() === 'item') newKey = 'Name';
-            if (key.toLowerCase().trim() === 'url') newKey = 'Slug';
-            newItem[newKey] = (item as any)[key];
-        }
-        return newItem;
-    });
+    return data;
   } catch (error) {
     console.error(`Error fetching or parsing CSV from ${url}:`, error);
     return [];
@@ -107,25 +109,42 @@ export const getCategories = unstable_cache(
     // This overrides incorrect GIDs from the Master Sheet.
     // This should be removed once the Google Sheet is corrected.
     const correctGids: { [key: string]: string } = {
-        'Home': '177392102', // Assuming this is correct for now, but likely needs a real GID
+        'Home': '177392102', // This one should still point to master, as per diagnostic
         'Projects': '153094389',
         'Catalog': '581525493',
-        'Tools': '990396131',
-        'Ressources': '1813804988',
         'Research': '275243306',
+        'Tool': '990396131',
         'Collabs': '2055846949',
-        'Events': '376468249'
+        'Events': '376468249',
+        'Ressources': '1813804988',
     };
+    
+    // The sheet names are slightly different in some cases
+    const gidCorrectionMap: { [key: string]: string } = {
+      'Home': '177392102', // This will still load the master sheet, but we'll handle it. Let's assume there is NO home sheet for now.
+      'Projects': '153094389',
+      'Catalog': '581525493',
+      'Research': '275243306',
+      'Tools': '990396131', // Correcting 'Tool' to 'Tools' if that is the actual name
+      'Collabs': '2055846949',
+      'Events': '376468249',
+      'Resources': '1813804988' // Correcting 'Ressources' to 'Resources'
+    };
+
 
     const baseUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=';
     const urlSuffix = '&single=true&output=csv';
 
     return categories.map(category => {
-        const correctGid = correctGids[category.Name];
-        if (correctGid) {
+        // Find a matching key in gidCorrectionMap (case-insensitive and forgiving for plurals)
+        const mapKey = Object.keys(gidCorrectionMap).find(k => k.toLowerCase() === category.Name.toLowerCase() || k.toLowerCase() === category.Name.toLowerCase() + 's');
+        
+        if (mapKey) {
+            const correctGid = gidCorrectionMap[mapKey];
             const currentGid = new URLSearchParams(category['Url Sheet'].split('?')[1]).get('gid');
+            
             if (currentGid !== correctGid) {
-                console.log(`Overriding GID for ${category.Name}: ${currentGid} -> ${correctGid}`);
+                console.log(`CODE WORKAROUND: Overriding GID for ${category.Name}: ${currentGid} -> ${correctGid}`);
                 category['Url Sheet'] = `${baseUrl}${correctGid}${urlSuffix}`;
             }
         }
@@ -148,15 +167,15 @@ export const getBrands = unstable_cache(
 
 export const getCategoryData = unstable_cache(
   async (sheetUrl: string) => {
-    if (!sheetUrl) return [];
-    // The key for the cache must be unique for each sheet.
-    // Using the full sheetUrl ensures this.
+    if (!sheetUrl || new URLSearchParams(sheetUrl.split('?')[1]).get('gid') === '177392102') {
+        // Do not fetch data if it's the master sheet GID, except for the home page itself.
+        // For now, returning an empty array for any page (like Home, Tools) that incorrectly pointed to master.
+        return [];
+    }
     return fetchAndParseCsv<any>(sheetUrl);
   },
-  ['categoryData'], // This is now more of a group name
+  ['categoryData'],
   { 
-    // We provide tags so we can revalidate this specific data later if needed,
-    // but the uniqueness of the cache is handled by the arguments to the function.
     tags: ['categoryData'] 
   }
 );
