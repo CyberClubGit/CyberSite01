@@ -34,7 +34,7 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
         console.error(`[Sheets] Invalid URL provided: ${url}`);
         return [];
     }
-    const response = await fetch(url, { next: { revalidate: 300 } }); // 5 minute cache
+    const response = await fetch(url);
     if (!response.ok) {
       console.error(`[Sheets] Failed to fetch CSV from ${url}: ${response.status} ${response.statusText}`);
       return [];
@@ -78,7 +78,12 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
         if (values.length >= headers.length) {
             const rowObject: { [key: string]: any } = {};
             headers.forEach((header, index) => {
-                const value = values[index] ? values[index].trim() : '';
+                let value = values[index] ? values[index].trim() : '';
+                 // Remove surrounding quotes if they exist
+                if (value.startsWith('"') && value.endsWith('"')) {
+                    value = value.substring(1, value.length - 1).replace(/""/g, '"');
+                }
+                
                 // Standardize common column names on the fly for consistency
                 if (header === 'Item' || header === 'Title') {
                     rowObject['Name'] = value;
@@ -107,7 +112,38 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
 export const getCategories = unstable_cache(
   async () => {
     console.log('[Sheets] Fetching Master Sheet for categories...');
-    return fetchAndParseCsv<Category>(MASTER_SHEET_URL);
+    const categoriesFromSheet = await fetchAndParseCsv<Category>(MASTER_SHEET_URL);
+
+    // --- TEMPORARY WORKAROUND to fix incorrect GIDs in the master sheet ---
+    const gidCorrectionMap: { [key: string]: string } = {
+        'Home': '177392102',
+        'Projects': '153094389',
+        'Catalog': '581525493',
+        'Research': '275243306',
+        'Tool': '990396131',
+        'Tools': '990396131',
+        'Collabs': '2055846949',
+        'Events': '376468249',
+        'Ressources': '1813804988',
+        'Resources': '1813804988'
+    };
+    const baseUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=';
+    const urlSuffix = '&single=true&output=csv';
+
+    return categoriesFromSheet.map(category => {
+      const mapKey = Object.keys(gidCorrectionMap).find(k => k.toLowerCase() === category.Name.toLowerCase());
+      if (mapKey) {
+          const correctGid = gidCorrectionMap[mapKey];
+          // We create a new object to avoid mutating the cached one, and assign the corrected URL
+          return {
+              ...category,
+              'Url Sheet': `${baseUrl}${correctGid}${urlSuffix}`,
+          };
+      }
+      return category;
+    });
+    // --- END OF WORKAROUND ---
+
   },
   ['categories'],
   { revalidate: 300 } // 5 minutes
