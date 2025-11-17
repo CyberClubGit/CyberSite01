@@ -41,70 +41,63 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
     }
     const csvText = await response.text();
     
+    // Replace CRLF with LF for consistency
     const lines = csvText.trim().replace(/\r\n/g, '\n').split('\n');
-    if (lines.length < 1) return [];
+    if (lines.length < 2) return [];
 
     const headers = lines[0].split(',').map(h => h.trim());
     const data: T[] = [];
-    
+
     for (let i = 1; i < lines.length; i++) {
-        if (!lines[i] || lines[i].trim() === '') continue;
+        const line = lines[i];
+        if (!line || line.trim() === '') continue;
 
-        const row: any = {};
-        let currentLine = lines[i];
-        let inQuote = false;
-        let field = '';
-        let headerIndex = 0;
+        const values: string[] = [];
+        let currentField = '';
+        let inQuotes = false;
 
-        for (let j = 0; j < currentLine.length; j++) {
-            const char = currentLine[j];
+        for (let j = 0; j < line.length; j++) {
+            const char = line[j];
+            const nextChar = line[j + 1];
 
             if (char === '"') {
-                if (inQuote && j + 1 < currentLine.length && currentLine[j + 1] === '"') {
-                    field += '"';
+                if (inQuotes && nextChar === '"') {
+                    // This is an escaped quote
+                    currentField += '"';
                     j++; // Skip the next quote
                 } else {
-                    inQuote = !inQuote;
+                    // This is the start or end of a quoted field
+                    inQuotes = !inQuotes;
                 }
-            } else if (char === ',' && !inQuote) {
-                const header = headers[headerIndex];
-                if (header) {
-                    row[header] = field.trim().replace(/^"|"$/g, '');
-                }
-                field = '';
-                headerIndex++;
+            } else if (char === ',' && !inQuotes) {
+                // End of a field
+                values.push(currentField);
+                currentField = '';
             } else {
-                field += char;
+                currentField += char;
             }
         }
-        
-        while (inQuote && i + 1 < lines.length) {
-            i++;
-            field += '\n' + lines[i];
+        values.push(currentField); // Add the last field
 
-            if (lines[i].endsWith('"')) {
-                inQuote = false;
-                field = field.slice(0, -1);
-            }
-        }
-        
-        const lastHeader = headers[headerIndex];
-        if (lastHeader) {
-            row[lastHeader] = field.trim().replace(/^"|"$/g, '');
-        }
-        
-        if (Object.values(row).some(v => v !== null && String(v).trim() !== '')) {
-            const renamedRow: any = {};
-            for (const key in row) {
-                if (key.toLowerCase().trim() === 'item') {
-                    renamedRow['Name'] = row[key];
-                } else if (key.toLowerCase().trim() === 'url') {
-                    renamedRow['Slug'] = row[key];
-                } else {
-                    renamedRow[key] = row[key];
+        if (values.length >= headers.length) {
+            const row: any = {};
+            headers.forEach((header, index) => {
+                row[header] = values[index] ? values[index].trim() : '';
+            });
+
+             if (Object.values(row).some(v => v !== null && String(v).trim() !== '')) {
+                const renamedRow: any = {};
+                for (const key in row) {
+                    if (key.toLowerCase().trim() === 'item') {
+                        renamedRow['Name'] = row[key];
+                    } else if (key.toLowerCase().trim() === 'url') {
+                        renamedRow['Slug'] = row[key];
+                    } else {
+                        renamedRow[key] = row[key];
+                    }
                 }
+                data.push(renamedRow as T);
             }
-            data.push(renamedRow as T);
         }
     }
     
@@ -142,6 +135,8 @@ export const getCategoryData = unstable_cache(
     }
     const store = (next_unstable_cache as any).getCacheStore?.();
     if (!store) {
+      // If we are in a context that doesn't have the cache store (like a client-side error boundary)
+      // we should not attempt to fetch data, as it indicates a server-side context is missing.
       return [];
     }
 
@@ -149,6 +144,7 @@ export const getCategoryData = unstable_cache(
   },
   ['categoryData'],
   { 
+    // Using tags allows for more granular revalidation if needed in the future
     tags: ['categoryData'] 
   }
 );
