@@ -65,6 +65,8 @@
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 0 0% 83.1%;
+
+    --brand-color: #FFFFFF;
   }
 }
  
@@ -82,10 +84,16 @@
 }
 
 .brand-selector {
-  border: 2px solid var(--brand-color);
+  border-color: var(--brand-color) !important;
 }
 
+.brand-selector:focus-visible {
+    --tw-ring-color: var(--brand-color) !important;
+}
+
+
 .menu-link.active {
-  border-bottom: 2px solid var(--brand-color);
-  color: var(--brand-color);
+  color: var(--brand-color) !important;
+  border-bottom-color: var(--brand-color) !important;
+  border-bottom-width: 2px;
 }

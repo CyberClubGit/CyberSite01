@@ -9,7 +9,8 @@ export interface Category {
 export interface Brand {
   Brand: string;
   Activity: string;
-  Color: string;
+  'Color Light': string;
+  'Color Dark': string;
 }
 
 async function fetchAndParseCsv<T>(url:string): Promise<T[]> {
@@ -20,7 +21,6 @@ async function fetchAndParseCsv<T>(url:string): Promise<T[]> {
     }
     const csvText = await response.text();
     
-    // Split by new line, trim each line and filter out empty lines
     const lines = csvText.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
     if (lines.length < 2) {
       return [];

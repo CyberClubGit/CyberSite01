@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useTheme } from 'next-themes';
 import { Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import { getBrands, getCategories, type Brand, type Category } from '@/lib/sheet
 import { usePathname, useRouter } from 'next/navigation';
 
 export function Header() {
-  const { setTheme, theme } = useTheme();
+  const { setTheme, theme, resolvedTheme } = useTheme();
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [selectedBrand, setSelectedBrand] = useState<string>('Cyber Club');
@@ -25,95 +25,43 @@ export function Header() {
   const pathname = usePathname();
   const router = useRouter();
 
-  useEffect(() => {
-    setIsMounted(true);
-    async function fetchData() {
-      const [fetchedCategories, fetchedBrands] = await Promise.all([
-        getCategories(),
-        getBrands(),
-      ]);
-      setCategories(fetchedCategories);
-      setBrands(fetchedBrands);
+  const applyBrandColor = useCallback((brand: Brand | undefined, currentTheme: string | undefined) => {
+    if (!brand || !currentTheme) return;
 
-      // Initialize from localStorage after data is fetched
-      const storedBrand = localStorage.getItem('brandSelected');
-      const brandFromUrl = pathname.split('/')[1];
-      const brandObjectFromUrl = fetchedBrands.find(b => b.Activity === brandFromUrl);
+    const isDarkMode = currentTheme === 'dark';
+    let brandColor = isDarkMode ? brand['Color Dark'] : brand['Color Light'];
 
-      let initialBrand = 'Cyber Club';
-      if (brandObjectFromUrl) {
-          initialBrand = brandObjectFromUrl.Brand;
-      } else if (storedBrand && fetchedBrands.some(b => b.Brand === storedBrand)) {
-        initialBrand = storedBrand;
-      }
-      
-      handleBrandChange(initialBrand, true, fetchedBrands);
-      
-      const pathParts = pathname.split('/').filter(p => p);
-      const currentCategorySlug = pathParts.length > 1 ? pathParts[1] : pathParts[0];
-
-      if (initialBrand !== 'Cyber Club' && !brandObjectFromUrl) {
-        const brandToApply = fetchedBrands.find(b => b.Brand === initialBrand);
-        if (brandToApply && currentCategorySlug) {
-            router.push(`/${brandToApply.Activity}/${currentCategorySlug}`);
-        }
-      }
+    if (brandColor && !brandColor.startsWith('#')) {
+      brandColor = `#${brandColor}`;
     }
 
-    fetchData();
-
-    const storedTheme = localStorage.getItem('darkMode');
-    if (storedTheme) {
-      setTheme(JSON.parse(storedTheme) ? 'dark' : 'light');
-    }
+    const colorToSet = brandColor || (isDarkMode ? '#FFFFFF' : '#000000');
+    document.documentElement.style.setProperty('--brand-color', colorToSet);
   }, []);
 
-  useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem('darkMode', JSON.stringify(theme === 'dark'));
-    }
-  }, [theme, isMounted]);
-
-  useEffect(() => {
-    if (!isMounted || brands.length === 0) return;
-
-    const pathParts = pathname.split('/').filter(p => p);
-    const brandActivityFromUrl = pathParts.length > 1 ? pathParts[0] : undefined;
-    
-    const brandFromUrl = brands.find(b => b.Activity === brandActivityFromUrl);
-
-    if (brandFromUrl) {
-        if (brandFromUrl.Brand !== selectedBrand) {
-            handleBrandChange(brandFromUrl.Brand, true, brands);
-        }
-    } else { // No brand in URL
-        if (selectedBrand !== 'Cyber Club') {
-            handleBrandChange('Cyber Club', true, brands);
-        }
-    }
-
-  }, [pathname, brands, isMounted]);
-
-
-  const handleBrandChange = (brandName: string, fromUrl = false, brandList: Brand[]) => {
+  const handleBrandChange = useCallback((brandName: string, fromUrl = false, brandList: Brand[], categoryList: Category[]) => {
     const allBrands = brandList.length > 0 ? brandList : brands;
     const brand = allBrands.find(b => b.Brand === brandName) || allBrands.find(b => b.Brand === 'Cyber Club');
+    
     if (!brand) return;
 
     setSelectedBrand(brand.Brand);
+    applyBrandColor(brand, resolvedTheme);
 
     if (isMounted) {
       localStorage.setItem('brandSelected', brand.Brand);
-      document.documentElement.style.setProperty('--brand-color', brand.Color || '#000000');
     }
     
     if (!fromUrl) {
       const currentPathParts = pathname.split('/').filter(p => p);
+      const allCategories = categoryList.length > 0 ? categoryList : categories;
       let categorySlug = 'home';
       
-      const potentialCategorySlug = currentPathParts[currentPathParts.length - 1];
-      if (categories.some(c => c.Url === potentialCategorySlug)) {
-        categorySlug = potentialCategorySlug;
+      if (currentPathParts.length > 0) {
+          const potentialCategorySlug = currentPathParts[currentPathParts.length - 1];
+          if (allCategories.some(c => c.Url === potentialCategorySlug)) {
+            categorySlug = potentialCategorySlug;
+          }
       }
       
       let newPath;
@@ -127,8 +75,73 @@ export function Header() {
         router.push(newPath);
       }
     }
-  };
+  }, [isMounted, brands, categories, pathname, router, applyBrandColor, resolvedTheme]);
+
+  useEffect(() => {
+    setIsMounted(true);
+    async function fetchData() {
+      const [fetchedCategories, fetchedBrands] = await Promise.all([
+        getCategories(),
+        getBrands(),
+      ]);
+      setCategories(fetchedCategories);
+      setBrands(fetchedBrands);
+
+      const storedBrand = localStorage.getItem('brandSelected') || 'Cyber Club';
+      const brandFromUrlSlug = pathname.split('/')[1];
+      const brandFromUrl = fetchedBrands.find(b => b.Activity === brandFromUrlSlug);
+      
+      let initialBrandName = 'Cyber Club';
+      if (brandFromUrl) {
+          initialBrandName = brandFromUrl.Brand;
+      } else if (storedBrand && fetchedBrands.some(b => b.Brand === storedBrand)) {
+        initialBrandName = storedBrand;
+      }
+
+      const initialBrand = fetchedBrands.find(b => b.Brand === initialBrandName) || fetchedBrands.find(b => b.Brand === 'Cyber Club');
+      if (initialBrand) {
+        setSelectedBrand(initialBrand.Brand);
+        applyBrandColor(initialBrand, resolvedTheme);
+      }
+      
+      const pathParts = pathname.split('/').filter(p => p);
+      const currentCategorySlug = pathParts.length > 1 ? pathParts[1] : pathParts[0];
+
+      if (initialBrand && initialBrand.Brand !== 'Cyber Club' && !brandFromUrl) {
+        const categoryToUse = currentCategorySlug || 'home';
+        router.push(`/${initialBrand.Activity}/${categoryToUse}`);
+      }
+    }
+    fetchData();
+  }, [applyBrandColor, pathname, resolvedTheme, router]);
+
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem('darkMode', JSON.stringify(theme === 'dark'));
+      const currentBrand = brands.find(b => b.Brand === selectedBrand);
+      applyBrandColor(currentBrand, resolvedTheme);
+    }
+  }, [theme, isMounted, resolvedTheme, applyBrandColor, brands, selectedBrand]);
   
+  useEffect(() => {
+    if (!isMounted || brands.length === 0) return;
+
+    const pathParts = pathname.split('/').filter(p => p);
+    const brandActivityFromUrl = pathParts.length > 1 ? pathParts[0] : undefined;
+    
+    const brandFromUrl = brands.find(b => b.Activity === brandActivityFromUrl);
+
+    if (brandFromUrl) {
+        if (brandFromUrl.Brand !== selectedBrand) {
+            handleBrandChange(brandFromUrl.Brand, true, brands, categories);
+        }
+    } else {
+        if (selectedBrand !== 'Cyber Club') {
+             handleBrandChange('Cyber Club', true, brands, categories);
+        }
+    }
+  }, [pathname, brands, isMounted, selectedBrand, handleBrandChange, categories]);
+
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
@@ -145,12 +158,15 @@ export function Header() {
   if (!isMounted) {
     return (
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="container flex h-16 items-center">
+            <div className="container flex h-16 items-center justify-between">
                  <div className="mr-4 flex">
                     <Link href="/" className="mr-6 flex items-center space-x-2">
                         <span className="font-bold font-headline text-lg">CYBER CLUB</span>
                     </Link>
                 </div>
+                 <div className="flex flex-1 items-center justify-end space-x-4">
+                    {/* Placeholder for theme toggle */}
+                 </div>
             </div>
         </header>
     );
@@ -166,7 +182,7 @@ export function Header() {
         </div>
 
         <div className="flex flex-1 items-center justify-start space-x-2">
-          <Select onValueChange={(value) => handleBrandChange(value, false, brands)} value={selectedBrand}>
+          <Select onValueChange={(value) => handleBrandChange(value, false, brands, categories)} value={selectedBrand}>
             <SelectTrigger className="w-[150px] brand-selector">
               <SelectValue placeholder="Select Brand" />
             </SelectTrigger>
@@ -186,7 +202,7 @@ export function Header() {
               .filter(category => category.Item && category.Url)
               .map((category) => {
                   const linkHref = getLinkHref(category.Url);
-                  const isActive = pathname === linkHref || (pathname.endsWith(category.Url) && pathname !== '/home' && category.Url !== 'home');
+                  const isActive = pathname === linkHref || (pathname.endsWith(`/${category.Url}`) && !pathname.startsWith('/home') && category.Url !== 'home');
                   return (
                     <Link
                         key={category.Item}
