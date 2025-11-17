@@ -1,20 +1,5 @@
 
-import { unstable_cache as next_unstable_cache } from 'next/cache';
-
-// Wrapper to check for the existence of the cache store.
-const unstable_cache: typeof next_unstable_cache = (
-  ...args: Parameters<typeof next_unstable_cache>
-) => {
-  const store = (next_unstable_cache as any).getCacheStore?.();
-  if (!store) {
-    // If the cache store is not available, we're likely in a context
-    // where caching is not supported (e.g., certain client-side error renderings).
-    // We return a no-op version of the cached function.
-    const fn = args[0];
-    return fn as any;
-  }
-  return next_unstable_cache(...args);
-};
+import { unstable_cache } from 'next/cache';
 
 export interface Category {
   Name: string;
@@ -22,6 +7,7 @@ export interface Category {
   Slug: string;
   Background: string;
   'Url Sheet': string;
+  'Url app': string;
 }
 
 export interface Brand {
@@ -29,17 +15,28 @@ export interface Brand {
   Activity: string;
   'Color Light': string;
   'Color Dark': string;
+  Description: string;
+  Logo: string;
 }
 
+const MASTER_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=177392102&single=true&output=csv';
+const BRAND_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=1634708260&single=true&output=csv';
+
+/**
+ * Fetches a public Google Sheet as a CSV and parses it into an array of objects.
+ * This function is robust and handles quoted fields containing commas.
+ * @param url The public URL of the Google Sheet, ending in 'output=csv'.
+ * @returns A promise that resolves to an array of objects, where each object represents a row.
+ */
 async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
     if (!url || !url.startsWith('https')) {
-        console.error(`Invalid URL provided to fetchAndParseCsv: ${url}`);
+        console.error(`[Sheets] Invalid URL provided: ${url}`);
         return [];
     }
-    const response = await fetch(url, { cache: 'no-store'});
+    const response = await fetch(url, { next: { revalidate: 300 } }); // 5 minute cache
     if (!response.ok) {
-      console.error(`Failed to fetch CSV from ${url}: ${response.status} ${response.statusText}`);
+      console.error(`[Sheets] Failed to fetch CSV from ${url}: ${response.status} ${response.statusText}`);
       return [];
     }
     const csvText = await response.text();
@@ -54,20 +51,20 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
         const line = lines[i];
         if (!line || line.trim() === '') continue;
 
+        // Robust CSV line parsing
         const values: string[] = [];
         let currentField = '';
         let inQuotes = false;
-
         for (let j = 0; j < line.length; j++) {
             const char = line[j];
-            const nextChar = line[j + 1];
+            const nextChar = j + 1 < line.length ? line[j+1] : null;
 
             if (char === '"') {
                 if (inQuotes && nextChar === '"') {
-                    currentField += '"';
-                    j++; 
+                    currentField += '"'; // Escaped quote
+                    j++;
                 } else {
-                    inQuotes = !inQuotes;
+                    inQuotes = !inQuotes; // Start or end of a quoted field
                 }
             } else if (char === ',' && !inQuotes) {
                 values.push(currentField);
@@ -79,106 +76,73 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
         values.push(currentField);
 
         if (values.length >= headers.length) {
-            const row: any = {};
+            const rowObject: { [key: string]: any } = {};
             headers.forEach((header, index) => {
-                row[header] = values[index] ? values[index].trim() : '';
-            });
-
-            // Standardize column names: 'Item' -> 'Name', 'Url' -> 'Slug'
-            const renamedRow: { [key: string]: any } = {};
-            for (const key in row) {
-                const lowerKey = key.toLowerCase().trim();
-                if (lowerKey === 'item' || lowerKey === 'title') {
-                    renamedRow['Name'] = row[key];
-                } else if (lowerKey === 'url') {
-                    renamedRow['Slug'] = row[key];
+                const value = values[index] ? values[index].trim() : '';
+                // Standardize common column names on the fly for consistency
+                if (header === 'Item' || header === 'Title') {
+                    rowObject['Name'] = value;
+                } else if (header === 'Url') {
+                    rowObject['Slug'] = value;
                 } else {
-                    renamedRow[key] = row[key];
+                    rowObject[header] = value;
                 }
-            }
-
-            if (Object.values(renamedRow).some(v => v !== null && String(v).trim() !== '')) {
-                data.push(renamedRow as T);
-            }
+            });
+            data.push(rowObject as T);
         }
     }
     
     return data;
   } catch (error) {
-    console.error(`Error during fetch or parse for ${url}:`, error);
+    console.error(`[Sheets] Error during fetch or parse for ${url}:`, error);
     return []; 
   }
 }
 
-
+/**
+ * Fetches and parses the Master Sheet to get the list of all categories.
+ * This function trusts the Master Sheet as the single source of truth for category URLs.
+ * It is cached for 5 minutes.
+ */
 export const getCategories = unstable_cache(
   async () => {
-    const masterSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=177392102&single=true&output=csv';
-    const categoriesFromSheet = await fetchAndParseCsv<Category>(masterSheetUrl);
-
-    // --- TEMPORARY WORKAROUND to fix incorrect GIDs in the master sheet ---
-    const gidCorrectionMap: { [key: string]: string } = {
-        'Home': '177392102', // This might still be master, but for consistency
-        'Projects': '153094389',
-        'Catalog': '581525493',
-        'Research': '275243306',
-        'Tool': '990396131', // Handles both "Tool" and "Tools"
-        'Tools': '990396131',
-        'Collabs': '2055846949',
-        'Events': '376468249',
-        'Ressources': '1813804988', // French spelling
-        'Resources': '1813804988', // English spelling
-    };
-
-    const baseUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=';
-    const urlSuffix = '&single=true&output=csv';
-
-    return categoriesFromSheet.map(category => {
-        // Find the correct key in the map, case-insensitively
-        const mapKey = Object.keys(gidCorrectionMap).find(k => k.toLowerCase() === category.Name.toLowerCase());
-
-        if (mapKey) {
-            const correctGid = gidCorrectionMap[mapKey];
-            const newUrl = `${baseUrl}${correctGid}${urlSuffix}`;
-            // Return a new object with the corrected URL
-            return {
-                ...category,
-                'Url Sheet': newUrl,
-            };
-        }
-        
-        return category; // Return original if no correction is needed
-    });
-    // --- END OF WORKAROUND ---
+    console.log('[Sheets] Fetching Master Sheet for categories...');
+    return fetchAndParseCsv<Category>(MASTER_SHEET_URL);
   },
   ['categories'],
-  { revalidate: 300 } // Revalidate every 5 minutes
+  { revalidate: 300 } // 5 minutes
 );
 
+/**
+ * Fetches and parses the Brand Sheet to get the list of all brands and their styles.
+ * It is cached for 5 minutes.
+ */
 export const getBrands = unstable_cache(
   async () => {
-    const brandSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=1634708260&single=true&output=csv';
-    return fetchAndParseCsv<Brand>(brandSheetUrl);
+    console.log('[Sheets] Fetching Brand Sheet...');
+    return fetchAndParseCsv<Brand>(BRAND_SHEET_URL);
   },
   ['brands'],
-  { revalidate: 300 } // Revalidate every 5 minutes
+  { revalidate: 300 } // 5 minutes
 );
 
+/**
+ * Fetches and parses the data for a specific category using the URL provided.
+ * This function is designed to fetch data from any sheet URL passed to it.
+ * It is cached for 5 minutes. The cache key is the sheet URL itself.
+ * @param sheetUrl The full, public URL of the Google Sheet to fetch.
+ */
 export const getCategoryData = unstable_cache(
   async (sheetUrl: string) => {
     if (!sheetUrl) {
+        console.warn('[Sheets] getCategoryData called with an empty URL.');
         return [];
     }
-    const store = (next_unstable_cache as any).getCacheStore?.();
-    if (!store) {
-      return fetchAndParseCsv<any>(sheetUrl);
-    }
+    console.log(`[Sheets] Fetching data for category from: ${sheetUrl}`);
     return fetchAndParseCsv<any>(sheetUrl);
   },
-  ['categoryData'],
+  ['categoryData'], // Base key, Next.js will add the arguments to make it unique
   { 
-    revalidate: 300 // Revalidate every 5 minutes, same as others
+    revalidate: 300 // 5 minutes
   }
 );
-
-    
