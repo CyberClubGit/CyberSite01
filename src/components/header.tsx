@@ -6,12 +6,6 @@ import { useTheme } from 'next-themes';
 import { Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -26,11 +20,13 @@ export function Header() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [selectedBrand, setSelectedBrand] = useState<string>('Cyber Club');
+  const [isMounted, setIsMounted] = useState(false);
 
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
+    setIsMounted(true);
     async function fetchData() {
       const [fetchedCategories, fetchedBrands] = await Promise.all([
         getCategories(),
@@ -40,13 +36,21 @@ export function Header() {
       setBrands(fetchedBrands);
       console.log('Fetched Categories:', fetchedCategories);
       console.log('Fetched Brands:', fetchedBrands);
+
+      // Initialize brand from localStorage or URL after data is fetched
+      const storedBrand = localStorage.getItem('brandSelected');
+      const brandFromUrl = pathname.split('/')[1];
+      const brandObjectFromUrl = fetchedBrands.find(b => b.Activity === brandFromUrl);
+
+      if (brandObjectFromUrl) {
+          handleBrandChange(brandObjectFromUrl.Brand, true, fetchedBrands);
+      } else if (storedBrand) {
+        handleBrandChange(storedBrand, true, fetchedBrands);
+      } else {
+        handleBrandChange('Cyber Club', true, fetchedBrands);
+      }
     }
     fetchData();
-
-    const storedBrand = localStorage.getItem('brandSelected');
-    if (storedBrand) {
-      handleBrandChange(storedBrand, true);
-    }
 
     const storedTheme = localStorage.getItem('darkMode');
     if (storedTheme) {
@@ -55,48 +59,65 @@ export function Header() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(theme === 'dark'));
-  }, [theme]);
-  
+    if (isMounted) {
+      localStorage.setItem('darkMode', JSON.stringify(theme === 'dark'));
+    }
+  }, [theme, isMounted]);
+
   useEffect(() => {
-    const brandFromUrl = pathname.split('/')[1];
+    if (brands.length === 0) return;
+
+    const pathParts = pathname.split('/').filter(p => p);
+    const brandFromUrl = pathParts[0];
+    const categoryFromUrl = pathParts.length > 1 ? pathParts[1] : (pathParts.length === 1 ? pathParts[0] : null);
+
     const brandObject = brands.find(b => b.Activity === brandFromUrl);
-    if (brandObject && brandObject.Brand !== selectedBrand) {
-        handleBrandChange(brandObject.Brand, true);
-    } else if (!brandFromUrl || brandFromUrl === 'home' || categories.find(c => c.Url === brandFromUrl)) {
-        if(selectedBrand !== 'Cyber Club') {
-            handleBrandChange('Cyber Club', true);
+
+    if (brandObject) { // URL has a brand
+        if (brandObject.Brand !== selectedBrand) {
+            handleBrandChange(brandObject.Brand, true, brands);
+        }
+    } else if (categoryFromUrl && categories.some(c => c.Url === categoryFromUrl)) { // URL has only category
+        if (selectedBrand !== 'Cyber Club') {
+            handleBrandChange('Cyber Club', true, brands);
         }
     }
-  }, [pathname, brands]);
+  }, [pathname, brands, categories]);
 
-  const handleBrandChange = (brandName: string, fromUrl = false) => {
-    const brand = brands.find(b => b.Brand === brandName) || brands.find(b => b.Brand === 'Cyber Club');
+
+  const handleBrandChange = (brandName: string, fromUrl = false, brandList: Brand[]) => {
+    const allBrands = brandList.length > 0 ? brandList : brands;
+    const brand = allBrands.find(b => b.Brand === brandName) || allBrands.find(b => b.Brand === 'Cyber Club');
     if (!brand) return;
 
     setSelectedBrand(brand.Brand);
-    localStorage.setItem('brandSelected', brand.Brand);
-    document.documentElement.style.setProperty('--brand-color', brand.Color);
-
+    if (isMounted) {
+      localStorage.setItem('brandSelected', brand.Brand);
+      document.documentElement.style.setProperty('--brand-color', brand.Color);
+    }
+    
     if (!fromUrl) {
       const currentPathParts = pathname.split('/').filter(p => p);
-      const isCategoryUrl = categories.some(c => c.Url === currentPathParts[currentPathParts.length - 1]);
+      let categorySlug = 'home'; // default
+      
+      // Find current category from URL
+      if (currentPathParts.length > 0) {
+        const potentialCategory = currentPathParts[currentPathParts.length - 1];
+        if (categories.some(c => c.Url === potentialCategory)) {
+          categorySlug = potentialCategory;
+        }
+      }
       
       let newPath;
       if (brand.Brand === 'Cyber Club') {
-        if(isCategoryUrl) {
-           newPath = `/${currentPathParts[currentPathParts.length - 1]}`;
-        } else {
-           newPath = '/home';
-        }
+        newPath = `/${categorySlug}`;
       } else {
-         if(isCategoryUrl) {
-            newPath = `/${brand.Activity}/${currentPathParts[currentPathParts.length - 1]}`;
-         } else {
-            newPath = `/${brand.Activity}/home`;
-         }
+        newPath = `/${brand.Activity}/${categorySlug}`;
       }
-      router.push(newPath);
+      
+      if (newPath !== pathname) {
+        router.push(newPath);
+      }
     }
   };
   
@@ -113,6 +134,10 @@ export function Header() {
     return `/${categoryUrl}`;
   };
 
+  if (!isMounted) {
+    return null; // or a loading skeleton
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
@@ -123,7 +148,7 @@ export function Header() {
         </div>
 
         <div className="flex flex-1 items-center justify-start space-x-2">
-          <Select onValueChange={(value) => handleBrandChange(value)} value={selectedBrand}>
+          <Select onValueChange={(value) => handleBrandChange(value, false, brands)} value={selectedBrand}>
             <SelectTrigger className="w-[150px] brand-selector">
               <SelectValue placeholder="Select Brand" />
             </SelectTrigger>
@@ -142,11 +167,12 @@ export function Header() {
             {categories
               .filter(category => category.Item && category.Url)
               .map((category) => {
-                  const isActive = pathname.endsWith(`/${category.Url}`) || (pathname === '/' && category.Url === 'home') || pathname.endsWith(`/${category.Url}/`);
+                  const linkHref = getLinkHref(category.Url);
+                  const isActive = pathname === linkHref;
                   return (
                     <Link
                         key={category.Item}
-                        href={getLinkHref(category.Url)}
+                        href={linkHref}
                         className={`text-sm font-medium transition-colors hover:text-primary menu-link ${isActive ? 'active' : ''}`}
                     >
                         {category.Item}
