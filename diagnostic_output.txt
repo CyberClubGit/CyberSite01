@@ -1,0 +1,143 @@
+Page Category: Home
+======================
+{
+  "category": {
+    "Name": "Home",
+    "Url Logo Png": "https://drive.google.com/open?id=1NU2qTrw8JZ8ura9JpJsH3O2crcafz_Yx&usp=drive_copy",
+    "Slug": "home",
+    "Background": "https://drive.google.com/open?id=161OMKRK0PfozA-aXaXr7bJ-O7MqgoTuY&usp=drive_copy",
+    "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=177392102&single=true&output=csv"
+  },
+  "brand": null,
+  "data": [
+    // This is the content of the Master Sheet, not the Home sheet.
+    { "Name": "Home", ... },
+    { "Name": "Projects", ... },
+    { "Name": "Catalog", ... },
+    ...and so on for all categories
+  ]
+}
+
+Page Category: Projects
+========================
+{
+  "category": {
+    "Name": "Projects",
+    "Url Logo Png": "https://drive.google.com/open?id=1YudbNuUzJTjXhLbyExCm0FdNEGjbCG4f&usp=drive_copy",
+    "Slug": "projects",
+    "Background": "https://drive.google.com/open?id=1WYoHSYxGSo-1tTxw4rjU9fCNrLQ24xwG&usp=drive_copy",
+    "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=153094389&single=true&output=csv"
+  },
+  "brand": null,
+  "data": [
+    // This is the content of the Master Sheet, not the Projects sheet.
+    { "Name": "Home", ... },
+    { "Name": "Projects", ... },
+    { "Name": "Catalog", ... },
+    ...and so on for all categories
+  ]
+}
+
+Page Category: Catalog
+=======================
+{
+  "category": {
+    "Name": "Catalog",
+    "Url Logo Png": "https://drive.google.com/open?id=1ssx-HkoV4vx4R7kBtVrfGSNk_bEEQJp1&usp=drive_copy",
+    "Slug": "catalog",
+    "Background": "https://drive.google.com/open?id=1WYoHSYxGSo-1tTxw4rjU9fCNrLQ24xwG&usp=drive_copy",
+    "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=581525493&single=true&output=csv"
+  },
+  "brand": null,
+  "data": [
+     // This is the content of the Master Sheet, not the Catalog sheet.
+    { "Name": "Home", ... },
+    { "Name": "Projects", ... },
+    { "Name": "Catalog", ... },
+    ...and so on for all categories
+  ]
+}
+
+Page Category: Research
+=======================
+{
+  "category": {
+    "Name": "Research",
+    ...
+    "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=275243306&single=true&output=csv"
+  },
+  "brand": null,
+  "data": [
+    // This correctly shows data from the Research sheet.
+    { "Name": "Project Title A", ... },
+    { "Name": "Paper B", ... }
+  ]
+}
+
+Page Category: Events
+=====================
+{
+  "category": {
+    "Name": "Events",
+    ...
+    "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=376468249&single=true&output=csv"
+  },
+  "brand": null,
+  "data": [
+    // This correctly shows data from the Events sheet.
+    { "Name": "Event X", ... },
+    { "Name": "Conference Y", ... }
+  ]
+}
+
+Page Category: Tools
+=====================
+{
+  "category": {
+    "Name": "Tools",
+    ...
+    "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=990396131&single=true&output=csv"
+  },
+  "brand": null,
+  "data": [
+    // This is the content of the Master Sheet, not the Tools sheet.
+    { "Name": "Home", ... },
+    { "Name": "Projects", ... },
+    { "Name": "Catalog", ... },
+    ...and so on for all categories
+  ]
+}
+
+Page Category: Collabs
+======================
+{
+  "category": {
+    "Name": "Collabs",
+    ...
+    "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=2055846949&single=true&output=csv"
+  },
+  "brand": null,
+  "data": [
+    // This correctly shows data from the Collabs sheet.
+    { "Name": "Collaboration 1", ... },
+    { "Name": "Partnership 2", ... }
+  ]
+}
+
+Page Category: Resources
+=========================
+{
+  "category": {
+    "Name": "Resources",
+    ...
+    "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=1813804988&single=true&output=csv"
+  },
+  "brand": null,
+  "data": [
+    // This is the content of the Master Sheet, not the Resources sheet.
+    { "Name": "Home", ... },
+    { "Name": "Projects", ... },
+    { "Name": "Catalog", ... },
+    ...and so on for all categories
+  ]
+}
