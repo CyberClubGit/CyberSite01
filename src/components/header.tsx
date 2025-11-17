@@ -43,44 +43,38 @@ export function Header({ categories, brands }: HeaderProps) {
     document.documentElement.style.setProperty('--brand-color', colorToSet);
   }, []);
 
-  const handleBrandChange = useCallback((brandName: string, fromUrl = false) => {
+  const handleBrandChange = useCallback((brandName: string) => {
     const brand = brands.find(b => b.Brand === brandName) || brands.find(b => b.Brand === 'Cyber Club');
     
     if (!brand) return;
 
     setSelectedBrand(brand.Brand);
-    applyBrandColor(brand, resolvedTheme);
-
     if (isMounted) {
       localStorage.setItem('brandSelected', brand.Brand);
     }
     
-    if (!fromUrl) {
-      const currentPathParts = pathname.split('/').filter(p => p);
-      let categorySlug = 'home';
-      
-      const brandInPath = brands.find(b => b.Activity.toLowerCase() === currentPathParts[0]?.toLowerCase());
-
-      if(brandInPath) {
-        if (currentPathParts.length > 1) {
-            categorySlug = currentPathParts[1];
-        }
-      } else if (currentPathParts.length > 0) {
-        categorySlug = currentPathParts[0];
-      }
-      
-      let newPath;
-      if (brand.Brand === 'Cyber Club') {
-        newPath = `/${categorySlug}`;
-      } else {
-        newPath = `/${brand.Activity.toLowerCase()}/${categorySlug}`;
-      }
-      
-      if (newPath !== pathname) {
-        router.push(newPath);
+    const pathParts = pathname.split('/').filter(p => p);
+    let categorySlug = 'home';
+    
+    if (pathParts.length > 0) {
+      const lastPart = pathParts[pathParts.length - 1];
+      const isCategory = categories.some(c => c.Url.toLowerCase() === lastPart.toLowerCase());
+      if(isCategory) {
+        categorySlug = lastPart;
       }
     }
-  }, [isMounted, brands, pathname, router, applyBrandColor, resolvedTheme]);
+    
+    let newPath;
+    if (brand.Brand === 'Cyber Club') {
+      newPath = `/${categorySlug}`;
+    } else {
+      newPath = `/${brand.Activity.toLowerCase()}/${categorySlug}`;
+    }
+    
+    router.push(newPath);
+
+  }, [isMounted, brands, pathname, router, categories]);
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -89,40 +83,25 @@ export function Header({ categories, brands }: HeaderProps) {
   useEffect(() => {
     if (!isMounted || brands.length === 0) return;
     
-    const storedBrandName = localStorage.getItem('brandSelected') || 'Cyber Club';
     const pathParts = pathname.split('/').filter(p => p);
-    const brandActivityFromUrl = pathParts[0];
-    const brandFromUrl = brands.find(b => b.Activity.toLowerCase() === brandActivityFromUrl?.toLowerCase());
+    const potentialBrandActivity = pathParts.length > 1 ? pathParts[0] : undefined;
+    const brandFromUrl = brands.find(b => b.Activity.toLowerCase() === potentialBrandActivity?.toLowerCase());
 
-    let brandToApply: Brand | undefined;
+    const currentBrandName = brandFromUrl ? brandFromUrl.Brand : 'Cyber Club';
 
-    if (brandFromUrl) {
-      brandToApply = brandFromUrl;
-    } else {
-      brandToApply = brands.find(b => b.Brand === storedBrandName) || brands.find(b => b.Brand === 'Cyber Club');
+    if (selectedBrand !== currentBrandName) {
+      setSelectedBrand(currentBrandName);
+      localStorage.setItem('brandSelected', currentBrandName);
     }
     
-    if (brandToApply) {
-        if(selectedBrand !== brandToApply.Brand) {
-            setSelectedBrand(brandToApply.Brand);
-        }
-        applyBrandColor(brandToApply, resolvedTheme);
-    }
+    const brandToApply = brands.find(b => b.Brand === currentBrandName);
+    applyBrandColor(brandToApply, resolvedTheme);
 
-    if (!brandFromUrl && brandToApply && brandToApply.Brand !== 'Cyber Club') {
-      const categorySlug = pathParts[0] || 'home';
-      const newPath = `/${brandToApply.Activity.toLowerCase()}/${categorySlug}`;
-      if (pathname !== newPath) {
-          router.push(newPath);
-      }
-    }
-
-  }, [isMounted, brands, pathname, resolvedTheme, applyBrandColor, router, selectedBrand]);
+  }, [isMounted, brands, pathname, resolvedTheme, applyBrandColor, selectedBrand]);
 
 
   useEffect(() => {
     if (isMounted) {
-      localStorage.setItem('darkMode', JSON.stringify(theme === 'dark'));
       const currentBrand = brands.find(b => b.Brand === selectedBrand);
       applyBrandColor(currentBrand, resolvedTheme);
     }
@@ -168,7 +147,7 @@ export function Header({ categories, brands }: HeaderProps) {
         </div>
 
         <div className="flex flex-1 items-center justify-start space-x-2">
-          <Select onValueChange={(value) => handleBrandChange(value, false)} value={selectedBrand}>
+          <Select onValueChange={handleBrandChange} value={selectedBrand}>
             <SelectTrigger className="w-[150px] brand-selector">
               <SelectValue placeholder="Select Brand" />
             </SelectTrigger>
@@ -188,7 +167,10 @@ export function Header({ categories, brands }: HeaderProps) {
               .filter(category => category.Item && category.Url)
               .map((category) => {
                   const linkHref = getLinkHref(category.Url);
-                  const isActive = pathname === linkHref || (category.Url !== 'home' && pathname.endsWith(`/${category.Url}`));
+                  const pathParts = pathname.split('/').filter(p => p);
+                  const lastPart = pathParts.length > 0 ? pathParts[pathParts.length - 1] : 'home';
+                  const isActive = lastPart === category.Url.toLowerCase();
+                  
                   return (
                     <Link
                         key={category.Item}

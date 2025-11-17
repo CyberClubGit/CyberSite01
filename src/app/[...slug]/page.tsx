@@ -10,36 +10,35 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
 
   let brand: Brand | undefined;
   let category: Category | undefined;
-  let remainingSlug: string[] = [];
-
-  const potentialBrandActivity = slug[0];
-  const foundBrand = brands.find(b => b.Activity.toLowerCase() === potentialBrandActivity.toLowerCase());
-
-  if (foundBrand && slug.length > 1) {
-    brand = foundBrand;
-    const potentialCategorySlug = slug[1];
-    category = categories.find(c => c.Url.toLowerCase() === potentialCategorySlug.toLowerCase());
-    remainingSlug = slug.slice(2);
-  } else {
-    const potentialCategorySlug = slug[0];
-    category = categories.find(c => c.Url.toLowerCase() === potentialCategorySlug.toLowerCase());
-    remainingSlug = slug.slice(1);
-  }
-
-  // Handle case where first slug is not a brand but there are more slugs
-  if (!category && slug.length > 1) {
-    const potentialCategorySlug = slug[0];
-    const foundCategory = categories.find(c => c.Url.toLowerCase() === potentialCategorySlug.toLowerCase());
-    if (foundCategory) {
-      category = foundCategory;
-      remainingSlug = slug.slice(1);
-    }
-  }
   
-  // if we are at the root / or /home
+  // Handle /home route explicitly
   if (slug.length === 1 && slug[0] === 'home') {
     category = categories.find(c => c.Url.toLowerCase() === 'home');
+  } else {
+    // Find category slug, it can be at slug[0] or slug[1]
+    const potentialCategorySlug = slug.length > 1 
+      ? slug[1] 
+      : slug[0];
+    
+    category = categories.find(c => c.Url.toLowerCase() === potentialCategorySlug?.toLowerCase());
+
+    // If category not found at slug[1], maybe it's at slug[0] (and there's no brand)
+    if (!category && slug.length > 0) {
+      category = categories.find(c => c.Url.toLowerCase() === slug[0]?.toLowerCase());
+    }
+
+    // Find brand if a category was found
+    if(category) {
+        const potentialBrandSlug = slug.length > 1 && slug[0] !== category.Url.toLowerCase()
+            ? slug[0]
+            : undefined;
+        
+        if (potentialBrandSlug) {
+            brand = brands.find(b => b.Activity.toLowerCase() === potentialBrandSlug.toLowerCase());
+        }
+    }
   }
+
 
   if (!category) {
     notFound();
