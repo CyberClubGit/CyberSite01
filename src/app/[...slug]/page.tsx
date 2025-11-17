@@ -10,26 +10,18 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
 
   let brand: Brand | undefined;
   let category: Category | undefined;
-  let categorySlug: string | undefined;
 
-  // Find category slug - it can be the first or second part of the URL
-  const potentialCatSlug1 = slug[0];
-  const potentialCatSlug2 = slug[1];
+  const potentialCatSlug1 = slug.length > 0 ? slug[slug.length - 1] : 'home';
+  const potentialBrandSlug = slug.length > 1 ? slug[0] : undefined;
 
-  const cat1 = categories.find(c => c.Slug && c.Slug.toLowerCase() === potentialCatSlug1?.toLowerCase());
-  const cat2 = categories.find(c => c.Slug && c.Slug.toLowerCase() === potentialCatSlug2?.toLowerCase());
+  category = categories.find(c => c.Slug && c.Slug.toLowerCase() === potentialCatSlug1?.toLowerCase());
 
-  if (cat2) {
-    category = cat2;
-    categorySlug = potentialCatSlug2;
-    const potentialBrandSlug = potentialCatSlug1;
-    brand = brands.find(b => b.Activity && b.Activity.toLowerCase() === potentialBrandSlug?.toLowerCase());
-  } else if (cat1) {
-    category = cat1;
-    categorySlug = potentialCatSlug1;
-    // No brand in this case
-  } else if (slug[0] === 'home') {
+  if (!category && slug.length === 1 && slug[0] === 'home') {
     category = categories.find(c => c.Slug && c.Slug.toLowerCase() === 'home');
+  }
+
+  if (potentialBrandSlug) {
+      brand = brands.find(b => b.Activity && b.Activity.toLowerCase() === potentialBrandSlug.toLowerCase());
   }
 
   if (!category) {

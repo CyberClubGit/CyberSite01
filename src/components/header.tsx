@@ -4,8 +4,13 @@
 import Link from 'next/link';
 import { useEffect, useState, useCallback } from 'react';
 import { useTheme } from 'next-themes';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 import {
   Select,
   SelectContent,
@@ -25,9 +30,29 @@ export function Header({ categories, brands }: HeaderProps) {
   const { setTheme, theme, resolvedTheme } = useTheme();
   const [selectedBrand, setSelectedBrand] = useState<string>('Cyber Club');
   const [isMounted, setIsMounted] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const pathname = usePathname();
   const router = useRouter();
+
+  const getCurrentCategorySlug = useCallback(() => {
+    const pathParts = pathname.split('/').filter(p => p);
+    if (pathParts.length === 0) return 'home';
+
+    const catSlugs = categories.map(c => c.Slug?.toLowerCase());
+
+    // Look from right to left for a category slug
+    for (let i = pathParts.length - 1; i >= 0; i--) {
+      if (catSlugs.includes(pathParts[i]?.toLowerCase())) {
+        return pathParts[i];
+      }
+    }
+    
+    // Default to home if no category is found in URL, e.g. for base path
+    if (pathname === '/') return 'home';
+
+    return undefined;
+  }, [pathname, categories]);
 
   const applyBrandColor = useCallback((brand: Brand | undefined, currentTheme: string | undefined) => {
     if (!brand || !currentTheme) return;
@@ -51,20 +76,10 @@ export function Header({ categories, brands }: HeaderProps) {
     setSelectedBrand(brand.Brand);
     localStorage.setItem('brandSelected', brand.Brand);
     
-    const pathParts = pathname.split('/').filter(p => p);
-    let currentCategorySlug = 'home';
-
-    const cat1 = categories.find(c => c.Slug && c.Slug.toLowerCase() === pathParts[0]?.toLowerCase());
-    const cat2 = categories.find(c => c.Slug && c.Slug.toLowerCase() === pathParts[1]?.toLowerCase());
-
-    if (cat2) {
-      currentCategorySlug = pathParts[1];
-    } else if (cat1) {
-      currentCategorySlug = pathParts[0];
-    }
+    const currentCategorySlug = getCurrentCategorySlug() || 'home';
     
     let newPath;
-    if (brand.Brand === 'Cyber Club') {
+    if (brand.Brand === 'Cyber Club' || !brand.Activity) {
       newPath = `/${currentCategorySlug}`;
     } else {
       newPath = `/${brand.Activity.toLowerCase()}/${currentCategorySlug}`;
@@ -72,7 +87,7 @@ export function Header({ categories, brands }: HeaderProps) {
     
     router.push(newPath);
 
-  }, [brands, pathname, router, categories]);
+  }, [brands, router, getCurrentCategorySlug]);
 
 
   useEffect(() => {
@@ -124,6 +139,29 @@ export function Header({ categories, brands }: HeaderProps) {
     return `/${categoryUrl}`;
   };
 
+  const currentCategorySlug = getCurrentCategorySlug();
+
+  const renderNavLinks = (isMobile = false) => (
+    categories
+      .filter(category => category.Name && category.Slug)
+      .map((category) => {
+          const linkHref = getLinkHref(category.Slug.toLowerCase());
+          const isActive = (currentCategorySlug || 'home').toLowerCase() === category.Slug.toLowerCase();
+          
+          return (
+            <Link
+                key={category.Name}
+                href={linkHref}
+                onClick={() => isMobile && setIsMobileMenuOpen(false)}
+                className={`text-sm font-medium transition-colors hover:text-primary menu-link ${isActive ? 'active' : ''} ${isMobile ? 'block w-full text-left p-2' : ''}`}
+            >
+                {category.Name}
+            </Link>
+          )
+      })
+  );
+
+
   if (!isMounted) {
     return (
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -143,69 +181,73 @@ export function Header({ categories, brands }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
-        <div className="mr-4 flex">
+        <div className="mr-auto flex items-center gap-2">
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <span className="font-bold font-headline text-lg">CYBER CLUB</span>
           </Link>
+        
+          <div className="hidden md:flex">
+             <Select onValueChange={handleBrandChange} value={selectedBrand}>
+                <SelectTrigger className="w-[150px] brand-selector">
+                  <SelectValue placeholder="Select Brand" />
+                </SelectTrigger>
+                <SelectContent>
+                  {brands.map((brand) => (
+                    <SelectItem key={brand.Brand} value={brand.Brand}>
+                      {brand.Brand}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+          </div>
         </div>
 
-        <div className="flex flex-1 items-center justify-start space-x-2">
-          <Select onValueChange={handleBrandChange} value={selectedBrand}>
-            <SelectTrigger className="w-[150px] brand-selector">
-              <SelectValue placeholder="Select Brand" />
-            </SelectTrigger>
-            <SelectContent>
-              {brands.map((brand) => (
-                <SelectItem key={brand.Brand} value={brand.Brand}>
-                  {brand.Brand}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
 
-        <div className="flex flex-1 items-center justify-center space-x-6">
-          <nav className="hidden md:flex gap-6">
-            {categories
-              .filter(category => category.Name && category.Slug)
-              .map((category) => {
-                  const linkHref = getLinkHref(category.Slug);
-                  const pathParts = pathname.split('/').filter(p => p);
-                  
-                  const cat1 = categories.find(c => c.Slug && c.Slug.toLowerCase() === pathParts[0]?.toLowerCase());
-                  const cat2 = categories.find(c => c.Slug && c.Slug.toLowerCase() === pathParts[1]?.toLowerCase());
-
-                  let currentCategorySlug;
-                  if (cat2) {
-                    currentCategorySlug = pathParts[1];
-                  } else if (cat1) {
-                    currentCategorySlug = pathParts[0];
-                  } else if (pathParts[0] === 'home') {
-                    currentCategorySlug = 'home';
-                  }
-
-                  const isActive = (currentCategorySlug || 'home').toLowerCase() === category.Slug.toLowerCase();
-                  
-                  return (
-                    <Link
-                        key={category.Name}
-                        href={linkHref}
-                        className={`text-sm font-medium transition-colors hover:text-primary menu-link ${isActive ? 'active' : ''}`}
-                    >
-                        {category.Name}
-                    </Link>
-                  )
-              })}
+        <div className="hidden md:flex flex-1 items-center justify-center">
+          <nav className="flex gap-6">
+            {renderNavLinks()}
           </nav>
         </div>
 
-        <div className="flex flex-1 items-center justify-end space-x-4">
+        <div className="ml-auto flex items-center justify-end space-x-2">
             <Button variant="ghost" size="icon" onClick={toggleTheme}>
                 <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                 <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                 <span className="sr-only">Toggle theme</span>
             </Button>
-          {/* Placeholder for User Menu */}
+            
+            <div className="md:hidden">
+              <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                <SheetTrigger asChild>
+                   <Button variant="ghost" size="icon">
+                    <Menu className="h-6 w-6" />
+                    <span className="sr-only">Open navigation menu</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left">
+                    <div className="flex flex-col gap-4 p-4">
+                      <Link href="/" className="mb-4 flex items-center space-x-2" onClick={() => setIsMobileMenuOpen(false)}>
+                          <span className="font-bold font-headline text-lg">CYBER CLUB</span>
+                      </Link>
+                       <Select onValueChange={(value) => { handleBrandChange(value); setIsMobileMenuOpen(false); }} value={selectedBrand}>
+                          <SelectTrigger className="w-full brand-selector">
+                            <SelectValue placeholder="Select Brand" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {brands.map((brand) => (
+                              <SelectItem key={brand.Brand} value={brand.Brand}>
+                                {brand.Brand}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      <nav className="flex flex-col gap-2">
+                        {renderNavLinks(true)}
+                      </nav>
+                    </div>
+                </SheetContent>
+              </Sheet>
+            </div>
         </div>
       </div>
     </header>
