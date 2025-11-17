@@ -10,11 +10,14 @@ Page Category: Home
   },
   "brand": null,
   "data": [
-    // This is the content of the Master Sheet, not the Home sheet.
-    { "Name": "Home", ... },
-    { "Name": "Projects", ... },
-    { "Name": "Catalog", ... },
-    ...and so on for all categories
+    { "Name": "Home", "Url Logo Png": "...", "Slug": "home", "..."},
+    { "Name": "Projects", "Url Logo Png": "...", "Slug": "projects", "..."},
+    { "Name": "Catalog", "Url Logo Png": "...", "Slug": "catalog", "..."},
+    { "Name": "Research", "Url Logo Png": "...", "Slug": "research", "..."},
+    { "Name": "Tools", "Url Logo Png": "...", "Slug": "tools", "..."},
+    { "Name": "Collabs", "Url Logo Png": "...", "Slug": "collabs", "..."},
+    { "Name": "Events", "Url Logo Png": "...", "Slug": "events", "..."},
+    { "Name": "Resources", "Url Logo Png": "...", "Slug": "resources", "..."}
   ]
 }
 
@@ -30,11 +33,8 @@ Page Category: Projects
   },
   "brand": null,
   "data": [
-    // This is the content of the Master Sheet, not the Projects sheet.
-    { "Name": "Home", ... },
-    { "Name": "Projects", ... },
-    { "Name": "Catalog", ... },
-    ...and so on for all categories
+    { "Name": "Project 1", "..."},
+    { "Name": "Project 2", "..."}
   ]
 }
 
@@ -50,11 +50,8 @@ Page Category: Catalog
   },
   "brand": null,
   "data": [
-     // This is the content of the Master Sheet, not the Catalog sheet.
-    { "Name": "Home", ... },
-    { "Name": "Projects", ... },
-    { "Name": "Catalog", ... },
-    ...and so on for all categories
+    { "Name": "Product A", "..."},
+    { "Name": "Product B", "..."}
   ]
 }
 
@@ -63,14 +60,14 @@ Page Category: Research
 {
   "category": {
     "Name": "Research",
-    ...
+    "Url Logo Png": "...",
+    "Slug": "research",
     "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=275243306&single=true&output=csv"
   },
   "brand": null,
   "data": [
-    // This correctly shows data from the Research sheet.
-    { "Name": "Project Title A", ... },
-    { "Name": "Paper B", ... }
+    { "Name": "Project Title A", "..."},
+    { "Name": "Paper B", "..."}
   ]
 }
 
@@ -79,14 +76,14 @@ Page Category: Events
 {
   "category": {
     "Name": "Events",
-    ...
+    "Url Logo Png": "...",
+    "Slug": "events",
     "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=376468249&single=true&output=csv"
   },
   "brand": null,
   "data": [
-    // This correctly shows data from the Events sheet.
-    { "Name": "Event X", ... },
-    { "Name": "Conference Y", ... }
+    { "Name": "Event X", "..."},
+    { "Name": "Conference Y", "..."}
   ]
 }
 
@@ -95,16 +92,14 @@ Page Category: Tools
 {
   "category": {
     "Name": "Tools",
-    ...
+    "Url Logo Png": "...",
+    "Slug": "tools",
     "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=990396131&single=true&output=csv"
   },
   "brand": null,
   "data": [
-    // This is the content of the Master Sheet, not the Tools sheet.
-    { "Name": "Home", ... },
-    { "Name": "Projects", ... },
-    { "Name": "Catalog", ... },
-    ...and so on for all categories
+    { "Name": "Tool Alpha", "..."},
+    { "Name": "Software Beta", "..."}
   ]
 }
 
@@ -113,14 +108,14 @@ Page Category: Collabs
 {
   "category": {
     "Name": "Collabs",
-    ...
+    "Url Logo Png": "...",
+    "Slug": "collabs",
     "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=2055846949&single=true&output=csv"
   },
   "brand": null,
   "data": [
-    // This correctly shows data from the Collabs sheet.
-    { "Name": "Collaboration 1", ... },
-    { "Name": "Partnership 2", ... }
+    { "Name": "Collaboration 1", "..."},
+    { "Name": "Partnership 2", "..."}
   ]
 }
 
@@ -129,15 +124,13 @@ Page Category: Resources
 {
   "category": {
     "Name": "Resources",
-    ...
+    "Url Logo Png": "...",
+    "Slug": "resources",
     "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=1813804988&single=true&output=csv"
   },
   "brand": null,
   "data": [
-    // This is the content of the Master Sheet, not the Resources sheet.
-    { "Name": "Home", ... },
-    { "Name": "Projects", ... },
-    { "Name": "Catalog", ... },
-    ...and so on for all categories
+    { "Name": "Resource One", "..."},
+    { "Name": "Link Two", "..."}
   ]
 }
