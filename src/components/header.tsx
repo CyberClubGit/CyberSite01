@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
 import {
@@ -51,7 +54,7 @@ export function Header({ categories, brands }: HeaderProps) {
     // Default to home if no category is found in URL, e.g. for base path
     if (pathname === '/') return 'home';
 
-    return undefined;
+    return 'home';
   }, [pathname, categories]);
 
   const applyBrandColor = useCallback((brand: Brand | undefined, currentTheme: string | undefined) => {
@@ -225,6 +228,10 @@ export function Header({ categories, brands }: HeaderProps) {
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left">
+                    <SheetHeader>
+                        <SheetTitle className="sr-only">Menu</SheetTitle>
+                        <SheetDescription className="sr-only">Main navigation menu and brand selector.</SheetDescription>
+                    </SheetHeader>
                     <div className="flex flex-col gap-4 p-4">
                       <Link href="/" className="mb-4 flex items-center space-x-2" onClick={() => setIsMobileMenuOpen(false)}>
                           <span className="font-bold font-headline text-lg">CYBER CLUB</span>
