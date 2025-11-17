@@ -19,8 +19,59 @@ export interface Brand {
   Logo: string;
 }
 
-const MASTER_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=177392102&single=true&output=csv';
-const BRAND_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=1634708260&single=true&output=csv';
+const SPREADSHEET_ID = '2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1';
+const MASTER_SHEET_GID = '177392102';
+const BRAND_SHEET_GID = '1634708260';
+
+function buildCsvUrl(spreadsheetId: string, gid: string): string {
+  return `https://docs.google.com/spreadsheets/d/e/${spreadsheetId}/pub?gid=${gid}&single=true&output=csv`;
+}
+
+const MASTER_SHEET_URL = buildCsvUrl(SPREADSHEET_ID, MASTER_SHEET_GID);
+const BRAND_SHEET_URL = buildCsvUrl(SPREADSHEET_ID, BRAND_SHEET_GID);
+
+
+// --- Robust CSV Parsing and Normalization Utils ---
+
+/**
+ * Normalizes a category name for reliable comparison.
+ * - Trims whitespace from start/end
+ * - Converts to lowercase
+ * - Replaces multiple spaces with a single space
+ */
+function normalizeCategoryName(name: string): string {
+  if (!name) return '';
+  return name.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+
+function parseCsvLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const nextChar = i + 1 < line.length ? line[i + 1] : null;
+
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        current += '"';
+        i++; 
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
 
 async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
@@ -37,47 +88,21 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
 
     const lines = csvText.trim().replace(/\r\n/g, '\n').split('\n');
     if (lines.length < 2) return [];
-
-    const headersLine = lines.shift() || '';
-    const headers = headersLine.split(',').map(h => h.trim());
+    
+    const headerLine = lines.shift() || '';
+    const headers = parseCsvLine(headerLine);
     
     const data: T[] = [];
 
     for (const line of lines) {
       if (!line || line.trim() === '') continue;
 
-      const values: string[] = [];
-      let currentField = '';
-      let inQuotes = false;
-      for (let j = 0; j < line.length; j++) {
-        const char = line[j];
-        const nextChar = j + 1 < line.length ? line[j + 1] : null;
-
-        if (char === '"') {
-          if (inQuotes && nextChar === '"') {
-            currentField += '"';
-            j++;
-          } else {
-            inQuotes = !inQuotes;
-          }
-        } else if (char === ',' && !inQuotes) {
-          values.push(currentField);
-          currentField = '';
-        } else {
-          currentField += char;
-        }
-      }
-      values.push(currentField);
+      const values = parseCsvLine(line);
 
       if (values.length >= headers.length) {
         const rowObject: { [key: string]: any } = {};
         headers.forEach((header, index) => {
-          let value = values[index] ? values[index].trim() : '';
-          if (value.startsWith('"') && value.endsWith('"')) {
-            value = value.substring(1, value.length - 1).replace(/""/g, '"');
-          }
-          const standardizedHeader = header === 'Item' ? 'Name' : header === 'Url' ? 'Slug' : header;
-          rowObject[standardizedHeader] = value;
+          rowObject[header] = values[index] || '';
         });
         data.push(rowObject as T);
       }
@@ -89,35 +114,41 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   }
 }
 
+
 export const getCategories = unstable_cache(
   async () => {
     console.log('[Sheets] Fetching Master Sheet for categories...');
     const categoriesFromSheet = await fetchAndParseCsv<Category>(MASTER_SHEET_URL);
     
     const gidCorrectionMap: { [key: string]: string } = {
-        'Home': '177392102',
-        'Projects': '153094389',
-        'Catalog': '581525493',
-        'Research': '275243306',
-        'Tool': '990396131',
-        'Collabs': '2055846949',
-        'Events': '376468249',
-        'Ressources': '1813804988',
+        'home': '177392102',
+        'projects': '153094389',
+        'catalog': '581525493',
+        'research': '275243306',
+        'tool': '990396131',
+        'collabs': '2055846949',
+        'events': '376468249',
+        'ressources': '1813804988',
     };
 
-    const baseUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub';
-
     const correctedCategories = categoriesFromSheet.map(category => {
-        const categoryName = category.Name ? category.Name.trim() : '';
-        const correctGidKey = Object.keys(gidCorrectionMap).find(key => key.toLowerCase() === categoryName.toLowerCase());
+      const originalName = category.Name || category['Item'] || '';
+      const normalizedName = normalizeCategoryName(originalName);
+      const correctGid = gidCorrectionMap[normalizedName];
 
-        if (correctGidKey && gidCorrectionMap[correctGidKey]) {
-            return {
-                ...category,
-                'Url Sheet': `${baseUrl}?gid=${gidCorrectionMap[correctGidKey]}&single=true&output=csv`
-            };
-        }
-        return category;
+      let correctedUrl = category['Url Sheet'];
+      if (correctGid) {
+          console.log(`[Sheets] Correcting GID for "${originalName}" (normalized: "${normalizedName}") to ${correctGid}`);
+          correctedUrl = buildCsvUrl(SPREADSHEET_ID, correctGid);
+      } else {
+          console.warn(`[Sheets] No GID correction found for "${originalName}" (normalized: "${normalizedName}")`);
+      }
+
+      return {
+          ...category,
+          Name: originalName, // Ensure the original name is preserved for display
+          'Url Sheet': correctedUrl
+      };
     });
 
     console.log('[Sheets] Corrected categories with proper GIDs:', correctedCategories.map(c => ({ Name: c.Name, Url: c['Url Sheet'] })));
@@ -152,3 +183,5 @@ export const getCategoryData = unstable_cache(
     revalidate: 300 // 5 minutes
   }
 );
+
+    
