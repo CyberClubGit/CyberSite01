@@ -10,35 +10,25 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
 
   let brand: Brand | undefined;
   let category: Category | undefined;
-  
-  // Handle /home route explicitly
-  if (slug.length === 1 && slug[0] === 'home') {
-    category = categories.find(c => c.Url.toLowerCase() === 'home');
-  } else {
-    // Find category slug, it can be at slug[0] or slug[1]
-    const potentialCategorySlug = slug.length > 1 
-      ? slug[1] 
-      : slug[0];
-    
-    category = categories.find(c => c.Url.toLowerCase() === potentialCategorySlug?.toLowerCase());
 
-    // If category not found at slug[1], maybe it's at slug[0] (and there's no brand)
-    if (!category && slug.length > 0) {
-      category = categories.find(c => c.Url.toLowerCase() === slug[0]?.toLowerCase());
-    }
+  const brandSlug = slug.length > 1 ? slug[0] : undefined;
+  const potentialCategorySlugFromBrandRoute = slug.length > 1 ? slug[1] : undefined;
+  const potentialCategorySlugFromBaseRoute = slug.length > 0 ? slug[0] : undefined;
 
-    // Find brand if a category was found
-    if(category) {
-        const potentialBrandSlug = slug.length > 1 && slug[0] !== category.Url.toLowerCase()
-            ? slug[0]
-            : undefined;
-        
-        if (potentialBrandSlug) {
-            brand = brands.find(b => b.Activity.toLowerCase() === potentialBrandSlug.toLowerCase());
-        }
-    }
+  if (brandSlug) {
+      brand = brands.find(b => b.Activity && b.Activity.toLowerCase() === brandSlug.toLowerCase());
   }
 
+  if (brand && potentialCategorySlugFromBrandRoute) {
+      category = categories.find(c => c.Slug && c.Slug.toLowerCase() === potentialCategorySlugFromBrandRoute.toLowerCase());
+  } else if (potentialCategorySlugFromBaseRoute) {
+      category = categories.find(c => c.Slug && c.Slug.toLowerCase() === potentialCategorySlugFromBaseRoute.toLowerCase());
+  }
+  
+  // Handle /home route specifically if no other category matches
+  if (!category && potentialCategorySlugFromBaseRoute && potentialCategorySlugFromBaseRoute === 'home') {
+    category = categories.find(c => c.Slug && c.Slug.toLowerCase() === 'home');
+  }
 
   if (!category) {
     notFound();
@@ -52,19 +42,19 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
         <div className="flex flex-col items-center space-y-6 text-center">
           <div className="space-y-2">
             <h1 className="text-4xl font-headline font-black tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl/none capitalize">
-              {category?.Item}
+              {category?.Name}
             </h1>
             <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
               {brand 
-                ? `Contenu à venir pour ${category?.Item} sous la marque ${brand.Brand}`
-                : `Contenu à venir pour ${category?.Item}`}
+                ? `Contenu à venir pour ${category?.Name} sous la marque ${brand.Brand}`
+                : `Contenu à venir pour ${category?.Name}`}
             </p>
           </div>
         </div>
         <div className="mt-12 w-full mx-auto bg-muted/50 p-4 rounded-lg">
             <h2 className="text-2xl font-headline font-bold mb-4 text-center">Données brutes de la feuille :</h2>
             <pre className="text-xs bg-background p-4 rounded-md overflow-x-auto">
-                {JSON.stringify(categoryData, null, 2)}
+                {JSON.stringify({ category, brand, data: categoryData }, null, 2)}
             </pre>
         </div>
       </div>

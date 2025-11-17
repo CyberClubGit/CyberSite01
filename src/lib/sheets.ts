@@ -1,9 +1,10 @@
+
 import { unstable_cache } from 'next/cache';
 
 export interface Category {
-  Item: string;
+  Name: string;
   'Url Logo Png': string;
-  Url: string;
+  Slug: string;
   Background: string;
   'Url Sheet': string;
 }
@@ -26,7 +27,7 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
     const lines = csvText.trim().replace(/\r\n/g, '\n').split('\n');
     if (lines.length < 1) return [];
 
-    const headers = lines[0].split(',').map(h => h.trim());
+    const headers = lines[0].split(',').map(h => h.trim() === 'Item' ? 'Name' : (h.trim() === 'Url' ? 'Slug' : h.trim()));
     const data: T[] = [];
     
     for (let i = 1; i < lines.length; i++) {
@@ -59,28 +60,17 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
         
         while (inQuote && i + 1 < lines.length) {
             i++;
-            currentLine = lines[i];
-            field += '\n';
+            field += '\n' + lines[i];
 
-            for (let j = 0; j < currentLine.length; j++) {
-                const char = currentLine[j];
-
-                if (char === '"') {
-                   if (inQuote && j + 1 < currentLine.length && currentLine[j + 1] === '"') {
-                        field += '"';
-                        j++; // Skip next quote
-                    } else {
-                        inQuote = !inQuote;
-                    }
-                } else {
-                    field += char;
-                }
+            if (lines[i].endsWith('"')) {
+                inQuote = false;
+                field = field.slice(0, -1);
             }
         }
         
-        row[headers[headerIndex]] = field.trim();
+        row[headers[headerIndex]] = field.trim().replace(/^"|"$/g, '');
         
-        if (Object.values(row).some(v => v !== null && v !== '')) {
+        if (Object.values(row).some(v => v !== null && String(v).trim() !== '')) {
             data.push(row as T);
         }
     }
@@ -118,7 +108,6 @@ export const getCategoryData = unstable_cache(
   },
   ['categoryData'],
   { 
-    revalidate: 300,
     tags: ['categoryData'] 
   }
 );

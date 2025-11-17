@@ -57,10 +57,22 @@ export function Header({ categories, brands }: HeaderProps) {
     let categorySlug = 'home';
     
     if (pathParts.length > 0) {
-      const lastPart = pathParts[pathParts.length - 1];
-      const isCategory = categories.some(c => c.Url.toLowerCase() === lastPart.toLowerCase());
+      const isBrandSlug = (slug: string) => brands.some(b => b.Activity.toLowerCase() === slug.toLowerCase());
+      
+      let potentialCategorySlug = pathParts[0];
+      if (pathParts.length > 1 && isBrandSlug(pathParts[0])) {
+        potentialCategorySlug = pathParts[1];
+      }
+      
+      const isCategory = categories.some(c => c.Slug.toLowerCase() === potentialCategorySlug.toLowerCase());
       if(isCategory) {
-        categorySlug = lastPart;
+        categorySlug = potentialCategorySlug;
+      } else if (pathParts.length > 0) {
+        // Fallback for case where only category is present
+        const categoryMatch = categories.find(c => c.Slug.toLowerCase() === pathParts[pathParts.length - 1].toLowerCase());
+        if (categoryMatch) {
+          categorySlug = categoryMatch.Slug;
+        }
       }
     }
     
@@ -85,7 +97,7 @@ export function Header({ categories, brands }: HeaderProps) {
     
     const pathParts = pathname.split('/').filter(p => p);
     const potentialBrandActivity = pathParts.length > 1 ? pathParts[0] : undefined;
-    const brandFromUrl = brands.find(b => b.Activity.toLowerCase() === potentialBrandActivity?.toLowerCase());
+    const brandFromUrl = potentialBrandActivity ? brands.find(b => b.Activity.toLowerCase() === potentialBrandActivity.toLowerCase()) : undefined;
 
     const currentBrandName = brandFromUrl ? brandFromUrl.Brand : 'Cyber Club';
 
@@ -164,20 +176,23 @@ export function Header({ categories, brands }: HeaderProps) {
         <div className="flex flex-1 items-center justify-center space-x-6">
           <nav className="hidden md:flex gap-6">
             {categories
-              .filter(category => category.Item && category.Url)
+              .filter(category => category.Name && category.Slug)
               .map((category) => {
-                  const linkHref = getLinkHref(category.Url);
+                  const linkHref = getLinkHref(category.Slug);
                   const pathParts = pathname.split('/').filter(p => p);
-                  const lastPart = pathParts.length > 0 ? pathParts[pathParts.length - 1] : 'home';
-                  const isActive = lastPart === category.Url.toLowerCase();
+                  const currentCategorySlug = pathParts.length > 1 && brands.some(b => b.Activity.toLowerCase() === pathParts[0].toLowerCase())
+                    ? pathParts[1]
+                    : pathParts[0];
+
+                  const isActive = (currentCategorySlug || 'home').toLowerCase() === category.Slug.toLowerCase();
                   
                   return (
                     <Link
-                        key={category.Item}
+                        key={category.Name}
                         href={linkHref}
                         className={`text-sm font-medium transition-colors hover:text-primary menu-link ${isActive ? 'active' : ''}`}
                     >
-                        {category.Item}
+                        {category.Name}
                     </Link>
                   )
               })}
@@ -196,3 +211,4 @@ export function Header({ categories, brands }: HeaderProps) {
     </header>
   );
 }
+
