@@ -1,5 +1,20 @@
 
-import { unstable_cache } from 'next/cache';
+import { unstable_cache as next_unstable_cache } from 'next/cache';
+
+// Wrapper to check for the existence of the cache store.
+const unstable_cache: typeof next_unstable_cache = (
+  ...args: Parameters<typeof next_unstable_cache>
+) => {
+  const store = (next_unstable_cache as any).getCacheStore?.();
+  if (!store) {
+    // If the cache store is not available, we're likely in a context
+    // where caching is not supported (e.g., certain client-side error renderings).
+    // We return a no-op version of the cached function.
+    const fn = args[0];
+    return fn as any;
+  }
+  return next_unstable_cache(...args);
+};
 
 export interface Category {
   Name: string;
@@ -21,6 +36,7 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
     const response = await fetch(url, { next: { revalidate: 300 } });
     if (!response.ok) {
       console.error(`Failed to fetch CSV from ${url}: ${response.status} ${response.statusText}`);
+      // Return empty array for client-side resilience, preventing page crashes.
       return [];
     }
     const csvText = await response.text();
@@ -94,8 +110,8 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
     
     return data;
   } catch (error) {
-    console.error(`Error fetching or parsing CSV from ${url}:`, error);
-    return [];
+    console.error(`Error during fetch or parse for ${url}:`, error);
+    return []; // Return empty array on any failure.
   }
 }
 
