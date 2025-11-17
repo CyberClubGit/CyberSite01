@@ -5,23 +5,45 @@ import { notFound } from 'next/navigation';
 export default async function CatchAllPage({ params }: { params: { slug: string[] } }) {
   const { slug } = params;
   
-  const brands = await getBrands();
   const categories = await getCategories();
+  const brands = await getBrands();
 
   let brand: Brand | undefined;
   let category: Category | undefined;
+  let categorySlug: string | undefined;
 
-  const potentialCatSlug1 = slug.length > 0 ? slug[slug.length - 1] : 'home';
+  // Logic to determine brand and category from slug
   const potentialBrandSlug = slug.length > 1 ? slug[0] : undefined;
+  const brandFromSlug = potentialBrandSlug ? brands.find(b => b.Activity && b.Activity.toLowerCase() === potentialBrandSlug.toLowerCase()) : undefined;
 
-  category = categories.find(c => c.Slug && c.Slug.toLowerCase() === potentialCatSlug1?.toLowerCase());
-
-  if (!category && slug.length === 1 && slug[0] === 'home') {
-    category = categories.find(c => c.Slug && c.Slug.toLowerCase() === 'home');
+  if (brandFromSlug) {
+    brand = brandFromSlug;
+    categorySlug = slug[1];
+  } else {
+    categorySlug = slug[0];
+  }
+  
+  // Handle /home case
+  if (slug.length === 1 && slug[0] === 'home') {
+    categorySlug = 'home';
   }
 
-  if (potentialBrandSlug) {
-      brand = brands.find(b => b.Activity && b.Activity.toLowerCase() === potentialBrandSlug.toLowerCase());
+  if (categorySlug) {
+      category = categories.find(c => c.Slug && c.Slug.toLowerCase() === categorySlug?.toLowerCase());
+  }
+
+  if (!category) {
+    // Try to find if the last part of the slug is a category, for URLs like /brand/category
+    const lastSlugPart = slug[slug.length - 1];
+    const categoryByLastPart = categories.find(c => c.Slug && c.Slug.toLowerCase() === lastSlugPart.toLowerCase());
+    if (categoryByLastPart) {
+      category = categoryByLastPart;
+    }
+  }
+
+  // If still no category, and it's the root, default to home
+  if (!category && slug.length === 0) {
+      category = categories.find(c => c.Slug && c.Slug.toLowerCase() === 'home');
   }
 
   if (!category) {
