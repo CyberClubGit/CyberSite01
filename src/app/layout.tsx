@@ -40,9 +40,11 @@ export default function RootLayout({
                       <span className="hidden sm:inline">Pricing</span>
                   </Button>
                 </Link>
-                <Button variant="ghost" className="flex items-center gap-2">
-                  <Github className="h-4 w-4" />
-                  <span className="hidden sm:inline">GitHub</span>
+                <Button asChild variant="ghost" className="flex items-center gap-2">
+                  <a href="https://github.com/FirebaseExtended/studio-samples/tree/main/templates/next-sheets-starter" target="_blank" rel="noopener noreferrer">
+                    <Github className="h-4 w-4" />
+                    <span className="hidden sm:inline">GitHub</span>
+                  </a>
                 </Button>
                 <UserProfile />
               </nav>
