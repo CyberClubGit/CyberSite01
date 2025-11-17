@@ -1,3 +1,5 @@
+import { unstable_cache } from 'next/cache';
+
 export interface Category {
   Item: string;
   'Url Logo Png': string;
@@ -15,7 +17,7 @@ export interface Brand {
 
 async function fetchAndParseCsv<T>(url:string): Promise<T[]> {
   try {
-    const response = await fetch(url, { cache: 'no-store' });
+    const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch CSV from ${url}: ${response.statusText}`);
     }
@@ -44,12 +46,20 @@ async function fetchAndParseCsv<T>(url:string): Promise<T[]> {
   }
 }
 
-export async function getCategories(): Promise<Category[]> {
+export const getCategories = unstable_cache(
+  async () => {
     const masterSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=177392102&single=true&output=csv';
     return fetchAndParseCsv<Category>(masterSheetUrl);
-}
+  },
+  ['categories'],
+  { revalidate: 300 } // Revalidate every 5 minutes
+);
 
-export async function getBrands(): Promise<Brand[]> {
+export const getBrands = unstable_cache(
+  async () => {
     const brandSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=1634708260&single=true&output=csv';
     return fetchAndParseCsv<Brand>(brandSheetUrl);
-}
+  },
+  ['brands'],
+  { revalidate: 300 } // Revalidate every 5 minutes
+);

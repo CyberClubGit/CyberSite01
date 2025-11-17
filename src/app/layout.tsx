@@ -4,17 +4,21 @@ import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Header } from '@/components/header';
+import { getBrands, getCategories } from '@/lib/sheets';
 
 export const metadata: Metadata = {
   title: 'CYBER CLUB',
   description: 'CYBER CLUB Portfolio',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const categories = await getCategories();
+  const brands = await getBrands();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -38,7 +42,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <div className="flex min-h-screen flex-col bg-background text-foreground">
-              <Header />
+              <Header categories={categories} brands={brands} />
               <main className="flex-1">{children}</main>
               <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
                 <p className="text-xs text-muted-foreground">
