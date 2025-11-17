@@ -23,95 +23,38 @@ const SPREADSHEET_ID = '2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTI
 const MASTER_SHEET_GID = '177392102';
 const BRAND_SHEET_GID = '1634708260';
 
-function buildCsvUrl(spreadsheetId: string, gid: string): string {
-  return `https://docs.google.com/spreadsheets/d/e/${spreadsheetId}/pub?gid=${gid}&single=true&output=csv`;
+function buildCsvUrl(gid: string): string {
+  return `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${gid}&single=true&output=csv`;
 }
 
-const MASTER_SHEET_URL = buildCsvUrl(SPREADSHEET_ID, MASTER_SHEET_GID);
-const BRAND_SHEET_URL = buildCsvUrl(SPREADSHEET_ID, BRAND_SHEET_GID);
+const MASTER_SHEET_URL = buildCsvUrl(MASTER_SHEET_GID);
+const BRAND_SHEET_URL = buildCsvUrl(BRAND_SHEET_GID);
 
-// --- Robust CSV Parsing and Normalization Utils ---
-
-/**
- * Normalizes a category name for comparison.
- * - Trims whitespace from start/end
- * - Converts to lowercase
- * - Replaces multiple spaces with a single one
- */
-function normalizeCategoryName(name: string | undefined): string {
-  if (!name) return '';
-  return name.trim().toLowerCase().replace(/\s+/g, ' ');
-}
-
-/**
- * Robustly parses a single line of a CSV file, handling quoted fields.
- */
-function parseCsvLine(line: string): string[] {
-  const result: string[] = [];
-  let current = '';
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    const nextChar = i + 1 < line.length ? line[i + 1] : null;
-
-    if (char === '"') {
-      if (inQuotes && nextChar === '"') {
-        current += '"';
-        i++; // Skip the escaped quote
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (char === ',' && !inQuotes) {
-      result.push(current.trim());
-      current = '';
-    } else {
-      current += char;
-    }
-  }
-  result.push(current.trim());
-  return result;
-}
-
-/**
- * Fetches a CSV from a URL and parses it into an array of objects.
- */
 async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
-    if (!url || !url.startsWith('https')) {
-      console.error(`[Sheets] Invalid or empty URL provided: ${url}`);
-      return [];
-    }
-    const response = await fetch(url, { cache: 'no-store' });
+    const response = await fetch(url, { next: { revalidate: 300 } });
     if (!response.ok) {
       console.error(`[Sheets] Failed to fetch CSV from ${url}: ${response.status} ${response.statusText}`);
       return [];
     }
     const csvText = await response.text();
-
     const lines = csvText.trim().replace(/\r\n/g, '\n').split('\n');
     if (lines.length < 2) return [];
-    
+
     const headerLine = lines.shift() || '';
-    const headers = parseCsvLine(headerLine);
-    
+    // Simple CSV parsing for headers
+    const headers = headerLine.split(',');
+
     const data: T[] = [];
-
     for (const line of lines) {
-      if (!line || line.trim() === '') continue;
-
-      const values = parseCsvLine(line);
-
-      // Check for empty lines or lines with only commas
-      if (values.every(v => v === '')) continue;
-
-      if (values.length >= headers.length) {
+        if (!line.trim()) continue;
+        // Simple CSV parsing for lines
+        const values = line.split(',');
         const rowObject: { [key: string]: any } = {};
         headers.forEach((header, index) => {
-          rowObject[header] = values[index] || '';
+            rowObject[header.trim()] = values[index]?.trim() || '';
         });
         data.push(rowObject as T);
-      }
     }
     return data;
   } catch (error) {
@@ -120,16 +63,16 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   }
 }
 
-// Normalized GID correction map (keys are lowercase)
+// Correction map for GIDs
 const gidCorrectionMap: { [key: string]: string } = {
-  'home': '177392102',
-  'projects': '153094389',
-  'catalog': '581525493',
-  'research': '275243306',
-  'tool': '990396131',
-  'collabs': '2055846949',
-  'events': '376468249',
-  'ressources': '1813804988'
+    'Home': '177392102',
+    'Projects': '153094389',
+    'Catalog': '581525493',
+    'Research': '275243306',
+    'Tool': '990396131',
+    'Collabs': '2055846949',
+    'Events': '376468249',
+    'Ressources': '1813804988'
 };
 
 export const getCategories = unstable_cache(
@@ -137,19 +80,12 @@ export const getCategories = unstable_cache(
     console.log('[Sheets] Fetching Master Sheet for categories list...');
     const categories = await fetchAndParseCsv<Category>(MASTER_SHEET_URL);
 
-    // Apply GID corrections using normalization
+    // Apply GID corrections
     return categories.map(category => {
-      const normalizedName = normalizeCategoryName(category.Name);
-      const correctedGid = gidCorrectionMap[normalizedName];
-
+      const correctedGid = gidCorrectionMap[category.Name];
       if (correctedGid) {
-        const newUrl = buildCsvUrl(SPREADSHEET_ID, correctedGid);
-        if (category['Url Sheet'] !== newUrl) {
-           console.log(`[Sheets] Correcting GID for "${category.Name}" (normalized: "${normalizedName}"). New URL: ${newUrl}`);
-           category['Url Sheet'] = newUrl;
-        }
-      } else if (category.Name) { // only warn if a name was present
-        console.warn(`[Sheets] No GID correction found for category "${category.Name}" (normalized: "${normalizedName}")`);
+          const newUrl = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${correctedGid}&single=true&output=csv`;
+          category['Url Sheet'] = newUrl;
       }
       return category;
     }).filter(category => category.Name && category.Slug); // Filter out empty/invalid rows
@@ -169,14 +105,14 @@ export const getBrands = unstable_cache(
 
 export const getCategoryData = unstable_cache(
   async (sheetUrl: string) => {
-     if (!sheetUrl) {
+    if (!sheetUrl) {
       console.warn(`[Sheets] getCategoryData called with an empty URL.`);
       return [];
     }
     console.log(`[Sheets] Fetching data from: ${sheetUrl}`);
     return fetchAndParseCsv<any>(sheetUrl);
   },
-  ['categoryData'], // Note: Next.js handles caching based on parameters
+  ['categoryData'],
   {
     revalidate: 300 // 5 minutes
   }
