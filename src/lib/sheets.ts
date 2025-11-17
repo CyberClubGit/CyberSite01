@@ -31,7 +31,7 @@ const BRAND_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8Lrio
 async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
     if (!url || !url.startsWith('https')) {
-        console.error(`[Sheets] Invalid URL provided: ${url}`);
+        console.error(`[Sheets] Invalid or empty URL provided: ${url}`);
         return [];
     }
     const response = await fetch(url);
@@ -51,7 +51,6 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
         const line = lines[i];
         if (!line || line.trim() === '') continue;
 
-        // Robust CSV line parsing
         const values: string[] = [];
         let currentField = '';
         let inQuotes = false;
@@ -61,10 +60,10 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
 
             if (char === '"') {
                 if (inQuotes && nextChar === '"') {
-                    currentField += '"'; // Escaped quote
+                    currentField += '"';
                     j++;
                 } else {
-                    inQuotes = !inQuotes; // Start or end of a quoted field
+                    inQuotes = !inQuotes;
                 }
             } else if (char === ',' && !inQuotes) {
                 values.push(currentField);
@@ -79,19 +78,12 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
             const rowObject: { [key: string]: any } = {};
             headers.forEach((header, index) => {
                 let value = values[index] ? values[index].trim() : '';
-                 // Remove surrounding quotes if they exist
                 if (value.startsWith('"') && value.endsWith('"')) {
                     value = value.substring(1, value.length - 1).replace(/""/g, '"');
                 }
                 
-                // Standardize common column names on the fly for consistency
-                if (header === 'Item' || header === 'Title') {
-                    rowObject['Name'] = value;
-                } else if (header === 'Url') {
-                    rowObject['Slug'] = value;
-                } else {
-                    rowObject[header] = value;
-                }
+                const standardizedHeader = header === 'Item' ? 'Name' : header === 'Url' ? 'Slug' : header;
+                rowObject[standardizedHeader] = value;
             });
             data.push(rowObject as T);
         }
@@ -113,37 +105,7 @@ export const getCategories = unstable_cache(
   async () => {
     console.log('[Sheets] Fetching Master Sheet for categories...');
     const categoriesFromSheet = await fetchAndParseCsv<Category>(MASTER_SHEET_URL);
-
-    // --- TEMPORARY WORKAROUND to fix incorrect GIDs in the master sheet ---
-    const gidCorrectionMap: { [key: string]: string } = {
-        'Home': '177392102',
-        'Projects': '153094389',
-        'Catalog': '581525493',
-        'Research': '275243306',
-        'Tool': '990396131',
-        'Tools': '990396131',
-        'Collabs': '2055846949',
-        'Events': '376468249',
-        'Ressources': '1813804988',
-        'Resources': '1813804988'
-    };
-    const baseUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=';
-    const urlSuffix = '&single=true&output=csv';
-
-    return categoriesFromSheet.map(category => {
-      const mapKey = Object.keys(gidCorrectionMap).find(k => k.toLowerCase() === category.Name.toLowerCase());
-      if (mapKey) {
-          const correctGid = gidCorrectionMap[mapKey];
-          // We create a new object to avoid mutating the cached one, and assign the corrected URL
-          return {
-              ...category,
-              'Url Sheet': `${baseUrl}${correctGid}${urlSuffix}`,
-          };
-      }
-      return category;
-    });
-    // --- END OF WORKAROUND ---
-
+    return categoriesFromSheet;
   },
   ['categories'],
   { revalidate: 300 } // 5 minutes
@@ -174,7 +136,7 @@ export const getCategoryData = unstable_cache(
         console.warn('[Sheets] getCategoryData called with an empty URL.');
         return [];
     }
-    console.log(`[Sheets] Fetching data for category from: ${sheetUrl}`);
+    console.log(`[Sheets] Fetching category data from: ${sheetUrl}`);
     return fetchAndParseCsv<any>(sheetUrl);
   },
   ['categoryData'], // Base key, Next.js will add the arguments to make it unique
