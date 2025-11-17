@@ -73,9 +73,8 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
     notFound();
   }
   
-  // Changed this line to pass the category slug to getCategoryData
-  const categoryData = await getCategoryData(category.Slug);
-  const isCatalogPage = category.Slug.toLowerCase() === 'catalog';
+  const categoryData = await getCategoryData(category['Url Sheet']);
+  const isCatalogPage = category.Name.toLowerCase() === 'catalog';
 
   return (
     <section className="w-full py-12 md:py-24 lg:py-32">

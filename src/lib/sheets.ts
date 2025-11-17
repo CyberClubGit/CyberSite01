@@ -30,19 +30,6 @@ function buildCsvUrl(spreadsheetId: string, gid: string): string {
 const MASTER_SHEET_URL = buildCsvUrl(SPREADSHEET_ID, MASTER_SHEET_GID);
 const BRAND_SHEET_URL = buildCsvUrl(SPREADSHEET_ID, BRAND_SHEET_GID);
 
-// Centralized configuration for all sheet URLs
-export const SHEET_LINKS: { [key: string]: string } = {
-  home:     'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=177392102&single=true&output=csv',
-  projects: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=153094389&single=true&output=csv',
-  catalog:  'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=581525493&single=true&output=csv',
-  research: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=275243306&single=true&output=csv',
-  tool:     'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=990396131&single=true&output=csv',
-  collabs:   'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=2055846949&single=true&output=csv',
-  events:    'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=376468249&single=true&output=csv',
-  ressources:'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=1813804988&single=true&output=csv'
-};
-
-
 // --- Robust CSV Parsing and Normalization Utils ---
 function parseCsvLine(line: string): string[] {
   const result: string[] = [];
@@ -113,16 +100,40 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   }
 }
 
+// Temporary GID correction map
+const gidCorrectionMap: { [key: string]: string } = {
+  'Home': '177392102',
+  'Projects': '153094389',
+  'Catalog': '581525493',
+  'Research': '275243306',
+  'Tools': '990396131',
+  'Collabs': '2055846949',
+  'Events': '376468249',
+  'Ressources': '1813804988'
+};
 
 export const getCategories = unstable_cache(
   async () => {
     console.log('[Sheets] Fetching Master Sheet for categories list...');
-    return fetchAndParseCsv<Category>(MASTER_SHEET_URL);
+    const categories = await fetchAndParseCsv<Category>(MASTER_SHEET_URL);
+
+    // Apply GID corrections
+    return categories.map(category => {
+      const correctedGid = gidCorrectionMap[category.Name];
+      if (correctedGid) {
+        const newUrl = buildCsvUrl(SPREADSHEET_ID, correctedGid);
+        // Check if the URL is different to avoid unnecessary modifications
+        if (category['Url Sheet'] !== newUrl) {
+           console.log(`[Sheets] Correcting GID for "${category.Name}". New URL: ${newUrl}`);
+           category['Url Sheet'] = newUrl;
+        }
+      }
+      return category;
+    });
   },
   ['categories'],
   { revalidate: 300 } // 5 minutes
 );
-
 
 export const getBrands = unstable_cache(
   async () => {
@@ -134,18 +145,15 @@ export const getBrands = unstable_cache(
 );
 
 export const getCategoryData = unstable_cache(
-  async (categorySlug: string) => {
-    const normalizedSlug = categorySlug.toLowerCase();
-    const sheetUrl = SHEET_LINKS[normalizedSlug];
-
-    if (!sheetUrl) {
-      console.warn(`[Sheets] No URL configured for category slug: "${normalizedSlug}"`);
+  async (sheetUrl: string) => {
+     if (!sheetUrl) {
+      console.warn(`[Sheets] getCategoryData called with an empty URL.`);
       return [];
     }
-    console.log(`[Sheets] Fetching data for "${normalizedSlug}" from: ${sheetUrl}`);
+    console.log(`[Sheets] Fetching data from: ${sheetUrl}`);
     return fetchAndParseCsv<any>(sheetUrl);
   },
-  ['categoryData'], // Note: This cache key is now dynamic based on the slug.
+  ['categoryData'], // Note: Next.js handles caching based on parameters
   {
     revalidate: 300 // 5 minutes
   }
