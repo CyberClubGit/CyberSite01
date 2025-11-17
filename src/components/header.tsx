@@ -65,7 +65,9 @@ export function Header() {
 
         <div className="flex flex-1 items-center justify-center space-x-6">
           <nav className="hidden md:flex gap-6">
-            {categories.map((category) => (
+            {categories
+              .filter((category) => category.Category) // Ensure category and its name exist
+              .map((category) => (
               <Link
                 key={category.Category}
                 href={`/${category.Category.toLowerCase()}`}
