@@ -1,6 +1,9 @@
 export interface Category {
-  Category: string;
-  UrlSheet: string;
+  Item: string;
+  'Url Logo Png': string;
+  Url: string;
+  Background: string;
+  'Url Sheet': string;
 }
 
 export interface Brand {
@@ -9,15 +12,16 @@ export interface Brand {
   Color: string;
 }
 
-async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
+async function fetchAndParseCsv<T>(url:string): Promise<T[]> {
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) {
       throw new Error(`Failed to fetch CSV from ${url}: ${response.statusText}`);
     }
     const csvText = await response.text();
     
-    const lines = csvText.trim().split(/\r\n|\n/);
+    // Split by new line, trim each line and filter out empty lines
+    const lines = csvText.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
     if (lines.length < 2) {
       return [];
     }

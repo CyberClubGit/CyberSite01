@@ -34,7 +34,7 @@
  
     --radius: 0.5rem;
 
-    --brand-color: hsl(var(--primary));
+    --brand-color: #000000;
   }
  
   .dark {
@@ -65,8 +65,6 @@
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 0 0% 83.1%;
-
-    --brand-color: hsl(var(--primary));
   }
 }
  
@@ -81,4 +79,13 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline;
   }
+}
+
+.brand-selector {
+  border: 2px solid var(--brand-color);
+}
+
+.menu-link.active {
+  border-bottom: 2px solid var(--brand-color);
+  color: var(--brand-color);
 }
