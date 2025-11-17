@@ -120,38 +120,7 @@ export const getCategories = unstable_cache(
   async () => {
     const masterSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=177392102&single=true&output=csv';
     const categoriesFromSheet = await fetchAndParseCsv<Category>(masterSheetUrl);
-
-    // --- TEMPORARY WORKAROUND ---
-    const gidCorrectionMap: { [key: string]: string } = {
-        'Home': '177392102', // This is still the master sheet, as no dedicated home sheet was identified
-        'Projects': '153094389',
-        'Catalog': '581525493',
-        'Research': '275243306',
-        'Tool': '990396131',
-        'Tools': '990396131',
-        'Collabs': '2055846949',
-        'Events': '376468249',
-        'Ressources': '1813804988',
-        'Resources': '1813804988',
-    };
-
-    const baseUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=';
-    const urlSuffix = '&single=true&output=csv';
-
-    return categoriesFromSheet.map(category => {
-        const mapKey = Object.keys(gidCorrectionMap).find(k => k.toLowerCase() === category.Name.toLowerCase());
-        
-        if (mapKey) {
-            const correctGid = gidCorrectionMap[mapKey];
-            // We create a new object to avoid mutating the cached one, and assign the corrected URL
-            return {
-                ...category,
-                'Url Sheet': `${baseUrl}${correctGid}${urlSuffix}`
-            };
-        }
-        return category;
-    });
-    // --- END OF WORKAROUND ---
+    return categoriesFromSheet;
   },
   ['categories'],
   { revalidate: 300 } // Revalidate every 5 minutes
@@ -171,17 +140,9 @@ export const getCategoryData = unstable_cache(
     if (!sheetUrl) {
         return [];
     }
-    // Do not fetch data if it's the master sheet GID for a page that should have its own data.
-    const urlParams = new URLSearchParams(sheetUrl.split('?')[1]);
-    const gid = urlParams.get('gid');
-
-    if (gid === '177392102' && !sheetUrl.includes('Home')) { // Allow master for Home, but not others
-        // Find category name from URL to decide if it's an intended master sheet load
-        // This is complex, better to just block all but a specific case if needed.
-        // For now, if a page that is NOT home points to master, we assume it's an error and return empty.
-        // A better check could be done if category name was passed.
-        // Let's assume for any page data fetch, pointing to master GID is wrong.
-        return [];
+    const store = (next_unstable_cache as any).getCacheStore?.();
+    if (!store) {
+      return [];
     }
 
     return fetchAndParseCsv<any>(sheetUrl);
