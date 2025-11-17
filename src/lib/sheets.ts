@@ -23,7 +23,7 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
     }
     const csvText = await response.text();
     
-    const lines = csvText.trim().split('\r\n').join('\n').split('\n');
+    const lines = csvText.trim().replace(/\r\n/g, '\n').split('\n');
     if (lines.length < 1) return [];
 
     const headers = lines[0].split(',').map(h => h.trim());
@@ -52,13 +52,7 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
                 row[headers[headerIndex]] = field.trim();
                 field = '';
                 headerIndex++;
-            } else if (char === '\n' && !inQuote) {
-                 //This should not happen with the split but as a safeguard
-                 row[headers[headerIndex]] = field.trim();
-                 field = '';
-                 headerIndex++;
-            }
-             else {
+            } else {
                 field += char;
             }
         }
@@ -86,8 +80,7 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
         
         row[headers[headerIndex]] = field.trim();
         
-        // Only add non-empty rows
-        if (Object.values(row).some(v => v !== '')) {
+        if (Object.values(row).some(v => v !== null && v !== '')) {
             data.push(row as T);
         }
     }
@@ -123,11 +116,9 @@ export const getCategoryData = unstable_cache(
     if (!sheetUrl) return [];
     return fetchAndParseCsv<any>(sheetUrl);
   },
-  ['categoryData'], // This key will be extended with the sheetUrl
+  ['categoryData'],
   { 
     revalidate: 300,
-    // The `tags` option allows us to create dynamic cache keys.
-    // By adding the sheetUrl to the tags, we ensure each sheet has its own cache entry.
     tags: ['categoryData'] 
   }
 );

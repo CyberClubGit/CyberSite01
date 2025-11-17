@@ -25,7 +25,6 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
       brandActivity = maybeBrandActivity;
       categorySlug = maybeCategorySlug;
     } else if (getCategoryBySlug(maybeBrandActivity)) {
-        // Fallback pour les cas comme /projects/item-id où la marque n'est pas présente
         categorySlug = maybeBrandActivity;
     }
   }
