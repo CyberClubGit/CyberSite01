@@ -84,18 +84,21 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
             headers.forEach((header, index) => {
                 row[header] = values[index] ? values[index].trim() : '';
             });
-
-             if (Object.values(row).some(v => v !== null && String(v).trim() !== '')) {
-                const renamedRow: any = {};
-                for (const key in row) {
-                    if (key.toLowerCase().trim() === 'item') {
-                        renamedRow['Name'] = row[key];
-                    } else if (key.toLowerCase().trim() === 'url') {
-                        renamedRow['Slug'] = row[key];
-                    } else {
-                        renamedRow[key] = row[key];
-                    }
+            
+            // Rename 'Item' to 'Name' and 'Url' to 'Slug' for consistency across all sheets
+            const renamedRow: any = {};
+            for (const key in row) {
+                if (key.toLowerCase().trim() === 'item') {
+                    renamedRow['Name'] = row[key];
+                } else if (key.toLowerCase().trim() === 'url') {
+                    renamedRow['Slug'] = row[key];
+                } else {
+                    renamedRow[key] = row[key];
                 }
+            }
+
+
+             if (Object.values(renamedRow).some(v => v !== null && String(v).trim() !== '')) {
                 data.push(renamedRow as T);
             }
         }
