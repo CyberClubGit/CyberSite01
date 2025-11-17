@@ -41,21 +41,17 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
     const lines = csvText.trim().replace(/\r\n/g, '\n').split('\n');
     if (lines.length < 2) return [];
 
-    const headerLine = lines.shift() || '';
-    // Simple CSV parsing for headers
-    const headers = headerLine.split(',');
+    const header = lines.shift()?.split(',') || [];
 
-    const data: T[] = [];
-    for (const line of lines) {
-        if (!line.trim()) continue;
-        // Simple CSV parsing for lines
-        const values = line.split(',');
-        const rowObject: { [key: string]: any } = {};
-        headers.forEach((header, index) => {
-            rowObject[header.trim()] = values[index]?.trim() || '';
-        });
-        data.push(rowObject as T);
-    }
+    const data: T[] = lines.map(line => {
+      const values = line.split(',');
+      const rowObject: { [key: string]: any } = {};
+      header.forEach((key, index) => {
+        rowObject[key.trim()] = values[index]?.trim() || '';
+      });
+      return rowObject as T;
+    });
+
     return data;
   } catch (error) {
     console.error(`[Sheets] Error during fetch or parse for ${url}:`, error);
@@ -63,7 +59,6 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   }
 }
 
-// Correction map for GIDs
 const gidCorrectionMap: { [key: string]: string } = {
     'Home': '177392102',
     'Projects': '153094389',
@@ -76,23 +71,33 @@ const gidCorrectionMap: { [key: string]: string } = {
 };
 
 export const getCategories = unstable_cache(
-  async () => {
+  async (): Promise<Category[]> => {
     console.log('[Sheets] Fetching Master Sheet for categories list...');
-    const categories = await fetchAndParseCsv<Category>(MASTER_SHEET_URL);
+    const rawCategories = await fetchAndParseCsv<any>(MASTER_SHEET_URL);
 
-    // Apply GID corrections
-    return categories.map(category => {
-      const correctedGid = gidCorrectionMap[category.Name];
+    return rawCategories.map(category => {
+      const name = category.Name || category.Item;
+      const correctedGid = gidCorrectionMap[name];
+      
+      let correctedUrlSheet = category['Url Sheet'];
       if (correctedGid) {
-          const newUrl = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${correctedGid}&single=true&output=csv`;
-          category['Url Sheet'] = newUrl;
+          correctedUrlSheet = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${correctedGid}&single=true&output=csv`;
       }
-      return category;
-    }).filter(category => category.Name && category.Slug); // Filter out empty/invalid rows
+      
+      return {
+        Name: name,
+        'Url Logo Png': category['Url Logo Png'],
+        Slug: category.Url,
+        Background: category.Background,
+        'Url Sheet': correctedUrlSheet,
+        'Url app': category['Url app'],
+      };
+    }).filter((category): category is Category => !!category.Name && !!category.Slug);
   },
   ['categories'],
-  { revalidate: 300 } // 5 minutes
+  { revalidate: 300 }
 );
+
 
 export const getBrands = unstable_cache(
   async () => {
@@ -105,8 +110,8 @@ export const getBrands = unstable_cache(
 
 export const getCategoryData = unstable_cache(
   async (sheetUrl: string) => {
-    if (!sheetUrl) {
-      console.warn(`[Sheets] getCategoryData called with an empty URL.`);
+    if (!sheetUrl || !sheetUrl.startsWith('http')) {
+      console.warn(`[Sheets] getCategoryData called with an invalid URL: ${sheetUrl}`);
       return [];
     }
     console.log(`[Sheets] Fetching data from: ${sheetUrl}`);

@@ -21,10 +21,9 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
   }
 
   // Handle root URL case
-  if (slug.length === 0 || slug[0] === '') {
+  if (slug.length === 0 || (slug.length === 1 && slug[0] === '')) {
       category = categories.find(c => c.Slug && c.Slug.toLowerCase() === 'home');
   }
-
 
   if (!category) {
     notFound();
