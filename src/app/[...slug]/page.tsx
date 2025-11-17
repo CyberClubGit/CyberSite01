@@ -4,38 +4,43 @@ import { notFound } from 'next/navigation';
 
 export default async function CatchAllPage({ params }: { params: { slug: string[] } }) {
   const { slug } = params;
-  let brandActivity: string | undefined;
-  let categorySlug: string | undefined;
-
+  
   const brands = await getBrands();
   const categories = await getCategories();
 
-  const getBrandByActivity = (activity: string) => brands.find(b => b.Activity.toLowerCase() === activity.toLowerCase());
-  const getCategoryBySlug = (slug: string) => categories.find(c => c.Url.toLowerCase() === slug.toLowerCase());
+  let brand: Brand | undefined;
+  let category: Category | undefined;
+  let remainingSlug: string[] = [];
 
-  if (slug.length === 1) {
-    const maybeCategorySlug = slug[0];
-    if (getCategoryBySlug(maybeCategorySlug)) {
-        categorySlug = maybeCategorySlug;
-    }
-  } else if (slug.length >= 2) {
-    const maybeBrandActivity = slug[0];
-    const maybeCategorySlug = slug[1];
-    if (getBrandByActivity(maybeBrandActivity) && getCategoryBySlug(maybeCategorySlug)) {
-      brandActivity = maybeBrandActivity;
-      categorySlug = maybeCategorySlug;
-    } else if (getCategoryBySlug(maybeBrandActivity)) {
-        categorySlug = maybeBrandActivity;
-    }
+  const potentialBrandActivity = slug[0];
+  const foundBrand = brands.find(b => b.Activity.toLowerCase() === potentialBrandActivity.toLowerCase());
+
+  if (foundBrand && slug.length > 1) {
+    brand = foundBrand;
+    const potentialCategorySlug = slug[1];
+    category = categories.find(c => c.Url.toLowerCase() === potentialCategorySlug.toLowerCase());
+    remainingSlug = slug.slice(2);
+  } else {
+    const potentialCategorySlug = slug[0];
+    category = categories.find(c => c.Url.toLowerCase() === potentialCategorySlug.toLowerCase());
+    remainingSlug = slug.slice(1);
   }
 
-  if (!categorySlug) {
-    notFound();
+  // Handle case where first slug is not a brand but there are more slugs
+  if (!category && slug.length > 1) {
+    const potentialCategorySlug = slug[0];
+    const foundCategory = categories.find(c => c.Url.toLowerCase() === potentialCategorySlug.toLowerCase());
+    if (foundCategory) {
+      category = foundCategory;
+      remainingSlug = slug.slice(1);
+    }
   }
-
-  const category = getCategoryBySlug(categorySlug);
-  const brand = brandActivity ? getBrandByActivity(brandActivity) : undefined;
   
+  // if we are at the root / or /home
+  if (slug.length === 1 && slug[0] === 'home') {
+    category = categories.find(c => c.Url.toLowerCase() === 'home');
+  }
+
   if (!category) {
     notFound();
   }

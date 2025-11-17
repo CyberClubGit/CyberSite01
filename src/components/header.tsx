@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -58,54 +59,66 @@ export function Header({ categories, brands }: HeaderProps) {
       const currentPathParts = pathname.split('/').filter(p => p);
       let categorySlug = 'home';
       
-      if (currentPathParts.length > 0) {
-          const potentialCategorySlug = currentPathParts[currentPathParts.length - 1];
-          if (categories.some(c => c.Url === potentialCategorySlug)) {
-            categorySlug = potentialCategorySlug;
-          }
+      const brandInPath = brands.find(b => b.Activity.toLowerCase() === currentPathParts[0]?.toLowerCase());
+
+      if(brandInPath) {
+        if (currentPathParts.length > 1) {
+            categorySlug = currentPathParts[1];
+        }
+      } else if (currentPathParts.length > 0) {
+        categorySlug = currentPathParts[0];
       }
       
       let newPath;
       if (brand.Brand === 'Cyber Club') {
         newPath = `/${categorySlug}`;
       } else {
-        newPath = `/${brand.Activity}/${categorySlug}`;
+        newPath = `/${brand.Activity.toLowerCase()}/${categorySlug}`;
       }
       
       if (newPath !== pathname) {
         router.push(newPath);
       }
     }
-  }, [isMounted, brands, categories, pathname, router, applyBrandColor, resolvedTheme]);
+  }, [isMounted, brands, pathname, router, applyBrandColor, resolvedTheme]);
 
   useEffect(() => {
     setIsMounted(true);
-
-    const storedBrand = localStorage.getItem('brandSelected') || 'Cyber Club';
-    const brandFromUrlSlug = pathname.split('/')[1];
-    const brandFromUrl = brands.find(b => b.Activity === brandFromUrlSlug);
-    
-    let initialBrandName = 'Cyber Club';
-    if (brandFromUrl) {
-        initialBrandName = brandFromUrl.Brand;
-    } else if (storedBrand && brands.some(b => b.Brand === storedBrand)) {
-      initialBrandName = storedBrand;
-    }
-
-    const initialBrand = brands.find(b => b.Brand === initialBrandName) || brands.find(b => b.Brand === 'Cyber Club');
-    if (initialBrand) {
-      setSelectedBrand(initialBrand.Brand);
-      applyBrandColor(initialBrand, resolvedTheme);
-    }
-    
-    const pathParts = pathname.split('/').filter(p => p);
-    const currentCategorySlug = pathParts.length > 1 ? pathParts[1] : pathParts[0];
-
-    if (initialBrand && initialBrand.Brand !== 'Cyber Club' && !brandFromUrl) {
-      const categoryToUse = currentCategorySlug || 'home';
-      router.push(`/${initialBrand.Activity}/${categoryToUse}`);
-    }
   }, []);
+
+  useEffect(() => {
+    if (!isMounted || brands.length === 0) return;
+    
+    const storedBrandName = localStorage.getItem('brandSelected') || 'Cyber Club';
+    const pathParts = pathname.split('/').filter(p => p);
+    const brandActivityFromUrl = pathParts[0];
+    const brandFromUrl = brands.find(b => b.Activity.toLowerCase() === brandActivityFromUrl?.toLowerCase());
+
+    let brandToApply: Brand | undefined;
+
+    if (brandFromUrl) {
+      brandToApply = brandFromUrl;
+    } else {
+      brandToApply = brands.find(b => b.Brand === storedBrandName) || brands.find(b => b.Brand === 'Cyber Club');
+    }
+    
+    if (brandToApply) {
+        if(selectedBrand !== brandToApply.Brand) {
+            setSelectedBrand(brandToApply.Brand);
+        }
+        applyBrandColor(brandToApply, resolvedTheme);
+    }
+
+    if (!brandFromUrl && brandToApply && brandToApply.Brand !== 'Cyber Club') {
+      const categorySlug = pathParts[0] || 'home';
+      const newPath = `/${brandToApply.Activity.toLowerCase()}/${categorySlug}`;
+      if (pathname !== newPath) {
+          router.push(newPath);
+      }
+    }
+
+  }, [isMounted, brands, pathname, resolvedTheme, applyBrandColor, router, selectedBrand]);
+
 
   useEffect(() => {
     if (isMounted) {
@@ -115,34 +128,16 @@ export function Header({ categories, brands }: HeaderProps) {
     }
   }, [theme, isMounted, resolvedTheme, applyBrandColor, brands, selectedBrand]);
   
-  useEffect(() => {
-    if (!isMounted || brands.length === 0) return;
-
-    const pathParts = pathname.split('/').filter(p => p);
-    const brandActivityFromUrl = pathParts.length > 1 ? pathParts[0] : undefined;
-    
-    const brandFromUrl = brands.find(b => b.Activity === brandActivityFromUrl);
-
-    if (brandFromUrl) {
-        if (brandFromUrl.Brand !== selectedBrand) {
-            handleBrandChange(brandFromUrl.Brand, true);
-        }
-    } else {
-        if (selectedBrand !== 'Cyber Club') {
-             handleBrandChange('Cyber Club', true);
-        }
-    }
-  }, [pathname, brands, isMounted, selectedBrand, handleBrandChange]);
 
   const toggleTheme = () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    const newTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
   };
 
   const getLinkHref = (categoryUrl: string) => {
     const brand = brands.find(b => b.Brand === selectedBrand);
     if (brand && brand.Brand !== 'Cyber Club' && brand.Activity) {
-      return `/${brand.Activity}/${categoryUrl}`;
+      return `/${brand.Activity.toLowerCase()}/${categoryUrl}`;
     }
     return `/${categoryUrl}`;
   };
@@ -150,7 +145,7 @@ export function Header({ categories, brands }: HeaderProps) {
   if (!isMounted) {
     return (
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="container flex h-16 items-center justify-between">
+            <div className="container flex h-16 items-center">
                  <div className="mr-4 flex">
                     <Link href="/" className="mr-6 flex items-center space-x-2">
                         <span className="font-bold font-headline text-lg">CYBER CLUB</span>
@@ -193,7 +188,7 @@ export function Header({ categories, brands }: HeaderProps) {
               .filter(category => category.Item && category.Url)
               .map((category) => {
                   const linkHref = getLinkHref(category.Url);
-                  const isActive = pathname === linkHref || (pathname.endsWith(`/${category.Url}`) && !pathname.startsWith('/home') && category.Url !== 'home');
+                  const isActive = pathname === linkHref || (category.Url !== 'home' && pathname.endsWith(`/${category.Url}`));
                   return (
                     <Link
                         key={category.Item}
