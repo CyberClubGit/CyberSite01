@@ -38,11 +38,12 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
     const lines = csvText.trim().replace(/\r\n/g, '\n').split('\n');
     if (lines.length < 2) return [];
 
-    const headers = lines[0].split(',').map(h => h.trim());
+    const headersLine = lines.shift() || '';
+    const headers = headersLine.split(',').map(h => h.trim());
+    
     const data: T[] = [];
 
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i];
+    for (const line of lines) {
       if (!line || line.trim() === '') continue;
 
       const values: string[] = [];
@@ -93,7 +94,6 @@ export const getCategories = unstable_cache(
     console.log('[Sheets] Fetching Master Sheet for categories...');
     const categoriesFromSheet = await fetchAndParseCsv<Category>(MASTER_SHEET_URL);
     
-    // This map is the temporary fix to ensure the correct GID is used.
     const gidCorrectionMap: { [key: string]: string } = {
         'Home': '177392102',
         'Projects': '153094389',
@@ -105,17 +105,16 @@ export const getCategories = unstable_cache(
         'Ressources': '1813804988',
     };
 
-    const baseUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=';
+    const baseUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub';
 
     const correctedCategories = categoriesFromSheet.map(category => {
-        // Robust matching: trim whitespace and be case-insensitive for the lookup
         const categoryName = category.Name ? category.Name.trim() : '';
-        const correctGid = Object.keys(gidCorrectionMap).find(key => key.toLowerCase() === categoryName.toLowerCase());
+        const correctGidKey = Object.keys(gidCorrectionMap).find(key => key.toLowerCase() === categoryName.toLowerCase());
 
-        if (correctGid && gidCorrectionMap[correctGid]) {
+        if (correctGidKey && gidCorrectionMap[correctGidKey]) {
             return {
                 ...category,
-                'Url Sheet': `${baseUrl}${gidCorrectionMap[correctGid]}&single=true&output=csv`
+                'Url Sheet': `${baseUrl}?gid=${gidCorrectionMap[correctGidKey]}&single=true&output=csv`
             };
         }
         return category;
