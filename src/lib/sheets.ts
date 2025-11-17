@@ -33,7 +33,11 @@ export interface Brand {
 
 async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
-    const response = await fetch(url); // Removed revalidate from here, it's handled by unstable_cache
+    if (!url || !url.startsWith('https')) {
+        console.error(`Invalid URL provided to fetchAndParseCsv: ${url}`);
+        return [];
+    }
+    const response = await fetch(url, { cache: 'no-store'});
     if (!response.ok) {
       console.error(`Failed to fetch CSV from ${url}: ${response.status} ${response.statusText}`);
       return [];
@@ -84,7 +88,7 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
             const renamedRow: { [key: string]: any } = {};
             for (const key in row) {
                 const lowerKey = key.toLowerCase().trim();
-                if (lowerKey === 'item') {
+                if (lowerKey === 'item' || lowerKey === 'title') {
                     renamedRow['Name'] = row[key];
                 } else if (lowerKey === 'url') {
                     renamedRow['Slug'] = row[key];
@@ -111,7 +115,41 @@ export const getCategories = unstable_cache(
   async () => {
     const masterSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=177392102&single=true&output=csv';
     const categoriesFromSheet = await fetchAndParseCsv<Category>(masterSheetUrl);
-    return categoriesFromSheet;
+
+    // --- TEMPORARY WORKAROUND to fix incorrect GIDs in the master sheet ---
+    const gidCorrectionMap: { [key: string]: string } = {
+        'Home': '177392102', // This might still be master, but for consistency
+        'Projects': '153094389',
+        'Catalog': '581525493',
+        'Research': '275243306',
+        'Tool': '990396131', // Handles both "Tool" and "Tools"
+        'Tools': '990396131',
+        'Collabs': '2055846949',
+        'Events': '376468249',
+        'Ressources': '1813804988', // French spelling
+        'Resources': '1813804988', // English spelling
+    };
+
+    const baseUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=';
+    const urlSuffix = '&single=true&output=csv';
+
+    return categoriesFromSheet.map(category => {
+        // Find the correct key in the map, case-insensitively
+        const mapKey = Object.keys(gidCorrectionMap).find(k => k.toLowerCase() === category.Name.toLowerCase());
+
+        if (mapKey) {
+            const correctGid = gidCorrectionMap[mapKey];
+            const newUrl = `${baseUrl}${correctGid}${urlSuffix}`;
+            // Return a new object with the corrected URL
+            return {
+                ...category,
+                'Url Sheet': newUrl,
+            };
+        }
+        
+        return category; // Return original if no correction is needed
+    });
+    // --- END OF WORKAROUND ---
   },
   ['categories'],
   { revalidate: 300 } // Revalidate every 5 minutes
@@ -133,7 +171,7 @@ export const getCategoryData = unstable_cache(
     }
     const store = (next_unstable_cache as any).getCacheStore?.();
     if (!store) {
-      return [];
+      return fetchAndParseCsv<any>(sheetUrl);
     }
     return fetchAndParseCsv<any>(sheetUrl);
   },
@@ -142,3 +180,5 @@ export const getCategoryData = unstable_cache(
     revalidate: 300 // Revalidate every 5 minutes, same as others
   }
 );
+
+    
