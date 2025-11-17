@@ -33,15 +33,13 @@ export interface Brand {
 
 async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
-    const response = await fetch(url, { next: { revalidate: 300 } });
+    const response = await fetch(url); // Removed revalidate from here, it's handled by unstable_cache
     if (!response.ok) {
       console.error(`Failed to fetch CSV from ${url}: ${response.status} ${response.statusText}`);
-      // Return empty array for client-side resilience, preventing page crashes.
       return [];
     }
     const csvText = await response.text();
     
-    // Replace CRLF with LF for consistency
     const lines = csvText.trim().replace(/\r\n/g, '\n').split('\n');
     if (lines.length < 2) return [];
 
@@ -62,43 +60,40 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
 
             if (char === '"') {
                 if (inQuotes && nextChar === '"') {
-                    // This is an escaped quote
                     currentField += '"';
-                    j++; // Skip the next quote
+                    j++; 
                 } else {
-                    // This is the start or end of a quoted field
                     inQuotes = !inQuotes;
                 }
             } else if (char === ',' && !inQuotes) {
-                // End of a field
                 values.push(currentField);
                 currentField = '';
             } else {
                 currentField += char;
             }
         }
-        values.push(currentField); // Add the last field
+        values.push(currentField);
 
         if (values.length >= headers.length) {
             const row: any = {};
             headers.forEach((header, index) => {
                 row[header] = values[index] ? values[index].trim() : '';
             });
-            
-            // Rename 'Item' to 'Name' and 'Url' to 'Slug' for consistency across all sheets
-            const renamedRow: any = {};
+
+            // Standardize column names: 'Item' -> 'Name', 'Url' -> 'Slug'
+            const renamedRow: { [key: string]: any } = {};
             for (const key in row) {
-                if (key.toLowerCase().trim() === 'item') {
+                const lowerKey = key.toLowerCase().trim();
+                if (lowerKey === 'item') {
                     renamedRow['Name'] = row[key];
-                } else if (key.toLowerCase().trim() === 'url') {
+                } else if (lowerKey === 'url') {
                     renamedRow['Slug'] = row[key];
                 } else {
                     renamedRow[key] = row[key];
                 }
             }
 
-
-             if (Object.values(renamedRow).some(v => v !== null && String(v).trim() !== '')) {
+            if (Object.values(renamedRow).some(v => v !== null && String(v).trim() !== '')) {
                 data.push(renamedRow as T);
             }
         }
@@ -107,7 +102,7 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
     return data;
   } catch (error) {
     console.error(`Error during fetch or parse for ${url}:`, error);
-    return []; // Return empty array on any failure.
+    return []; 
   }
 }
 
@@ -138,16 +133,12 @@ export const getCategoryData = unstable_cache(
     }
     const store = (next_unstable_cache as any).getCacheStore?.();
     if (!store) {
-      // If we are in a context that doesn't have the cache store (like a client-side error boundary)
-      // we should not attempt to fetch data, as it indicates a server-side context is missing.
       return [];
     }
-
     return fetchAndParseCsv<any>(sheetUrl);
   },
   ['categoryData'],
   { 
-    // Using tags allows for more granular revalidation if needed in the future
-    tags: ['categoryData'] 
+    revalidate: 300 // Revalidate every 5 minutes, same as others
   }
 );
