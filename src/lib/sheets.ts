@@ -15,7 +15,7 @@ export interface Brand {
   'Color Dark': string;
 }
 
-async function fetchAndParseCsv<T>(url:string): Promise<T[]> {
+async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
     const response = await fetch(url, { next: { revalidate: 300 } });
     if (!response.ok) {
@@ -23,47 +23,91 @@ async function fetchAndParseCsv<T>(url:string): Promise<T[]> {
     }
     const csvText = await response.text();
     
-    // Robust CSV parsing
-    const lines = csvText.trim().split('\n');
+    const lines = csvText.trim().split('\r\n').join('\n').split('\n');
     const headers = lines[0].split(',').map(h => h.trim());
     const data: T[] = [];
 
-    const regex = /(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|([^\",]*))(,|$)/g;
+    let currentLine = 1;
+    while (currentLine < lines.length) {
+        if (lines[currentLine].trim() === '') {
+            currentLine++;
+            continue;
+        }
 
-    for (let i = 1; i < lines.length; i++) {
-        if (lines[i].trim() === '') continue;
-
-        let line = lines[i];
         const obj: any = {};
-        for(let j = 0; j < headers.length; j++){
-            const header = headers[j];
+        let lineContent = lines[currentLine];
+        
+        for (const header of headers) {
+            let value = '';
+            
+            lineContent = lineContent.trim();
 
-            // If the line is empty, we are done
-            if (line.trim() === '') {
-                obj[header] = '';
-                continue;
-            }
-
-            regex.lastIndex = 0; // Reset regex state
-            const match = regex.exec(line);
-
-            if (match) {
-                // match[1] is the quoted value, match[2] is the unquoted value
-                const value = match[1] !== undefined 
-                    ? match[1].replace(/\"\"/g, '\"') // Unescape double quotes
-                    : match[2];
+            if (lineContent.startsWith('"')) {
+                // Quoted field, potentially multi-line
+                let closingQuoteIndex = -1;
+                let content = '';
                 
-                obj[header] = value.trim();
+                let searchLine = lineContent;
+                let searchLineIndex = currentLine;
 
-                // Move to the next part of the line
-                line = line.substring(match[0].length);
+                while (closingQuoteIndex === -1) {
+                    content += searchLine.substring(searchLine.startsWith('"') ? 1 : 0);
+                    
+                    let i = 0;
+                    while(i < content.length) {
+                        if (content[i] === '"') {
+                            if (i + 1 < content.length && content[i+1] === '"') {
+                                i += 2; // Skip escaped quote
+                            } else {
+                                closingQuoteIndex = i;
+                                break;
+                            }
+                        } else {
+                            i++;
+                        }
+                    }
+
+                    if (closingQuoteIndex !== -1) {
+                        value = content.substring(0, closingQuoteIndex).replace(/""/g, '"');
+                        const charsConsumed = value.replace(/"/g, '""').length + 2; // +2 for quotes
+                        
+                        let remainingInLine = lineContent.substring(charsConsumed);
+                        if (remainingInLine.startsWith(',')) {
+                            remainingInLine = remainingInLine.substring(1);
+                        }
+                        
+                        // This logic has limitations with multiline AND multiple columns on one line
+                        // It assumes the multiline quoted field ends the "visual" line in the source text editor
+                        lineContent = remainingInLine;
+                        currentLine = searchLineIndex;
+
+                    } else {
+                        searchLineIndex++;
+                        if (searchLineIndex >= lines.length) {
+                             throw new Error('Unclosed quote in CSV content');
+                        }
+                        searchLine = lines[searchLineIndex];
+                        content += '\n'; // Add newline that was stripped by split()
+                    }
+                }
+                 currentLine = searchLineIndex;
+
             } else {
-                obj[header] = '';
+                // Unquoted field
+                const commaIndex = lineContent.indexOf(',');
+                if (commaIndex !== -1) {
+                    value = lineContent.substring(0, commaIndex);
+                    lineContent = lineContent.substring(commaIndex + 1);
+                } else {
+                    value = lineContent;
+                    lineContent = '';
+                }
             }
+            obj[header] = value.trim();
         }
         data.push(obj as T);
+        currentLine++;
     }
-
 
     return data;
   } catch (error) {
