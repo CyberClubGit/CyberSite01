@@ -1,247 +1,54 @@
-Page Category: Home
-======================
-{
-  "category": {
-    "Name": "Home",
-    "Url Logo Png": "https://drive.google.com/open?id=1NU2qTrw8JZ8ura9JpJsH3O2crcafz_Yx&usp=drive_copy",
-    "Slug": "home",
-    "Background": "https://drive.google.com/open?id=161OMKRK0PfozA-aXaXr7bJ-O7MqgoTuY&usp=drive_copy",
-    "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=177392102&single=true&output=csv"
-  },
-  "brand": null,
-  "data": [
-    {
-      "Name": "Home",
-      "Url Logo Png": "https://drive.google.com/open?id=1NU2qTrw8JZ8ura9JpJsH3O2crcafz_Yx&usp=drive_copy",
-      "Slug": "home",
-      "Background": "https://drive.google.com/open?id=161OMKRK0PfozA-aXaXr7bJ-O7MqgoTuY&usp=drive_copy",
-      "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=177392102&single=true&output=csv",
-      "Url app": "https://cyber-club-landing-page-265253675853.us-west1.run.app"
-    },
-    {
-      "Name": "Projects",
-      "Url Logo Png": "https://drive.google.com/open?id=1YudbNuUzJTjXhLbyExCm0FdNEGjbCG4f&usp=drive_copy",
-      "Slug": "projects",
-      "Background": "https://drive.google.com/open?id=1WYoHSYxGSo-1tTxw4rjU9fCNrLQ24xwG&usp=drive_copy",
-      "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=153094389&single=true&output=csv",
-      "Url app": "https://section-projets-v05-light-dark-265253675853.us-west1.run.app"
-    },
-    {
-      "Name": "Catalog",
-      "Url Logo Png": "https://drive.google.com/open?id=1ssx-HkoV4vx4R7kBtVrfGSNk_bEEQJp1&usp=drive_copy",
-      "Slug": "catalog",
-      "Background": "https://drive.google.com/open?id=1WYoHSYxGSo-1tTxw4rjU9fCNrLQ24xwG&usp=drive_copy",
-      "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=581525493&single=true&output=csv",
-      "Url app": "https://copy-of-section-catalogue-v08-dna-265253675853.us-west1.run.app"
-    },
-    {
-      "Name": "Research",
-      "Url Logo Png": "https://drive.google.com/open?id=1O8obmRtVhn0VCubSjyCJWAlNmBS3DecW&usp=drive_copy",
-      "Slug": "research",
-      "Background": "https://drive.google.com/open?id=1BTip5fyZWHftFczokA_0QOeVi3ktcfEG&usp=drive_copy",
-      "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=275243306&single=true&output=csv",
-      "Url app": "https://section-research-v03-265253675853.us-west1.run.app"
-    },
-    {
-      "Name": "Tools",
-      "Url Logo Png": "https://drive.google.com/open?id=1BuFVH3iXyAN9Su9kbbQIJEOPvxoixYJ7&usp=drive_copy",
-      "Slug": "tools",
-      "Background": "https://drive.google.com/open?id=1WYoHSYxGSo-1tTxw4rjU9fCNrLQ24xwG&usp=drive_copy",
-      "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=990396131&single=true&output=csv",
-      "Url app": ""
-    },
-    {
-      "Name": "Collabs",
-      "Url Logo Png": "https://drive.google.com/open?id=1UgWNfIEgXGzZgDZyPt4XUvvVC0GmAF6h&usp=drive_copy",
-      "Slug": "collabs",
-      "Background": "https://drive.google.com/open?id=1rtSlS4I5uPPH-Gl3rZmD_vvNbuFe2eGm&usp=drive_copy",
-      "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=2055846949&single=true&output=csv",
-      "Url app": ""
-    },
-    {
-      "Name": "Events",
-      "Url Logo Png": "https://drive.google.com/open?id=1kEvFDWKH9lmzYnLyiB5Tq-UvY291dPHW&usp=drive_copy",
-      "Slug": "events",
-      "Background": "https://drive.google.com/open?id=1WYoHSYxGSo-1tTxw4rjU9fCNrLQ24xwG&usp=drive_copy",
-      "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=376468249&single=true&output=csv",
-      "Url app": "https://section-event-v02-265253675853.us-west1.run.app"
-    },
-    {
-      "Name": "Resources",
-      "Url Logo Png": "https://drive.google.com/open?id=1wIuEV0XJ-_Ww3KGesdy5bj9tdNgc9rlE&usp=drive_copy",
-      "Slug": "resources",
-      "Background": "https://drive.google.com/open?id=1WYoHSYxGSo-1tTxw4rjU9fCNrLQ24xwG&usp=drive_copy",
-      "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=1813804988&single=true&output=csv",
-      "Url app": "https://section-ressources-v03-password-265253675853.us-west1.run.app"
-    }
-  ]
-}
 
-Page Category: Projects
-========================
-{
-  "category": {
-    "Name": "Projects",
-    "Url Logo Png": "https://drive.google.com/open?id=1YudbNuUzJTjXhLbyExCm0FdNEGjbCG4f&usp=drive_copy",
-    "Slug": "projects",
-    "Background": "https://drive.google.com/open?id=1WYoHSYxGSo-1tTxw4rjU9fCNrLQ24xwG&usp=drive_copy",
-    "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=153094389&single=true&output=csv"
-  },
-  "brand": null,
-  "data": [
-    {
-      "Name": "CYBERPUNK",
-      "Date": "2024",
-      "Description": "Cyberpunk est une série de pièces textiles, reprenant le style des prototypes de la marque de vêtements techniques Para Wear. S'inspirant de l'univers cyberpunk, ces pièces uniques intègrent des éléments de design et des matériaux innovants pour un look futuriste et fonctionnel. Chaque pièce reflète une exploration créative de la mode, alliant esthétique audacieuse et technologies de pointe.",
-      "Gallery": "https://drive.google.com/open?id=1oJ72Z-pPlpG27Rk5Q2R7g3_g4h2_xG9O&usp=drive_copy, https://drive.google.com/open?id=1xQ4TqF01Z6T6jG1sR7g6o2_g6i4j_hL6&usp=drive_copy, https://drive.google.com/open?id=1P0B0G-g5g5R6T6f8c6F1c5V8h9h7g_fK&usp=drive_copy, https://drive.google.com/open?id=1oH8v6o4g4R6f1c7X6g8j_g4g6h5f_iJ9&usp=drive_copy",
-      "Brand": "Para Wear",
-      "Tags": "Textile, Mode, Cyberpunk, Prototype"
-    },
-    {
-      "Name": "RENAISSANCE",
-      "Date": "2024",
-      "Description": "Renaissance est un projet de recherche et de création qui fusionne le style de la Renaissance avec les technologies modernes du body scan 3D et de la fabrication numérique. Inspiré par les formes et les motifs de cette période historique, le projet explore de nouvelles façons de concevoir et de créer des vêtements sur mesure, alliant l'artisanat traditionnel et les outils numériques pour une mode innovante et personnalisée. Chaque pièce est une réinterprétation contemporaine de l'élégance classique.",
-      "Gallery": "https://drive.google.com/open?id=1A3v2o-kK8g4j_j6h9h7g_fK1c5V8h9h7&usp=drive_copy",
-      "Brand": "Para Wear",
-      "Tags": "Textile, Mode, Renaissance, Body Scan 3D, Fabrication Numérique"
-    }
-  ]
-}
+DESCRIPTION DU PROCESSUS D'IMPORTATION DES DONNÉES (au 25/07/2024)
 
-Page Category: Catalog
-=======================
-{
-  "category": {
-    "Name": "Catalog",
-    "Url Logo Png": "https://drive.google.com/open?id=1ssx-HkoV4vx4R7kBtVrfGSNk_bEEQJp1&usp=drive_copy",
-    "Slug": "catalog",
-    "Background": "https://drive.google.com/open?id=1WYoHSYxGSo-1tTxw4rjU9fCNrLQ24xwG&usp=drive_copy",
-    "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=581525493&single=true&output=csv"
-  },
-  "brand": null,
-  "data": [
-    {
-      "Name": "DNA",
-      "Date": "2024",
-      "Description": "DNA est une collection de bijoux en argent sterling 925, où chaque pièce est conçue à partir de l'ADN de la personne qui la porte. Grâce à une technologie de séquençage et de modélisation 3D, les formes uniques de l'ADN sont transformées en des designs de bijoux personnalisés. Chaque création est une célébration de l'individualité, un bijou qui raconte une histoire personnelle et unique, alliant science et art.",
-      "Gallery": "https://drive.google.com/open?id=1P0B0G-g5g5R6T6f8c6F1c5V8h9h7g_fK&usp=drive_copy, https://drive.google.com/open?id=1oH8v6o4g4R6f1c7X6g8j_g4g6h5f_iJ9&usp=drive_copy, https://drive.google.com/open?id=1xQ4TqF01Z6T6jG1sR7g6o2_g6i4j_hL6&usp=drive_copy",
-      "Brand": "Artefact",
-      "Tags": "Bijoux, Argent, ADN, Personnalisation, Design Génératif"
-    }
-  ]
-}
+Voici précisément comment l'application gère l'importation des données depuis les Google Sheets. Le processus se déroule principalement dans le fichier `src/lib/sheets.ts`.
 
-Page Category: Research
-=======================
-{
-  "category": {
-    "Name": "Research",
-    "Url Logo Png": "https://drive.google.com/open?id=1O8obmRtVhn0VCubSjyCJWAlNmBS3DecW&usp=drive_copy",
-    "Slug": "research",
-    "Background": "https://drive.google.com/open?id=1BTip5fyZWHftFczokA_0QOeVi3ktcfEG&usp=drive_copy",
-    "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=275243306&single=true&output=csv"
-  },
-  "brand": null,
-  "data": [
-    {
-      "Name": "BIM en Architecture",
-      "Date": "2024",
-      "Description": "Ce projet de recherche explore l'intégration du Building Information Modeling (BIM) dans les processus de conception architecturale. L'étude analyse comment le BIM peut améliorer la collaboration entre les différentes parties prenantes, optimiser la gestion des projets de construction et permettre une conception plus durable et efficace. Des études de cas concrets illustrent les avantages et les défis de l'adoption du BIM dans la pratique architecturale contemporaine.",
-      "Gallery": "https://drive.google.com/open?id=1A3v2o-kK8g4j_j6h9h7g_fK1c5V8h9h7&usp=drive_copy",
-      "Brand": "ArchNTech",
-      "Tags": "BIM, Architecture, Construction, Collaboration, Durabilité"
-    }
-  ]
-}
+Étape 1 : Récupération des Catégories (Master Sheet)
+----------------------------------------------------
+1.  **Appel de la fonction `getCategories`** : Tout commence par l'appel de la fonction `getCategories`. Cette fonction est chargée de récupérer la liste de toutes les pages/catégories du site (Home, Projects, Catalog, etc.).
 
-Page Category: Events
-=====================
-{
-  "category": {
-    "Name": "Events",
-    "Url Logo Png": "https://drive.google.com/open?id=1kEvFDWKH9lmzYnLyiB5Tq-UvY291dPHW&usp=drive_copy",
-    "Slug": "events",
-    "Background": "https://drive.google.com/open?id=1WYoHSYxGSo-1tTxw4rjU9fCNrLQ24xwG&usp=drive_copy",
-    "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=376468249&single=true&output=csv"
-  },
-  "brand": null,
-  "data": [
-    {
-      "Name": "CYBER NIGHT",
-      "Date": "2024-10-26",
-      "Description": "CYBER NIGHT est une soirée immersive qui célèbre la culture cyberpunk sous toutes ses formes. Au programme : DJ sets, performances artistiques, installations interactives et expositions de créations inspirées par l'univers cyberpunk. Venez découvrir un monde où la technologie, l'art et la musique se rencontrent pour créer une expérience unique et futuriste. Un rendez-vous incontournable pour tous les passionnés de l'esthétique et de la pensée cyberpunk.",
-      "Gallery": "https://drive.google.com/open?id=1oJ72Z-pPlpG27Rk5Q2R7g3_g4h2_xG9O&usp=drive_copy",
-      "Brand": "Cyber Club",
-      "Tags": "Cyberpunk, Musique, Art, Technologie, Immersif"
-    }
-  ]
-}
+2.  **Mise en Cache (`unstable_cache`)** : Pour des raisons de performance et pour éviter de surcharger l'API de Google Sheets, le résultat de cette fonction est mis en cache pendant 5 minutes. Cela signifie que l'application ne va pas réellement chercher les données sur Google Sheets à chaque chargement de page, mais seulement toutes les 5 minutes.
 
-Page Category: Tools
-=====================
-{
-  "category": {
-    "Name": "Tools",
-    "Url Logo Png": "https://drive.google.com/open?id=1BuFVH3iXyAN9Su9kbbQIJEOPvxoixYJ7&usp=drive_copy",
-    "Slug": "tools",
-    "Background": "https://drive.google.com/open?id=1WYoHSYxGSo-1tTxw4rjU9fCNrLQ24xwG&usp=drive_copy",
-    "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=990396131&single=true&output=csv"
-  },
-  "brand": null,
-  "data": [
-    {
-      "Name": "AI Storyboard",
-      "Date": "2024",
-      "Description": "AI Storyboard est un outil innovant qui utilise l'intelligence artificielle pour générer des storyboards à partir de scripts ou de descriptions textuelles. Conçu pour les réalisateurs, les animateurs et les créateurs de contenu, cet outil permet de visualiser rapidement des scènes, d'explorer différentes options de cadrage et de composition, et de collaborer plus efficacement avec les équipes de production. Gagnez du temps et libérez votre créativité avec AI Storyboard.",
-      "Gallery": "https://drive.google.com/open?id=1A3v2o-kK8g4j_j6h9h7g_fK1c5V8h9h7&usp=drive_copy",
-      "Brand": "Synthetic",
-      "Tags": "IA, Storyboard, Cinéma, Animation, Production"
-    }
-  ]
-}
+3.  **Fetch du CSV du Master Sheet** : La fonction utilise `fetch` pour télécharger le contenu du "Master Sheet" via son URL publique CSV :
+    `.../pub?gid=177392102&single=true&output=csv`
 
-Page Category: Collabs
-======================
-{
-  "category": {
-    "Name": "Collabs",
-    "Url Logo Png": "https://drive.google.com/open?id=1UgWNfIEgXGzZgDZyPt4XUvvVC0GmAF6h&usp=drive_copy",
-    "Slug": "collabs",
-    "Background": "https://drive.google.com/open?id=1rtSlS4I5uPPH-Gl3rZmD_vvNbuFe2eGm&usp=drive_copy",
-    "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=2055846949&single=true&output=csv"
-  },
-  "brand": null,
-  "data": [
-    {
-      "Name": "Nike x Para Wear",
-      "Date": "2025",
-      "Description": "Une collaboration exclusive entre Para Wear et Nike, qui explore l'avenir du vêtement de sport technique. Cette collection capsule repousse les limites de l'innovation en intégrant des matériaux avancés, des designs ergonomiques et des technologies connectées pour offrir des performances optimales. Chaque pièce est le fruit d'une recherche approfondie sur le mouvement et le confort, alliant le savoir-faire de Para Wear et l'expertise de Nike.",
-      "Gallery": "https://drive.google.com/open?id=1P0B0G-g5g5R6T6f8c6F1c5V8h9h7g_fK&usp=drive_copy",
-      "Brand": "Para Wear",
-      "Tags": "Nike, Para Wear, Sport, Technologie, Innovation"
-    }
-  ]
-}
+4.  **Parsing du CSV** : Le texte CSV est ensuite "parsé" (transformé) en un tableau d'objets JavaScript. Chaque objet représente une ligne du Master Sheet, donc une catégorie. Par exemple : `{ Name: 'Projects', Slug: 'projects', 'Url Sheet': '...' }`.
 
-Page Category: Resources
-=========================
-{
-  "category": {
-    "Name": "Resources",
-    "Url Logo Png": "https://drive.google.com/open?id=1wIuEV0XJ-_Ww3KGesdy5bj9tdNgc9rlE&usp=drive_copy",
-    "Slug": "resources",
-    "Background": "https://drive.google.com/open?id=1WYoHSYxGSo-1tTxw4rjU9fCNrLQ24xwG&usp=drive_copy",
-    "Url Sheet": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=1813804988&single=true&output=csv"
-  },
-  "brand": null,
-  "data": [
-    {
-      "Name": "Creative Commons",
-      "Date": "2024",
-      "Description": "Une ressource essentielle pour les créateurs, Creative Commons propose des licences de droits d'auteur flexibles qui permettent de partager et de réutiliser des œuvres créatives légalement. Découvrez comment utiliser ces licences pour vos propres projets ou trouver des contenus libres de droits pour enrichir vos créations. Un outil indispensable pour une culture plus ouverte et collaborative.",
-      "Gallery": "https://drive.google.com/open?id=1oH8v6o4g4R6f1c7X6g8j_g4g6h5f_iJ9&usp=drive_copy",
-      "Brand": "General",
-      "Tags": "Creative Commons, Licences, Droits d'auteur, Partage, Open Source"
-    }
-  ]
-}
+Étape 2 : Correctif Temporaire des GIDs (Le "Pansement" Actuel)
+-------------------------------------------------------------
+C'est l'étape la plus cruciale qui a été mise en place pour contourner le problème des mauvais GIDs dans votre Master Sheet.
+
+1.  **Définition d'une "Carte de Correction"** : Dans le code de `getCategories`, il y a un objet JavaScript (`gidCorrectionMap`) qui contient les GIDs corrects pour chaque catégorie dont le GID était erroné dans le Master Sheet.
+
+    Exemple de la carte :
+    ```javascript
+    const gidCorrectionMap = {
+      'Home': '177392102', // Reste le master sheet, car pas de feuille dédiée
+      'Projects': '153094389',
+      'Catalog': '581525493',
+      'Tools': '990396131',
+      // ... etc.
+    };
+    ```
+
+2.  **Vérification et Remplacement "à la volée"** : Le code parcourt ensuite chaque catégorie qui vient d'être récupérée du Master Sheet.
+    *   Pour chaque catégorie (ex: "Projects"), il regarde le `gid` présent dans sa propriété `'Url Sheet'`.
+    *   Il compare ce `gid` avec le `gid` correct stocké dans la `gidCorrectionMap`.
+    *   **Si les GIDs ne correspondent pas**, le code remplace dynamiquement l'URL de la feuille (`'Url Sheet'`) par une nouvelle URL construite avec le bon `gid`.
+
+    **C'est grâce à cette étape que les pages "Projects", "Catalog", etc., chargent maintenant les bonnes données, même si le Master Sheet contient toujours les mauvais `gid`.**
+
+Étape 3 : Récupération des Données Spécifiques à une Page
+-----------------------------------------------------------
+1.  **Navigation de l'utilisateur** : Lorsque vous accédez à une page (par exemple, en cliquant sur "Projects" dans le menu), l'application exécute le composant de page `src/app/[...slug]/page.tsx`.
+
+2.  **Identification de la Catégorie** : Ce composant analyse l'URL (ex: `/projects`) pour identifier la catégorie demandée.
+
+3.  **Appel de `getCategoryData`** : Une fois la catégorie identifiée (l'objet "Projects" avec son URL de feuille corrigée), la fonction `getCategoryData` est appelée.
+
+4.  **Fetch des Données Finales** : `getCategoryData` prend en paramètre l'URL de la feuille de la catégorie (qui a été corrigée à l'étape 2) et effectue un `fetch` pour récupérer le CSV de la feuille de calcul spécifique (par exemple, la feuille "Projects").
+
+5.  **Affichage** : Les données de cette feuille spécifique sont ensuite parsées et affichées sur la page.
+
+
+**En résumé :** Le système est actuellement un processus en deux temps. Il charge d'abord une liste de catégories depuis le Master Sheet, applique immédiatement un correctif en mémoire pour réparer les URLs des feuilles de calcul, puis utilise ces URLs corrigées pour charger les données réelles de la page que vous visitez.
