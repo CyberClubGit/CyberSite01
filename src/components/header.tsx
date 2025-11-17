@@ -49,43 +49,30 @@ export function Header({ categories, brands }: HeaderProps) {
     if (!brand) return;
 
     setSelectedBrand(brand.Brand);
-    if (isMounted) {
-      localStorage.setItem('brandSelected', brand.Brand);
-    }
+    localStorage.setItem('brandSelected', brand.Brand);
     
     const pathParts = pathname.split('/').filter(p => p);
-    let categorySlug = 'home';
-    
-    if (pathParts.length > 0) {
-      const isBrandSlug = (slug: string) => brands.some(b => b.Activity.toLowerCase() === slug.toLowerCase());
-      
-      let potentialCategorySlug = pathParts[0];
-      if (pathParts.length > 1 && isBrandSlug(pathParts[0])) {
-        potentialCategorySlug = pathParts[1];
-      }
-      
-      const isCategory = categories.some(c => c.Slug.toLowerCase() === potentialCategorySlug.toLowerCase());
-      if(isCategory) {
-        categorySlug = potentialCategorySlug;
-      } else if (pathParts.length > 0) {
-        // Fallback for case where only category is present
-        const categoryMatch = categories.find(c => c.Slug.toLowerCase() === pathParts[pathParts.length - 1].toLowerCase());
-        if (categoryMatch) {
-          categorySlug = categoryMatch.Slug;
-        }
-      }
+    let currentCategorySlug = 'home';
+
+    const cat1 = categories.find(c => c.Slug && c.Slug.toLowerCase() === pathParts[0]?.toLowerCase());
+    const cat2 = categories.find(c => c.Slug && c.Slug.toLowerCase() === pathParts[1]?.toLowerCase());
+
+    if (cat2) {
+      currentCategorySlug = pathParts[1];
+    } else if (cat1) {
+      currentCategorySlug = pathParts[0];
     }
     
     let newPath;
     if (brand.Brand === 'Cyber Club') {
-      newPath = `/${categorySlug}`;
+      newPath = `/${currentCategorySlug}`;
     } else {
-      newPath = `/${brand.Activity.toLowerCase()}/${categorySlug}`;
+      newPath = `/${brand.Activity.toLowerCase()}/${currentCategorySlug}`;
     }
     
     router.push(newPath);
 
-  }, [isMounted, brands, pathname, router, categories]);
+  }, [brands, pathname, router, categories]);
 
 
   useEffect(() => {
@@ -96,8 +83,8 @@ export function Header({ categories, brands }: HeaderProps) {
     if (!isMounted || brands.length === 0) return;
     
     const pathParts = pathname.split('/').filter(p => p);
-    const potentialBrandActivity = pathParts.length > 1 ? pathParts[0] : undefined;
-    const brandFromUrl = potentialBrandActivity ? brands.find(b => b.Activity.toLowerCase() === potentialBrandActivity.toLowerCase()) : undefined;
+    const potentialBrandActivity = pathParts[0];
+    const brandFromUrl = brands.find(b => b.Activity && b.Activity.toLowerCase() === potentialBrandActivity?.toLowerCase());
 
     const currentBrandName = brandFromUrl ? brandFromUrl.Brand : 'Cyber Club';
 
@@ -114,6 +101,10 @@ export function Header({ categories, brands }: HeaderProps) {
 
   useEffect(() => {
     if (isMounted) {
+      const storedBrand = localStorage.getItem('brandSelected') || 'Cyber Club';
+      if (storedBrand !== selectedBrand) {
+        // This effect is now just for initialization, navigation is handled in handleBrandChange and URL parsing effect
+      }
       const currentBrand = brands.find(b => b.Brand === selectedBrand);
       applyBrandColor(currentBrand, resolvedTheme);
     }
@@ -180,9 +171,18 @@ export function Header({ categories, brands }: HeaderProps) {
               .map((category) => {
                   const linkHref = getLinkHref(category.Slug);
                   const pathParts = pathname.split('/').filter(p => p);
-                  const currentCategorySlug = pathParts.length > 1 && brands.some(b => b.Activity.toLowerCase() === pathParts[0].toLowerCase())
-                    ? pathParts[1]
-                    : pathParts[0];
+                  
+                  const cat1 = categories.find(c => c.Slug && c.Slug.toLowerCase() === pathParts[0]?.toLowerCase());
+                  const cat2 = categories.find(c => c.Slug && c.Slug.toLowerCase() === pathParts[1]?.toLowerCase());
+
+                  let currentCategorySlug;
+                  if (cat2) {
+                    currentCategorySlug = pathParts[1];
+                  } else if (cat1) {
+                    currentCategorySlug = pathParts[0];
+                  } else if (pathParts[0] === 'home') {
+                    currentCategorySlug = 'home';
+                  }
 
                   const isActive = (currentCategorySlug || 'home').toLowerCase() === category.Slug.toLowerCase();
                   
@@ -211,4 +211,3 @@ export function Header({ categories, brands }: HeaderProps) {
     </header>
   );
 }
-

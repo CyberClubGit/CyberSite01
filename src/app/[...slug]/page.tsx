@@ -10,23 +10,25 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
 
   let brand: Brand | undefined;
   let category: Category | undefined;
+  let categorySlug: string | undefined;
 
-  const brandSlug = slug.length > 1 ? slug[0] : undefined;
-  const potentialCategorySlugFromBrandRoute = slug.length > 1 ? slug[1] : undefined;
-  const potentialCategorySlugFromBaseRoute = slug.length > 0 ? slug[0] : undefined;
+  // Find category slug - it can be the first or second part of the URL
+  const potentialCatSlug1 = slug[0];
+  const potentialCatSlug2 = slug[1];
 
-  if (brandSlug) {
-      brand = brands.find(b => b.Activity && b.Activity.toLowerCase() === brandSlug.toLowerCase());
-  }
+  const cat1 = categories.find(c => c.Slug && c.Slug.toLowerCase() === potentialCatSlug1?.toLowerCase());
+  const cat2 = categories.find(c => c.Slug && c.Slug.toLowerCase() === potentialCatSlug2?.toLowerCase());
 
-  if (brand && potentialCategorySlugFromBrandRoute) {
-      category = categories.find(c => c.Slug && c.Slug.toLowerCase() === potentialCategorySlugFromBrandRoute.toLowerCase());
-  } else if (potentialCategorySlugFromBaseRoute) {
-      category = categories.find(c => c.Slug && c.Slug.toLowerCase() === potentialCategorySlugFromBaseRoute.toLowerCase());
-  }
-  
-  // Handle /home route specifically if no other category matches
-  if (!category && potentialCategorySlugFromBaseRoute && potentialCategorySlugFromBaseRoute === 'home') {
+  if (cat2) {
+    category = cat2;
+    categorySlug = potentialCatSlug2;
+    const potentialBrandSlug = potentialCatSlug1;
+    brand = brands.find(b => b.Activity && b.Activity.toLowerCase() === potentialBrandSlug?.toLowerCase());
+  } else if (cat1) {
+    category = cat1;
+    categorySlug = potentialCatSlug1;
+    // No brand in this case
+  } else if (slug[0] === 'home') {
     category = categories.find(c => c.Slug && c.Slug.toLowerCase() === 'home');
   }
 
