@@ -23,21 +23,47 @@ async function fetchAndParseCsv<T>(url:string): Promise<T[]> {
     }
     const csvText = await response.text();
     
-    const lines = csvText.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
-    if (lines.length < 2) {
-      return [];
+    // Robust CSV parsing
+    const lines = csvText.trim().split('\n');
+    const headers = lines[0].split(',').map(h => h.trim());
+    const data: T[] = [];
+
+    const regex = /(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|([^\",]*))(,|$)/g;
+
+    for (let i = 1; i < lines.length; i++) {
+        if (lines[i].trim() === '') continue;
+
+        let line = lines[i];
+        const obj: any = {};
+        for(let j = 0; j < headers.length; j++){
+            const header = headers[j];
+
+            // If the line is empty, we are done
+            if (line.trim() === '') {
+                obj[header] = '';
+                continue;
+            }
+
+            regex.lastIndex = 0; // Reset regex state
+            const match = regex.exec(line);
+
+            if (match) {
+                // match[1] is the quoted value, match[2] is the unquoted value
+                const value = match[1] !== undefined 
+                    ? match[1].replace(/\"\"/g, '\"') // Unescape double quotes
+                    : match[2];
+                
+                obj[header] = value.trim();
+
+                // Move to the next part of the line
+                line = line.substring(match[0].length);
+            } else {
+                obj[header] = '';
+            }
+        }
+        data.push(obj as T);
     }
 
-    const headers = lines[0].split(',').map(h => h.trim());
-    
-    const data: T[] = lines.slice(1).map(line => {
-      const values = line.split(',');
-      const entry: any = {};
-      headers.forEach((header, index) => {
-        entry[header] = values[index]?.trim() || '';
-      });
-      return entry as T;
-    });
 
     return data;
   } catch (error) {
@@ -45,6 +71,7 @@ async function fetchAndParseCsv<T>(url:string): Promise<T[]> {
     return [];
   }
 }
+
 
 export const getCategories = unstable_cache(
   async () => {
