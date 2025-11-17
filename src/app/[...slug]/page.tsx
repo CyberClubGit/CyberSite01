@@ -10,20 +10,23 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
   const brands = await getBrands();
   const categories = await getCategories();
 
-  const getBrandByActivity = (activity: string) => brands.find(b => b.Activity === activity);
-  const getCategoryBySlug = (slug: string) => categories.find(c => c.Url === slug);
+  const getBrandByActivity = (activity: string) => brands.find(b => b.Activity.toLowerCase() === activity.toLowerCase());
+  const getCategoryBySlug = (slug: string) => categories.find(c => c.Url.toLowerCase() === slug.toLowerCase());
 
   if (slug.length === 1) {
     const maybeCategorySlug = slug[0];
     if (getCategoryBySlug(maybeCategorySlug)) {
         categorySlug = maybeCategorySlug;
     }
-  } else if (slug.length === 2) {
+  } else if (slug.length >= 2) {
     const maybeBrandActivity = slug[0];
     const maybeCategorySlug = slug[1];
     if (getBrandByActivity(maybeBrandActivity) && getCategoryBySlug(maybeCategorySlug)) {
       brandActivity = maybeBrandActivity;
       categorySlug = maybeCategorySlug;
+    } else if (getCategoryBySlug(maybeBrandActivity)) {
+        // Fallback for cases like /projects/item-id where brand is not present
+        categorySlug = maybeBrandActivity;
     }
   }
 
@@ -34,8 +37,11 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
   const category = getCategoryBySlug(categorySlug);
   const brand = brandActivity ? getBrandByActivity(brandActivity) : undefined;
   
-  // Correction: Utiliser la bonne URL de feuille de calcul pour la catégorie actuelle
-  const categoryData = await getCategoryData(category?.['Url Sheet'] || '');
+  if (!category) {
+    notFound();
+  }
+  
+  const categoryData = await getCategoryData(category['Url Sheet']);
 
   return (
     <section className="w-full py-12 md:py-24 lg:py-32">
