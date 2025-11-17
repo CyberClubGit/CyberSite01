@@ -17,7 +17,7 @@ export interface Brand {
 
 async function fetchAndParseCsv<T>(url:string): Promise<T[]> {
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { next: { revalidate: 300 } });
     if (!response.ok) {
       throw new Error(`Failed to fetch CSV from ${url}: ${response.statusText}`);
     }
@@ -62,4 +62,13 @@ export const getBrands = unstable_cache(
   },
   ['brands'],
   { revalidate: 300 } // Revalidate every 5 minutes
+);
+
+export const getCategoryData = unstable_cache(
+  async (sheetUrl: string) => {
+    if (!sheetUrl) return [];
+    return fetchAndParseCsv<any>(sheetUrl);
+  },
+  ['categoryData'],
+  { revalidate: 300 }
 );
