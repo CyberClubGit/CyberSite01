@@ -145,7 +145,7 @@ export function Header({ categories, brands }: HeaderProps) {
   const currentCategorySlug = getCurrentCategorySlug();
 
   const renderNavLinks = (isMobile = false) => (
-    categories
+    categories && categories
       .filter(category => category.Name && category.Slug)
       .map((category) => {
           const linkHref = getLinkHref(category.Slug.toLowerCase());
@@ -195,7 +195,7 @@ export function Header({ categories, brands }: HeaderProps) {
                   <SelectValue placeholder="Select Brand" />
                 </SelectTrigger>
                 <SelectContent>
-                  {brands.map((brand) => (
+                  {brands && brands.map((brand) => (
                     <SelectItem key={brand.Brand} value={brand.Brand}>
                       {brand.Brand}
                     </SelectItem>
@@ -227,28 +227,28 @@ export function Header({ categories, brands }: HeaderProps) {
                     <span className="sr-only">Open navigation menu</span>
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left">
-                    <SheetHeader>
+                <SheetContent side="left" className="p-0">
+                    <SheetHeader className="p-4 border-b">
                         <SheetTitle className="sr-only">Menu</SheetTitle>
                         <SheetDescription className="sr-only">Main navigation menu and brand selector.</SheetDescription>
+                         <Link href="/" className="flex items-center space-x-2" onClick={() => setIsMobileMenuOpen(false)}>
+                            <span className="font-bold font-headline text-lg">CYBER CLUB</span>
+                        </Link>
                     </SheetHeader>
                     <div className="flex flex-col gap-4 p-4">
-                      <Link href="/" className="mb-4 flex items-center space-x-2" onClick={() => setIsMobileMenuOpen(false)}>
-                          <span className="font-bold font-headline text-lg">CYBER CLUB</span>
-                      </Link>
                        <Select onValueChange={(value) => { handleBrandChange(value); setIsMobileMenuOpen(false); }} value={selectedBrand}>
                           <SelectTrigger className="w-full brand-selector">
                             <SelectValue placeholder="Select Brand" />
                           </SelectTrigger>
                           <SelectContent>
-                            {brands.map((brand) => (
+                            {brands && brands.map((brand) => (
                               <SelectItem key={brand.Brand} value={brand.Brand}>
                                 {brand.Brand}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                      <nav className="flex flex-col gap-2">
+                      <nav className="flex flex-col gap-2 mt-4 border-t pt-4">
                         {renderNavLinks(true)}
                       </nav>
                     </div>

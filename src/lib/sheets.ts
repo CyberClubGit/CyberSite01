@@ -31,6 +31,21 @@ const MASTER_SHEET_URL = buildCsvUrl(SPREADSHEET_ID, MASTER_SHEET_GID);
 const BRAND_SHEET_URL = buildCsvUrl(SPREADSHEET_ID, BRAND_SHEET_GID);
 
 // --- Robust CSV Parsing and Normalization Utils ---
+
+/**
+ * Normalizes a category name for comparison.
+ * - Trims whitespace from start/end
+ * - Converts to lowercase
+ * - Replaces multiple spaces with a single one
+ */
+function normalizeCategoryName(name: string | undefined): string {
+  if (!name) return '';
+  return name.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/**
+ * Robustly parses a single line of a CSV file, handling quoted fields.
+ */
 function parseCsvLine(line: string): string[] {
   const result: string[] = [];
   let current = '';
@@ -43,7 +58,7 @@ function parseCsvLine(line: string): string[] {
     if (char === '"') {
       if (inQuotes && nextChar === '"') {
         current += '"';
-        i++; 
+        i++; // Skip the escaped quote
       } else {
         inQuotes = !inQuotes;
       }
@@ -58,7 +73,9 @@ function parseCsvLine(line: string): string[] {
   return result;
 }
 
-
+/**
+ * Fetches a CSV from a URL and parses it into an array of objects.
+ */
 async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
     if (!url || !url.startsWith('https')) {
@@ -100,16 +117,16 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   }
 }
 
-// Temporary GID correction map
+// Normalized GID correction map (keys are lowercase)
 const gidCorrectionMap: { [key: string]: string } = {
-  'Home': '177392102',
-  'Projects': '153094389',
-  'Catalog': '581525493',
-  'Research': '275243306',
-  'Tools': '990396131',
-  'Collabs': '2055846949',
-  'Events': '376468249',
-  'Ressources': '1813804988'
+  'home': '177392102',
+  'projects': '153094389',
+  'catalog': '581525493',
+  'research': '275243306',
+  'tools': '990396131',
+  'collabs': '2055846949',
+  'events': '376468249',
+  'ressources': '1813804988'
 };
 
 export const getCategories = unstable_cache(
@@ -117,16 +134,19 @@ export const getCategories = unstable_cache(
     console.log('[Sheets] Fetching Master Sheet for categories list...');
     const categories = await fetchAndParseCsv<Category>(MASTER_SHEET_URL);
 
-    // Apply GID corrections
+    // Apply GID corrections using normalization
     return categories.map(category => {
-      const correctedGid = gidCorrectionMap[category.Name];
+      const normalizedName = normalizeCategoryName(category.Name);
+      const correctedGid = gidCorrectionMap[normalizedName];
+
       if (correctedGid) {
         const newUrl = buildCsvUrl(SPREADSHEET_ID, correctedGid);
-        // Check if the URL is different to avoid unnecessary modifications
         if (category['Url Sheet'] !== newUrl) {
-           console.log(`[Sheets] Correcting GID for "${category.Name}". New URL: ${newUrl}`);
+           console.log(`[Sheets] Correcting GID for "${category.Name}" (normalized: "${normalizedName}"). New URL: ${newUrl}`);
            category['Url Sheet'] = newUrl;
         }
+      } else {
+        console.warn(`[Sheets] No GID correction found for category "${category.Name}" (normalized: "${normalizedName}")`);
       }
       return category;
     });
