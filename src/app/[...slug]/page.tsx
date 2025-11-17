@@ -64,7 +64,7 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
   }
 
   // Handle root URL case
-  if (slug.length === 0) {
+  if (slug.length === 0 || slug[0] === '') {
       category = categories.find(c => c.Slug && c.Slug.toLowerCase() === 'home');
   }
 
@@ -73,7 +73,8 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
     notFound();
   }
   
-  const categoryData = await getCategoryData(category['Url Sheet']);
+  // Changed this line to pass the category slug to getCategoryData
+  const categoryData = await getCategoryData(category.Slug);
   const isCatalogPage = category.Slug.toLowerCase() === 'catalog';
 
   return (

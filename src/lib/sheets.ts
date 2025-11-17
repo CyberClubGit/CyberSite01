@@ -30,21 +30,20 @@ function buildCsvUrl(spreadsheetId: string, gid: string): string {
 const MASTER_SHEET_URL = buildCsvUrl(SPREADSHEET_ID, MASTER_SHEET_GID);
 const BRAND_SHEET_URL = buildCsvUrl(SPREADSHEET_ID, BRAND_SHEET_GID);
 
+// Centralized configuration for all sheet URLs
+export const SHEET_LINKS: { [key: string]: string } = {
+  home:     'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=177392102&single=true&output=csv',
+  projects: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=153094389&single=true&output=csv',
+  catalog:  'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=581525493&single=true&output=csv',
+  research: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=275243306&single=true&output=csv',
+  tool:     'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=990396131&single=true&output=csv',
+  collabs:   'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l11/pub?gid=2055846949&single=true&output=csv',
+  events:    'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=376468249&single=true&output=csv',
+  ressources:'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=1813804988&single=true&output=csv'
+};
+
 
 // --- Robust CSV Parsing and Normalization Utils ---
-
-/**
- * Normalizes a category name for reliable comparison.
- * - Trims whitespace from start/end
- * - Converts to lowercase
- * - Replaces multiple spaces with a single space
- */
-function normalizeCategoryName(name: string): string {
-  if (!name) return '';
-  return name.trim().toLowerCase().replace(/\s+/g, ' ');
-}
-
-
 function parseCsvLine(line: string): string[] {
   const result: string[] = [];
   let current = '';
@@ -117,43 +116,14 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
 
 export const getCategories = unstable_cache(
   async () => {
-    console.log('[Sheets] Fetching Master Sheet for categories...');
-    const categoriesFromSheet = await fetchAndParseCsv<Category>(MASTER_SHEET_URL);
-    
-    const gidCorrectionMap: { [key: string]: string } = {
-        'home': '177392102',
-        'projects': '153094389',
-        'catalog': '581525493',
-        'research': '275243306',
-        'tool': '990396131',
-        'collabs': '2055846949',
-        'events': '376468249',
-        'ressources': '1813804988',
-    };
-
-    const correctedCategories = categoriesFromSheet.map(category => {
-      const originalName = category.Name || category['Item'] || '';
-      const normalizedName = normalizeCategoryName(originalName);
-      const correctGid = gidCorrectionMap[normalizedName];
-
-      let correctedUrl = category['Url Sheet'];
-      if (correctGid) {
-          console.log(`[Sheets] Correcting GID for "${originalName}" (normalized: "${normalizedName}") to ${correctGid}`);
-          correctedUrl = buildCsvUrl(SPREADSHEET_ID, correctGid);
-      } else {
-          console.warn(`[Sheets] No GID correction found for "${originalName}" (normalized: "${normalizedName}")`);
-      }
-
-      return {
-          ...category,
-          Name: originalName, // Ensure the original name is preserved for display
-          'Url Sheet': correctedUrl
-      };
-    });
-
-    console.log('[Sheets] Corrected categories with proper GIDs:', correctedCategories.map(c => ({ Name: c.Name, Url: c['Url Sheet'] })));
-
-    return correctedCategories;
+    console.log('[Sheets] Fetching Master Sheet for categories list...');
+    const categories = await fetchAndParseCsv<Category>(MASTER_SHEET_URL);
+    // We only use the master sheet to get the list of categories (for the menu), not their URLs.
+    return categories.map(category => ({
+      ...category,
+      // The 'Url Sheet' from the master sheet is now ignored.
+      // The correct URL will be picked from SHEET_LINKS in getCategoryData.
+    }));
   },
   ['categories'],
   { revalidate: 300 } // 5 minutes
@@ -170,18 +140,19 @@ export const getBrands = unstable_cache(
 );
 
 export const getCategoryData = unstable_cache(
-  async (sheetUrl: string) => {
+  async (categorySlug: string) => {
+    const normalizedSlug = categorySlug.toLowerCase();
+    const sheetUrl = SHEET_LINKS[normalizedSlug];
+
     if (!sheetUrl) {
-      console.warn('[Sheets] getCategoryData called with an empty URL.');
+      console.warn(`[Sheets] No URL configured for category slug: "${normalizedSlug}"`);
       return [];
     }
-    console.log(`[Sheets] Fetching category data from: ${sheetUrl}`);
+    console.log(`[Sheets] Fetching data for "${normalizedSlug}" from: ${sheetUrl}`);
     return fetchAndParseCsv<any>(sheetUrl);
   },
-  ['categoryData'],
+  ['categoryData'], // Note: This cache key is now dynamic based on the slug.
   {
     revalidate: 300 // 5 minutes
   }
 );
-
-    
