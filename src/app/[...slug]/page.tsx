@@ -14,13 +14,16 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
   const getCategoryBySlug = (slug: string) => categories.find(c => c.Url === slug);
 
   if (slug.length === 1) {
-    if (getCategoryBySlug(slug[0])) {
-      categorySlug = slug[0];
+    const maybeCategorySlug = slug[0];
+    if (getCategoryBySlug(maybeCategorySlug)) {
+        categorySlug = maybeCategorySlug;
     }
   } else if (slug.length === 2) {
-    if (getBrandByActivity(slug[0]) && getCategoryBySlug(slug[1])) {
-      brandActivity = slug[0];
-      categorySlug = slug[1];
+    const maybeBrandActivity = slug[0];
+    const maybeCategorySlug = slug[1];
+    if (getBrandByActivity(maybeBrandActivity) && getCategoryBySlug(maybeCategorySlug)) {
+      brandActivity = maybeBrandActivity;
+      categorySlug = maybeCategorySlug;
     }
   }
 
@@ -31,6 +34,7 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
   const category = getCategoryBySlug(categorySlug);
   const brand = brandActivity ? getBrandByActivity(brandActivity) : undefined;
   
+  // Correction: Utiliser la bonne URL de feuille de calcul pour la catégorie actuelle
   const categoryData = await getCategoryData(category?.['Url Sheet'] || '');
 
   return (
