@@ -24,89 +24,76 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
     const csvText = await response.text();
     
     const lines = csvText.trim().split('\r\n').join('\n').split('\n');
+    if (lines.length < 1) return [];
+
     const headers = lines[0].split(',').map(h => h.trim());
     const data: T[] = [];
 
-    let currentLine = 1;
-    while (currentLine < lines.length) {
-        if (lines[currentLine].trim() === '') {
-            currentLine++;
+    let i = 1;
+    while (i < lines.length) {
+        if (!lines[i].trim()) {
+            i++;
             continue;
         }
 
+        let currentLineContent = lines[i];
         const obj: any = {};
-        let lineContent = lines[currentLine];
         
         for (const header of headers) {
             let value = '';
             
-            lineContent = lineContent.trim();
+            if (currentLineContent.startsWith('"')) {
+                // Handle quoted fields that may contain newlines
+                let completeField = '';
+                let inQuote = true;
+                let searchIndex = i;
+                let lineSlice = currentLineContent.substring(1); // Skip initial quote
 
-            if (lineContent.startsWith('"')) {
-                // Quoted field, potentially multi-line
-                let closingQuoteIndex = -1;
-                let content = '';
-                
-                let searchLine = lineContent;
-                let searchLineIndex = currentLine;
-
-                while (closingQuoteIndex === -1) {
-                    content += searchLine.substring(searchLine.startsWith('"') ? 1 : 0);
-                    
-                    let i = 0;
-                    while(i < content.length) {
-                        if (content[i] === '"') {
-                            if (i + 1 < content.length && content[i+1] === '"') {
-                                i += 2; // Skip escaped quote
-                            } else {
-                                closingQuoteIndex = i;
-                                break;
-                            }
-                        } else {
-                            i++;
+                while (inQuote) {
+                    const quoteIndex = lineSlice.indexOf('"');
+                    if (quoteIndex === -1) {
+                        // Newline is part of the field
+                        completeField += lineSlice + '\n';
+                        searchIndex++;
+                        if (searchIndex >= lines.length) {
+                             throw new Error('Unclosed quoted field in CSV');
                         }
-                    }
-
-                    if (closingQuoteIndex !== -1) {
-                        value = content.substring(0, closingQuoteIndex).replace(/""/g, '"');
-                        const charsConsumed = value.replace(/"/g, '""').length + 2; // +2 for quotes
-                        
-                        let remainingInLine = lineContent.substring(charsConsumed);
-                        if (remainingInLine.startsWith(',')) {
-                            remainingInLine = remainingInLine.substring(1);
-                        }
-                        
-                        // This logic has limitations with multiline AND multiple columns on one line
-                        // It assumes the multiline quoted field ends the "visual" line in the source text editor
-                        lineContent = remainingInLine;
-                        currentLine = searchLineIndex;
-
+                        lineSlice = lines[searchIndex];
                     } else {
-                        searchLineIndex++;
-                        if (searchLineIndex >= lines.length) {
-                             throw new Error('Unclosed quote in CSV content');
+                        // Quote found
+                        if (quoteIndex + 1 < lineSlice.length && lineSlice[quoteIndex + 1] === '"') {
+                            // Escaped quote
+                            completeField += lineSlice.substring(0, quoteIndex + 1);
+                            lineSlice = lineSlice.substring(quoteIndex + 2);
+                        } else {
+                            // End of quoted field
+                            completeField += lineSlice.substring(0, quoteIndex);
+                            currentLineContent = lineSlice.substring(quoteIndex + 1);
+                            if (currentLineContent.startsWith(',')) {
+                                currentLineContent = currentLineContent.substring(1);
+                            }
+                            inQuote = false;
                         }
-                        searchLine = lines[searchLineIndex];
-                        content += '\n'; // Add newline that was stripped by split()
                     }
                 }
-                 currentLine = searchLineIndex;
+                value = completeField.replace(/""/g, '"');
+                i = searchIndex;
 
             } else {
-                // Unquoted field
-                const commaIndex = lineContent.indexOf(',');
+                // Handle unquoted fields
+                const commaIndex = currentLineContent.indexOf(',');
                 if (commaIndex !== -1) {
-                    value = lineContent.substring(0, commaIndex);
-                    lineContent = lineContent.substring(commaIndex + 1);
+                    value = currentLineContent.substring(0, commaIndex);
+                    currentLineContent = currentLineContent.substring(commaIndex + 1);
                 } else {
-                    value = lineContent;
-                    lineContent = '';
+                    value = currentLineContent;
+                    currentLineContent = '';
                 }
             }
             obj[header] = value.trim();
         }
         data.push(obj as T);
-        currentLine++;
+        i++;
     }
 
     return data;
