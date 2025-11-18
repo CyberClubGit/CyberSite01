@@ -1,11 +1,10 @@
-
 import { unstable_cache } from 'next/cache';
 
 export interface Category {
-  Name: string;
+  'Name': string;
   'Url Logo Png': string;
-  Slug: string;
-  Background: string;
+  'Slug': string;
+  'Background': string;
   'Url Sheet': string;
   'Url app': string;
 }
@@ -26,17 +25,6 @@ const BRAND_SHEET_GID = '1634708260';
 const MASTER_SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${MASTER_SHEET_GID}&single=true&output=csv`;
 const BRAND_SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${BRAND_SHEET_GID}&single=true&output=csv`;
 
-const SHEET_URLS: Record<string, string> = {
-    home: `https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=177392102&single=true&output=csv`,
-    projects: `https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=153094389&single=true&output=csv`,
-    catalog: `https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=581525493&single=true&output=csv`,
-    research: `https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=275243306&single=true&output=csv`,
-    tools: `https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=990396131&single=true&output=csv`,
-    collabs: `https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=2055846949&single=true&output=csv`,
-    events: `https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=376468249&single=true&output=csv`,
-    ressources: `https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=1813804988&single=true&output=csv`
-};
-
 async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
     const response = await fetch(url, { next: { revalidate: 0 } });
@@ -55,13 +43,12 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
     const header = lines.shift()?.split(',') || [];
     
     return lines
-      .filter(line => line.trim() !== '') // Ignore empty lines
+      .filter(line => line.trim() !== '')
       .map(line => {
         const values = line.split(',');
         const obj: {[key: string]: string} = {};
         header.forEach((key, i) => {
-          const rawValue = values[i] || '';
-          obj[key.trim()] = rawValue.trim();
+          obj[key.trim()] = values[i]?.trim() || '';
         });
         return obj as T;
     });
@@ -75,18 +62,8 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
 export const getCategories = unstable_cache(
   async (): Promise<Category[]> => {
     console.log('[Sheets] Fetching Master Sheet for categories list...');
-    const rawCategories = await fetchAndParseCsv<any>(MASTER_SHEET_URL);
-
-    return rawCategories
-        .map(category => ({
-            Name: category.Name,
-            'Url Logo Png': category['Url Logo Png'],
-            Slug: category.Slug,
-            Background: category.Background,
-            'Url Sheet': category['Url Sheet'],
-            'Url app': category['Url app'],
-        }))
-        .filter((category): category is Category => !!category.Name && !!category.Slug);
+    const rawCategories = await fetchAndParseCsv<Category>(MASTER_SHEET_URL);
+    return rawCategories.filter((category): category is Category => !!category.Name && !!category.Slug);
   },
   ['categories'],
   { revalidate: 300 }
@@ -104,11 +81,20 @@ export const getBrands = unstable_cache(
 
 export const getCategoryData = unstable_cache(
   async (slug: string) => {
-    const sheetUrl = SHEET_URLS[slug.toLowerCase()];
-    if (!sheetUrl) {
-      console.warn(`[Sheets] getCategoryData called with an invalid slug: ${slug}. No URL found.`);
+    const categories = await getCategories();
+    const category = categories.find(c => c.Slug && c.Slug.toLowerCase() === slug.toLowerCase());
+    
+    if (!category || !category['Url Sheet']) {
+      console.warn(`[Sheets] getCategoryData: No sheet URL found for slug: ${slug}.`);
       return [];
     }
+    
+    const sheetUrl = category['Url Sheet'];
+    if (!sheetUrl.startsWith('https')) {
+        console.warn(`[Sheets] getCategoryData: Invalid sheet URL "${sheetUrl}" for slug: ${slug}.`);
+        return [];
+    }
+
     console.log(`[Sheets] Fetching data for slug "${slug}" from: ${sheetUrl}`);
     return fetchAndParseCsv<any>(sheetUrl);
   },
