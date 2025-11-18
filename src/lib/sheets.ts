@@ -32,7 +32,7 @@ const BRAND_SHEET_URL = buildCsvUrl(BRAND_SHEET_GID);
 
 async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
-    const response = await fetch(url, { next: { revalidate: 300 } });
+    const response = await fetch(url, { next: { revalidate: 0 } });
     if (!response.ok) {
       console.error(`[Sheets] Failed to fetch CSV from ${url}: ${response.status} ${response.statusText}`);
       return [];
@@ -87,15 +87,14 @@ export const getCategories = unstable_cache(
       return {
         Name: name,
         'Url Logo Png': category['Url Logo Png'],
-        Slug: category.Url,
+        Slug: category.Slug,
         Background: category.Background,
         'Url Sheet': correctedUrlSheet,
         'Url app': category['Url app'],
       };
     }).filter((category): category is Category => !!category.Name && !!category.Slug);
   },
-  ['categories'],
-  { revalidate: 300 }
+  ['categories']
 );
 
 
@@ -104,8 +103,7 @@ export const getBrands = unstable_cache(
     console.log('[Sheets] Fetching Brand Sheet...');
     return fetchAndParseCsv<Brand>(BRAND_SHEET_URL);
   },
-  ['brands'],
-  { revalidate: 300 } // 5 minutes
+  ['brands']
 );
 
 export const getCategoryData = unstable_cache(
@@ -117,8 +115,5 @@ export const getCategoryData = unstable_cache(
     console.log(`[Sheets] Fetching data from: ${sheetUrl}`);
     return fetchAndParseCsv<any>(sheetUrl);
   },
-  ['categoryData'],
-  {
-    revalidate: 300 // 5 minutes
-  }
+  ['categoryData']
 );
