@@ -27,7 +27,7 @@ const BRAND_SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_
 
 async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
-    const response = await fetch(url, { next: { revalidate: 0 } });
+    const response = await fetch(url); // Correction: removed problematic revalidate: 0
     if (!response.ok) {
       console.error(`[Sheets] Failed to fetch CSV from ${url}: ${response.status} ${response.statusText}`);
       return [];
@@ -48,7 +48,7 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
         const values = line.split(',');
         const obj: {[key: string]: string} = {};
         header.forEach((key, i) => {
-          obj[key] = values[i]?.trim() || '';
+          obj[key.trim()] = values[i]?.trim() || '';
         });
         return obj as T;
     });
