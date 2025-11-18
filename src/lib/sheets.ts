@@ -13,7 +13,7 @@ export interface Brand {
   Brand: string;
   Activity: string;
   'Color Light': string;
-  'Color Dark': string;
+  'Color Dark':string;
   Description: string;
   Logo: string;
 }
@@ -26,17 +26,15 @@ const MASTER_SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET
 const BRAND_SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${BRAND_SHEET_GID}&single=true&output=csv`;
 
 const SHEET_URLS: Record<string, string> = {
-    home: `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=177392102&single=true&output=csv`,
-    projects: `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=177392102&single=true&output=csv`,
-    catalog: `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=581525493&single=true&output=csv`, // Corrected from user prompt based on previous findings
-    research: `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=275243306&single=true&output=csv`,
-    tool: `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=990396131&single=true&output=csv`, // Corrected from user prompt
-    collabs: `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=2055846949&single=true&output=csv`,
-    events: `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=376468249&single=true&output=csv`,
-    ressources: `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=1813804988&single=true&output=csv`,
+    home: `https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=177392102&single=true&output=csv`,
+    projects: `https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=153094389&single=true&output=csv`,
+    catalog: `https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=581525493&single=true&output=csv`,
+    research: `https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=275243306&single=true&output=csv`,
+    tools: `https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=990396131&single=true&output=csv`,
+    collabs: `https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=2055846949&single=true&output=csv`,
+    events: `https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=376468249&single=true&output=csv`,
+    ressources: `https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=1813804988&single=true&output=csv`
 };
-// Note: I took the liberty to correct catalog, projects and tool URLs based on our previous findings of correct GIDs. Home points to the master sheet. Let me know if this is wrong.
-
 
 async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
