@@ -54,18 +54,16 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
 
     const header = lines.shift()?.split(',') || [];
     
-    return lines.map(line => {
-      const values = line.split(',');
-      const obj: {[key: string]: string} = {};
-      header.forEach((key, i) => {
-        // This is a simplified parser. It assumes the last column might contain commas.
-        if (i === header.length - 1) {
-          obj[key.trim()] = values.slice(i).join(',').trim();
-        } else {
-          obj[key.trim()] = values[i]?.trim() || '';
-        }
-      });
-      return obj as T;
+    return lines
+      .filter(line => line.trim() !== '') // Ignore empty lines
+      .map(line => {
+        const values = line.split(',');
+        const obj: {[key: string]: string} = {};
+        header.forEach((key, i) => {
+          const rawValue = values[i] || '';
+          obj[key.trim()] = rawValue.trim();
+        });
+        return obj as T;
     });
 
   } catch (error) {
@@ -108,7 +106,7 @@ export const getCategoryData = unstable_cache(
   async (slug: string) => {
     const sheetUrl = SHEET_URLS[slug.toLowerCase()];
     if (!sheetUrl) {
-      console.warn(`[Sheets] getCategoryData called with an invalid slug: ${slug}`);
+      console.warn(`[Sheets] getCategoryData called with an invalid slug: ${slug}. No URL found.`);
       return [];
     }
     console.log(`[Sheets] Fetching data for slug "${slug}" from: ${sheetUrl}`);
