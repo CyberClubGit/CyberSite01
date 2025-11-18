@@ -2,10 +2,10 @@ import { unstable_cache } from 'next/cache';
 
 // Main interface for a category, matching the Master Sheet columns.
 export interface Category {
-  'Name': string;
+  Name: string;
   'Url Logo Png': string;
-  'Slug': string;
-  'Background': string;
+  Slug: string;
+  Background: string;
   'Url Sheet': string;
   'Url app': string;
 }
