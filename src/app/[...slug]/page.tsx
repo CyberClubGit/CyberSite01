@@ -25,11 +25,11 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
       category = categories.find(c => c.Slug && c.Slug.toLowerCase() === 'home');
   }
 
-  if (!category) {
+  if (!category || !category.Slug) {
     notFound();
   }
   
-  const categoryData = await getCategoryData(category['Url Sheet']);
+  const categoryData = await getCategoryData(category.Slug);
 
   return (
     <section className="w-full py-12 md:py-24 lg:py-32">
