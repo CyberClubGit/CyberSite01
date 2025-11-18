@@ -42,7 +42,7 @@ export function Header({ categories, brands }: HeaderProps) {
     const pathParts = pathname.split('/').filter(p => p);
     if (pathParts.length === 0) return 'home';
 
-    const catSlugs = categories.map(c => c.Slug?.toLowerCase());
+    const catSlugs = categories.map(c => c.Url?.toLowerCase());
 
     // Look from right to left for a category slug
     for (let i = pathParts.length - 1; i >= 0; i--) {
@@ -146,10 +146,10 @@ export function Header({ categories, brands }: HeaderProps) {
 
   const renderNavLinks = (isMobile = false) => (
     categories && categories
-      .filter(category => category.Name && category.Slug)
+      .filter(category => category.Name && category.Url)
       .map((category) => {
-          const linkHref = getLinkHref(category.Slug.toLowerCase());
-          const isActive = (currentCategorySlug || 'home').toLowerCase() === category.Slug.toLowerCase();
+          const linkHref = getLinkHref(category.Url.toLowerCase());
+          const isActive = (currentCategorySlug || 'home').toLowerCase() === category.Url.toLowerCase();
           
           return (
             <Link

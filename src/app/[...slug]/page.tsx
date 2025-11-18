@@ -14,7 +14,7 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
   const lastSlugPart = slug.length > 0 ? slug[slug.length - 1] : 'home';
   const potentialBrandSlug = slug.length > 1 ? slug[0] : undefined;
   
-  category = categories.find(c => c.Slug && c.Slug.toLowerCase() === lastSlugPart.toLowerCase());
+  category = categories.find(c => c.Url && c.Url.toLowerCase() === lastSlugPart.toLowerCase());
 
   if (potentialBrandSlug) {
       brand = brands.find(b => b.Activity && b.Activity.toLowerCase() === potentialBrandSlug.toLowerCase());
@@ -22,14 +22,14 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
 
   // Handle root URL case
   if (slug.length === 0 || (slug.length === 1 && slug[0] === '')) {
-      category = categories.find(c => c.Slug && c.Slug.toLowerCase() === 'home');
+      category = categories.find(c => c.Url && c.Url.toLowerCase() === 'home');
   }
 
-  if (!category || !category.Slug) {
+  if (!category || !category.Url) {
     notFound();
   }
   
-  const categoryData = await getCategoryData(category.Slug);
+  const categoryData = await getCategoryData(category.Url);
 
   return (
     <section className="w-full py-12 md:py-24 lg:py-32">

@@ -1,10 +1,10 @@
 import { unstable_cache } from 'next/cache';
 
-// ✅ FIX 1: Interface sans quotes inutiles
+// ===== TYPES =====
 export interface Category {
   Name: string;
   'Url Logo Png': string;
-  Slug: string;
+  Url: string; // This is the slug for the category
   Background: string;
   'Url Sheet': string;
   'Url app': string;
@@ -19,6 +19,7 @@ export interface Brand {
   Logo: string;
 }
 
+// ===== CONFIGURATION =====
 const SPREADSHEET_ID = '2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1';
 const MASTER_SHEET_GID = '177392102';
 const BRAND_SHEET_GID = '1634708260';
@@ -26,118 +27,144 @@ const BRAND_SHEET_GID = '1634708260';
 const MASTER_SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${MASTER_SHEET_GID}&single=true&output=csv`;
 const BRAND_SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${BRAND_SHEET_GID}&single=true&output=csv`;
 
-// ✅ FIX 2: Map de correction des gids
-const gidCorrectionMap: { [key: string]: string } = {
-  'Home': '177392102',      // Master Sheet (ou vrai Home gid?)
-  'Projects': '153094389',
-  'Catalog': '581525493',
-  'Research': '275243306',
-  'Tools': '990396131',
-  'Collabs': '2055846949',
-  'Events': '376468249',
-  'Ressources': '1813804988'
-};
-
+// ===== HELPER: FETCH & PARSE CSV =====
 async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
-    const response = await fetch(url);
+    console.log(`[Sheets] Fetching: ${url}`);
+    
+    // Using a 5 minute revalidation time as a default for fetches
+    const response = await fetch(url, { 
+      next: { revalidate: 300 } 
+    });
+    
     if (!response.ok) {
-      console.error(`[Sheets] Failed to fetch CSV from ${url}: ${response.status} ${response.statusText}`);
+      console.error(`[Sheets] HTTP Error ${response.status}: ${response.statusText} for ${url}`);
       return [];
     }
+    
     const csvText = await response.text();
     const lines = csvText.trim().replace(/\r/g, '').split('\n');
     
     if (lines.length < 2) {
-      console.warn(`[Sheets] CSV from ${url} has no data lines.`);
+      console.warn(`[Sheets] No data rows in CSV from ${url}`);
       return [];
     }
 
-    const header = lines.shift()!.split(',');
+    // Parse header
+    const header = lines[0].split(',').map(h => h.trim());
+    console.log(`[Sheets] Headers from ${url}: ${header.join(', ')}`);
     
-    return lines
-      .filter(line => line.trim() !== '')
-      .map(line => {
-        const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-        
-        const obj: { [key: string]: string } = {};
-        header.forEach((key, i) => {
-          const cleanKey = key.trim();
-          const cleanValue = (values[i] || '').trim().replace(/^"|"$/g, '');
-          obj[cleanKey] = cleanValue;
-        });
-        return obj as T;
+    // Parse data rows
+    const data: T[] = [];
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.trim()) continue;
+      
+      const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+      
+      const row: any = {};
+      header.forEach((key, idx) => {
+        const value = (values[idx] || '').trim().replace(/^"|"$/g, '');
+        row[key] = value;
       });
-
+      
+      data.push(row as T);
+    }
+    
+    console.log(`[Sheets] Loaded ${data.length} rows from ${url}`);
+    return data;
+    
   } catch (error) {
-    console.error(`[Sheets] Error during fetch or parse for ${url}:`, error);
+    const err = error as Error;
+    console.error(`[Sheets] Fetch error for ${url}:`, err.message);
     return [];
   }
 }
 
-// ✅ FIX 2: Appliquer correction dans getCategories
+// ===== FETCHER: CATEGORIES (MASTER SHEET) =====
 export const getCategories = unstable_cache(
   async (): Promise<Category[]> => {
-    console.log('[Sheets] Fetching Master Sheet for categories list...');
-    const rawCategories = await fetchAndParseCsv<Category>(MASTER_SHEET_URL);
+    console.log('[Sheets] === Fetching Categories (Master Sheet) ===');
+    const rawData = await fetchAndParseCsv<any>(MASTER_SHEET_URL);
     
-    return rawCategories
-      .filter((category): category is Category => !!category.Name && !!category.Slug)
-      .map(category => {
-        const name = category.Name.trim();
-        // Handle "Tool" vs "Tools" inconsistency
-        const mapName = name === 'Tools' ? 'Tool' : name;
-        const correctedGid = gidCorrectionMap[mapName];
-        
-        if (correctedGid) {
-          const correctedUrl = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${correctedGid}&single=true&output=csv`;
-          console.log(`[Sheets] Correcting URL for ${name}: gid=${correctedGid}`);
-          return {
-            ...category,
-            'Url Sheet': correctedUrl
-          };
-        }
-        
-        return category;
-      });
+    const categories = rawData.map(row => ({
+      Name: row['Name'] || row['Item'] || '',
+      'Url Logo Png': row['Url Logo Png'] || '',
+      Url: row['Url'] || '', // This is the slug
+      Background: row['Background'] || '',
+      'Url Sheet': row['Url Sheet'] || '',
+      'Url app': row['Url app'] || '',
+    }));
+    
+    const validCategories = categories.filter(cat => 
+      cat.Name && cat.Url && cat['Url Sheet']
+    );
+    
+    console.log(`[Sheets] Valid categories count: ${validCategories.length}`);
+    if (validCategories.length > 0) {
+        console.log('[Sheets] Valid categories found:');
+        validCategories.forEach(cat => {
+          console.log(`  - ${cat.Name} (Slug: ${cat.Url}): ${cat['Url Sheet']}`);
+        });
+    } else {
+        console.warn('[Sheets] No valid categories found after parsing. Check Master Sheet columns.');
+    }
+    
+    return validCategories;
   },
   ['categories'],
-  { revalidate: 300 }
+  { revalidate: 300 } // Revalidate categories every 5 minutes
 );
 
+// ===== FETCHER: BRANDS =====
 export const getBrands = unstable_cache(
   async (): Promise<Brand[]> => {
-    console.log('[Sheets] Fetching Brand Sheet...');
-    const rawBrands = await fetchAndParseCsv<Brand>(BRAND_SHEET_URL);
-    return rawBrands.filter(brand => !!brand.Brand);
+    console.log('[Sheets] === Fetching Brands ===');
+    const brands = await fetchAndParseCsv<Brand>(BRAND_SHEET_URL);
+    const validBrands = brands.filter(brand => !!brand.Brand);
+    console.log(`[Sheets] Valid brands count: ${validBrands.length}`);
+    return validBrands;
   },
   ['brands'],
   { revalidate: 300 }
 );
 
+// ===== FETCHER: CATEGORY DATA =====
 export const getCategoryData = unstable_cache(
   async (slug: string) => {
-    if (!slug) {
-        console.warn(`[Sheets] getCategoryData: Received empty slug.`);
-        return [];
-    }
-    const categories = await getCategories();
-    const category = categories.find(c => c.Slug && c.Slug.toLowerCase() === slug.toLowerCase());
+    console.log(`[Sheets] === Fetching Category Data for slug: "${slug}" ===`);
     
-    if (!category || !category['Url Sheet']) {
-      console.warn(`[Sheets] getCategoryData: No sheet URL found for slug: ${slug}.`);
+    if (!slug) {
+      console.warn('[Sheets] getCategoryData: Empty slug provided.');
+      return [];
+    }
+    
+    const categories = await getCategories();
+    
+    const category = categories.find(c => 
+      c.Url && c.Url.toLowerCase() === slug.toLowerCase()
+    );
+    
+    if (!category) {
+      console.warn(`[Sheets] getCategoryData: No category found for slug: "${slug}"`);
       return [];
     }
     
     const sheetUrl = category['Url Sheet'];
-
-    if (!sheetUrl.startsWith('https://docs.google.com/spreadsheets/d/e/')) {
-        console.warn(`[Sheets] getCategoryData: Invalid sheet URL "${sheetUrl}" for slug: ${slug}.`);
-        return [];
+    console.log(`[Sheets] Found category "${category.Name}" with sheet URL: ${sheetUrl}`);
+    
+    if (!sheetUrl || !sheetUrl.startsWith('https://')) {
+      console.warn(`[Sheets] getCategoryData: Invalid or missing sheet URL for category: ${category.Name}`);
+      return [];
     }
-
-    console.log(`[Sheets] Fetching data for slug "${slug}" from: ${sheetUrl}`);
-    return fetchAndParseCsv<any>(sheetUrl);
+    
+    const data = await fetchAndParseCsv<any>(sheetUrl);
+    console.log(`[Sheets] Loaded ${data.length} items for ${category.Name}`);
+    
+    return data;
   },
-  ['categoryData']
+  ['categoryData'],
+  // Note: We are caching per slug implicitly by how unstable_cache works with arguments.
+  // Revalidation is set on the function itself.
+  { revalidate: 300 }
 );
