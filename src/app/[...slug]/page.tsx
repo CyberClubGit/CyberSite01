@@ -1,6 +1,7 @@
 
 import { getBrands, getCategories, getCategoryData, type Brand, type Category } from '@/lib/sheets';
 import { notFound } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default async function CatchAllPage({ params }: { params: { slug: string[] } }) {
   const { slug } = params;
@@ -44,6 +45,36 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
             </p>
           </div>
         </div>
+
+        {categoryData && categoryData.length > 0 && (
+          <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {categoryData.map((item, index) => {
+              // Try to find a title, fallback to the first available property
+              const title = item.Title || item.Name || item.Item || Object.values(item)[0] || 'Untitled';
+              const description = item.Description || `Item ${index + 1}`;
+              
+              return (
+                <Card key={index} className="flex flex-col">
+                  <CardHeader>
+                    <CardTitle className="font-headline text-lg">{title}</CardTitle>
+                    <CardDescription className="line-clamp-2">{description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-1 text-xs text-muted-foreground">
+                    <p className="line-clamp-3">
+                        {Object.entries(item)
+                          .filter(([key]) => key !== 'Title' && key !== 'Name' && key !== 'Item' && key !== 'Description')
+                          .slice(0, 3)
+                          .map(([key, value]) => `${key}: ${value || 'N/A'}`)
+                          .join(' | ')
+                        }
+                    </p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
         <div className="mt-12 w-full mx-auto bg-muted/50 p-4 rounded-lg">
           <h2 className="text-2xl font-headline font-bold mb-4 text-center">Données brutes de la feuille :</h2>
           <pre className="text-xs bg-background p-4 rounded-md overflow-x-auto">
