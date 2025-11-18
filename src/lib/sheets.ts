@@ -53,77 +53,20 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
     }
 
     const header = lines.shift()?.split(',') || [];
-    const headerTrimmed = header.map(h => h.trim());
-
-    const data: T[] = lines.map(line => {
+    
+    return lines.map(line => {
       const values = line.split(',');
-      const rowObject: { [key: string]: any } = {};
-      headerTrimmed.forEach((key, index) => {
-        // Re-join values that were incorrectly split by commas within a URL
-        if (key === 'Url Sheet' || key === 'Background' || key === 'Url Logo Png' || key === 'Url app') {
-          rowObject[key] = values.slice(index).join(',').trim();
+      const obj: {[key: string]: string} = {};
+      header.forEach((key, i) => {
+        // This is a simplified parser. It assumes the last column might contain commas.
+        if (i === header.length - 1) {
+          obj[key.trim()] = values.slice(i).join(',').trim();
         } else {
-          rowObject[key] = values[index]?.trim() || '';
+          obj[key.trim()] = values[i]?.trim() || '';
         }
       });
-      
-      // A more robust way to handle the URL splitting issue is to find the columns that should contain URLs
-      // and stitch them back together. This is still a bit of a hack.
-      const urlSheetIndex = headerTrimmed.indexOf('Url Sheet');
-      if (urlSheetIndex !== -1) {
-          const urlParts = values.slice(urlSheetIndex);
-          (rowObject as any)['Url Sheet'] = urlParts.join(',').trim();
-      }
-
-      return rowObject as T;
-    }).map(row => {
-        // A final cleaning pass to stitch the object correctly
-        const cleanRow: { [key: string]: any } = {};
-        const rowValues = line.split(',');
-        let valueIndex = 0;
-        for (const headerKey of headerTrimmed) {
-            if (valueIndex < rowValues.length) {
-                // If a field is known to potentially contain commas, we need a better strategy.
-                // For now, let's assume the simple split is what we have to work with and
-                // the primary issue is the `Url Sheet` field being last.
-                if (headerKey === 'Url Sheet') {
-                    cleanRow[headerKey] = rowValues.slice(valueIndex).join(',');
-                    break; 
-                } else {
-                    cleanRow[headerKey] = rowValues[valueIndex];
-                }
-                valueIndex++;
-            }
-        }
-        return cleanRow as T;
+      return obj as T;
     });
-
-    // Let's use the simplest robust parser: one that handles CSV correctly.
-    // Since we don't have a library, we'll write a small one.
-    const robustParser = (csv: string): T[] => {
-        const lines = csv.trim().replace(/\r\n/g, '\n').split('\n');
-        if (lines.length < 2) return [];
-        const header = lines.shift()!.split(',').map(h => h.trim());
-        
-        return lines.map(line => {
-            const obj: { [key: string]: string } = {};
-            // This is a naive regex-based CSV parser that handles simple cases
-            // but not quoted fields containing newlines. It should be enough for this sheet.
-            const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-            
-            header.forEach((key, i) => {
-                const value = (values[i] || '').replace(/"/g, '').trim();
-                obj[key] = value;
-            });
-            return obj as T;
-        });
-    }
-
-    const finalData = robustParser(csvText);
-
-    // console.log('[Sheets] Parsed Data:', JSON.stringify(finalData, null, 2));
-
-    return finalData;
 
   } catch (error) {
     console.error(`[Sheets] Error during fetch or parse for ${url}:`, error);
@@ -136,16 +79,16 @@ export const getCategories = unstable_cache(
     console.log('[Sheets] Fetching Master Sheet for categories list...');
     const rawCategories = await fetchAndParseCsv<any>(MASTER_SHEET_URL);
 
-    return rawCategories.map(category => {
-      return {
-        Name: category.Name,
-        'Url Logo Png': category['Url Logo Png'],
-        Slug: category.Slug,
-        Background: category.Background,
-        'Url Sheet': category['Url Sheet'],
-        'Url app': category['Url app'],
-      };
-    }).filter((category): category is Category => !!category.Name && !!category.Slug);
+    return rawCategories
+        .map(category => ({
+            Name: category.Name,
+            'Url Logo Png': category['Url Logo Png'],
+            Slug: category.Slug,
+            Background: category.Background,
+            'Url Sheet': category['Url Sheet'],
+            'Url app': category['Url app'],
+        }))
+        .filter((category): category is Category => !!category.Name && !!category.Slug);
   },
   ['categories'],
   { revalidate: 300 }
@@ -173,5 +116,3 @@ export const getCategoryData = unstable_cache(
   },
   ['categoryData']
 );
-
-    
