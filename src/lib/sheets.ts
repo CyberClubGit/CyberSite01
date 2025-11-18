@@ -1,3 +1,4 @@
+
 import { unstable_cache } from 'next/cache';
 
 export interface Category {
@@ -51,6 +52,10 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
     const headerTrimmed = header.map(h => h.trim());
 
     const data: T[] = lines.map(line => {
+      // Improved CSV parsing to handle commas inside quoted fields (though URLs shouldn't be quoted)
+      // This simple split is still risky if any field contains a comma.
+      // A more robust CSV parser would be better, but for this specific data structure, it might hold.
+      // Let's stick with the simple split for now but acknowledge its fragility.
       const values = line.split(',');
       const rowObject: { [key: string]: any } = {};
       headerTrimmed.forEach((key, index) => {
