@@ -48,7 +48,7 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
         const values = line.split(',');
         const obj: {[key: string]: string} = {};
         header.forEach((key, i) => {
-          obj[key.trim()] = values[i]?.trim() || '';
+          obj[key] = values[i]?.trim() || '';
         });
         return obj as T;
     });
