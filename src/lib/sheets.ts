@@ -4,7 +4,7 @@ import { unstable_cache } from 'next/cache';
 export interface Category {
   Name: string;
   'Url Logo Png': string;
-  Url: string; // This is the slug for the category
+  Url: string;
   Background: string;
   'Url Sheet': string;
   'Url app': string;
@@ -27,6 +27,50 @@ const BRAND_SHEET_GID = '1634708260';
 const MASTER_SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${MASTER_SHEET_GID}&single=true&output=csv`;
 const BRAND_SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${BRAND_SHEET_GID}&single=true&output=csv`;
 
+// ===== PARSER CSV ROBUSTE =====
+/**
+ * Parse une ligne CSV en respectant les guillemets et échappements
+ */
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  let i = 0;
+  
+  while (i < line.length) {
+    const char = line[i];
+    const nextChar = line[i + 1];
+    
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        // Guillemets échappés
+        current += '"';
+        i += 2;
+        continue;
+      } else {
+        // Toggle quote mode
+        inQuotes = !inQuotes;
+        i++;
+        continue;
+      }
+    }
+    
+    if (char === ',' && !inQuotes) {
+      // Fin du champ
+      result.push(current.trim());
+      current = '';
+      i++;
+      continue;
+    }
+    
+    current += char;
+    i++;
+  }
+  
+  result.push(current.trim());
+  return result;
+}
+
 // ===== HELPER: FETCH & PARSE CSV =====
 async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
@@ -42,40 +86,44 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
     }
     
     const csvText = await response.text();
-    const lines = csvText.trim().replace(/\r/g, '').split('\n');
+    const lines = csvText.trim().replace(/\r\n/g, '\n').split('\n');
     
     if (lines.length < 2) {
-      console.warn(`[Sheets] No data rows in CSV from ${url}`);
+      console.warn('[Sheets] No data rows in CSV');
       return [];
     }
 
-    // Parse header
-    const header = lines[0].split(',').map(h => h.trim());
-    console.log(`[Sheets] Headers from ${url}: ${header.join(', ')}`);
+    // Parse header avec parseCSVLine()
+    const headerLine = lines.shift()!;
+    const headers = parseCSVLine(headerLine);
+    console.log(`[Sheets] ✅ Headers (${headers.length}) for ${url}:`, headers.join(', '));
     
     // Parse data rows
     const data: T[] = [];
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line.trim()) continue;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
       
-      const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+      const values = parseCSVLine(line);
+      
+      if (values.length !== headers.length) {
+        console.warn(`[Sheets] Row ${i+1} in ${url}: Expected ${headers.length} columns, got ${values.length}. Line: "${line}"`);
+      }
       
       const row: any = {};
-      header.forEach((key, idx) => {
-        const value = (values[idx] || '').trim().replace(/^"|"$/g, '');
-        row[key] = value;
+      headers.forEach((key, idx) => {
+        row[key] = values[idx] || '';
       });
       
       data.push(row as T);
     }
     
-    console.log(`[Sheets] Loaded ${data.length} rows from ${url}`);
+    console.log(`[Sheets] ✅ Loaded ${data.length} rows from ${url}`);
     return data;
     
   } catch (error) {
     const err = error as Error;
-    console.error(`[Sheets] Fetch error for ${url}:`, err.message);
+    console.error(`[Sheets] Fetch or Parse error for ${url}:`, err.message);
     return [];
   }
 }
@@ -89,7 +137,7 @@ export const getCategories = unstable_cache(
     const categories = rawData.map(row => ({
       Name: row['Name'] || row['Item'] || '',
       'Url Logo Png': row['Url Logo Png'] || '',
-      Url: row['Url'] || '', // This is the slug
+      Url: row['Url'] || '',
       Background: row['Background'] || '',
       'Url Sheet': row['Url Sheet'] || '',
       'Url app': row['Url app'] || '',
@@ -103,16 +151,14 @@ export const getCategories = unstable_cache(
     if (validCategories.length > 0) {
         console.log('[Sheets] Valid categories found:');
         validCategories.forEach(cat => {
-          console.log(`  - ${cat.Name} (Slug: ${cat.Url}): ${cat['Url Sheet']}`);
+          console.log(`  - ${cat.Name} (Slug: ${cat.Url})`);
         });
-    } else {
-        console.warn('[Sheets] No valid categories found after parsing. Check Master Sheet columns.');
     }
     
     return validCategories;
   },
   ['categories'],
-  { revalidate: 300 } // Revalidate categories every 5 minutes
+  { revalidate: 300 }
 );
 
 // ===== FETCHER: BRANDS =====
@@ -158,12 +204,10 @@ export const getCategoryData = unstable_cache(
     }
     
     const data = await fetchAndParseCsv<any>(sheetUrl);
-    console.log(`[Sheets] Loaded ${data.length} items for ${category.Name}`);
+    console.log(`[Sheets] ✅ Loaded ${data.length} items for ${category.Name}`);
     
     return data;
   },
   ['categoryData'],
-  // Note: We are caching per slug implicitly by how unstable_cache works with arguments.
-  // Revalidation is set on the function itself.
   { revalidate: 300 }
 );

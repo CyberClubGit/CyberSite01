@@ -46,33 +46,15 @@ Le processus se déroule principalement dans le fichier `src/lib/sheets.ts` et p
 3.  **Fetch du CSV** : La fonction utilise `fetch` pour télécharger le contenu brut du "Master Sheet" via son URL de publication CSV :
     `.../pub?gid=177392102&single=true&output=csv`
 
-4.  **Parsing du CSV en Objets** : Le texte CSV obtenu est ensuite analysé (par la fonction `fetchAndParseCsv`) pour être transformé en un tableau d'objets JavaScript. Chaque objet représente une ligne du Master Sheet, et donc une catégorie du site.
-    *Exemple d'objet généré :* `{ "Name": "Projects", "Slug": "projects", "Url Sheet": "...", ... }`
+4.  **Parsing du CSV en Objets (LA CORRECTION CLÉ)** : Le texte CSV obtenu est ensuite analysé par la fonction `fetchAndParseCsv`. C'est l'étape la plus critique qui a été corrigée.
+    *   **Ancien problème** : Le parser précédent utilisait un `split(',')` simple ou un regex fragile qui cassait les lignes contenant des URLs ou des textes longs avec des virgules.
+    *   **Nouvelle solution** : Le parser actuel (`parseCSVLine`) lit la ligne CSV caractère par caractère. Il gère intelligemment les guillemets pour ne découper la ligne en colonnes que sur les virgules qui agissent comme de vrais séparateurs. Cela garantit que les champs contenant des virgules (comme des descriptions ou des listes d'URLs) ne sont pas tronqués. Chaque ligne est transformée en un objet JavaScript fiable.
+    *Exemple d'objet généré :* `{ "Name": "Projects", "Url": "projects", "Url Sheet": "...", ... }`
 
 ---
-### Étape 2 : Correctif Temporaire des GIDs (Le "Pansement" Actuel)
+### Étape 2 : Pas de Correctif des GIDs
 ---
-C'est l'étape la plus critique, mise en place pour **contourner les `gid` incorrects** que vous aviez identifiés dans le Master Sheet. Cette logique se trouve directement à la fin de la fonction `getCategories`.
-
-1.  **Définition d'une "Carte de Correction" (`gidCorrectionMap`)** : Un objet JavaScript statique est défini dans le code. Il sert de table de correspondance entre le nom d'une catégorie et le `gid` **correct** de la feuille de calcul qui lui est associée.
-
-    *Extrait de la carte de correction dans le code :*
-    ```javascript
-    const gidCorrectionMap = {
-      'Home': '177392102', // Reste le master, car pas de feuille dédiée identifiée
-      'Projects': '153094389',
-      'Catalog': '581525493',
-      'Tools': '990396131',
-      // ... etc. pour toutes les catégories.
-    };
-    ```
-
-2.  **Vérification et Remplacement "à la volée"** : Le code parcourt ensuite chaque objet "catégorie" qui vient d'être créé à partir du Master Sheet.
-    *   Pour chaque catégorie (ex: "Projects"), il extrait le `gid` présent dans sa propriété `'Url Sheet'` (qui est le mauvais `gid` venant du CSV).
-    *   Il compare ce `gid` avec le `gid` correct qui est stocké dans la `gidCorrectionMap` pour cette même catégorie.
-    *   **Si les `gid` ne correspondent pas**, le code ignore l'URL erronée du Master Sheet et en construit une **nouvelle**, en utilisant la base de l'URL et en y injectant le `gid` correct tiré de `gidCorrectionMap`.
-
-    **C'est grâce à cette étape de correction en mémoire que les pages "Projects", "Catalog", etc., chargent désormais les bonnes données, même si le Master Sheet lui-même contient toujours les mauvais liens.** C'est un pansement efficace mais temporaire.
+Contrairement aux versions précédentes, il n'y a **PLUS AUCUNE LOGIQUE DE CORRECTION** des `gid` dans le code. Le principe est que le `Master Sheet` est la source de vérité. Si un lien dans la colonne `'Url Sheet'` est incorrect, il doit être corrigé directement dans le Google Sheet, et non dans le code.
 
 ---
 ### Étape 3 : Récupération des Données Spécifiques à une Page
@@ -81,10 +63,10 @@ C'est l'étape la plus critique, mise en place pour **contourner les `gid` incor
 
 2.  **Exécution de la Page Dynamique** : Le composant de page `src/app/[...slug]/page.tsx` s'exécute. Il analyse l'URL (`/projects`) pour identifier la catégorie demandée ("projects").
 
-3.  **Appel de `getCategoryData`** : Le composant trouve l'objet "catégorie" correspondant (qui contient maintenant l'URL de la feuille **corrigée** à l'étape 2) et passe cette URL à la fonction `getCategoryData(sheetUrl)`.
+3.  **Appel de `getCategoryData`** : Le composant trouve l'objet "catégorie" correspondant (qui contient maintenant l'URL de la feuille correcte lue à l'étape 1) et passe cette URL à la fonction `getCategoryData(slug)`.
 
-4.  **Fetch des Données Finales** : `getCategoryData` prend cette URL corrigée et effectue un nouveau `fetch` pour récupérer le CSV de la feuille de calcul spécifique (par exemple, la feuille de données des projets).
+4.  **Fetch des Données Finales** : `getCategoryData` prend le `slug`, retrouve la catégorie, extrait la propriété `'Url Sheet'` et effectue un nouveau `fetch` pour récupérer le CSV de la feuille de calcul spécifique (par exemple, la feuille de données des projets).
 
-5.  **Parsing et Affichage** : Les données de cette feuille spécifique sont parsées et finalement affichées sur la page, dans la section "Données brutes de la feuille".
+5.  **Parsing et Affichage** : Les données de cette feuille spécifique sont parsées par le même `fetchAndParseCsv` robuste et finalement affichées sur la page.
 
-**En résumé :** Le système fonctionne actuellement en deux temps. Il charge une liste de catégories depuis le Master Sheet, applique immédiatement un correctif en mémoire pour réparer les URLs des feuilles de calcul qui sont erronées à la source, puis utilise ces URLs corrigées pour charger et afficher les données réelles de la page que vous visitez.
+**En résumé :** Le système fonctionne maintenant sur un principe simple et direct. Il lit la structure du site depuis le Master Sheet en utilisant un parser fiable, puis, pour chaque page visitée, il utilise l'URL exacte fournie dans le Master Sheet pour charger et afficher les données correspondantes. La complexité et les sources d'erreurs ont été éliminées.
