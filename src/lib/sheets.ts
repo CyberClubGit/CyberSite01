@@ -33,27 +33,21 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
       return [];
     }
     const csvText = await response.text();
-    const lines = csvText.trim().replace(/\r\n/g, '\n').split('\n');
+    const lines = csvText.trim().replace(/\r/g, '').split('\n');
     
     if (lines.length < 2) {
         console.warn(`[Sheets] CSV from ${url} has no data lines.`);
         return [];
     }
 
-    const headerLine = lines.shift();
-    if (!headerLine) {
-        console.warn(`[Sheets] CSV from ${url} has no header line.`);
-        return [];
-    }
-    const header = headerLine.split(',');
+    const header = lines.shift()!.split(',');
     
     return lines
-      .filter(line => line.trim() !== '')
       .map(line => {
         const values = line.split(',');
         const obj: {[key: string]: string} = {};
         header.forEach((key, i) => {
-          obj[key.trim()] = values[i]?.trim() || '';
+          obj[key] = values[i] || '';
         });
         return obj as T;
     });
