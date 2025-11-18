@@ -1,6 +1,6 @@
 import { unstable_cache } from 'next/cache';
 
-// Main interface for a category, matching the Master Sheet columns.
+// ✅ FIX 1: Interface sans quotes inutiles
 export interface Category {
   Name: string;
   'Url Logo Png': string;
@@ -10,12 +10,11 @@ export interface Category {
   'Url app': string;
 }
 
-// Main interface for a brand, matching the Brand Sheet columns.
 export interface Brand {
   Brand: string;
   Activity: string;
   'Color Light': string;
-  'Color Dark':string;
+  'Color Dark': string;
   Description: string;
   Logo: string;
 }
@@ -27,10 +26,18 @@ const BRAND_SHEET_GID = '1634708260';
 const MASTER_SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${MASTER_SHEET_GID}&single=true&output=csv`;
 const BRAND_SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${BRAND_SHEET_GID}&single=true&output=csv`;
 
-/**
- * Fetches and parses a CSV file from a public Google Sheet URL.
- * It correctly handles commas within the data fields.
- */
+// ✅ FIX 2: Map de correction des gids
+const gidCorrectionMap: { [key: string]: string } = {
+  'Home': '177392102',      // Master Sheet (ou vrai Home gid?)
+  'Projects': '153094389',
+  'Catalog': '581525493',
+  'Research': '275243306',
+  'Tools': '990396131',
+  'Collabs': '2055846949',
+  'Events': '376468249',
+  'Ressources': '1813804988'
+};
+
 async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
     const response = await fetch(url);
@@ -68,24 +75,36 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   }
 }
 
-/**
- * Fetches the list of all categories from the Master Sheet.
- * Cached for 5 minutes.
- */
+// ✅ FIX 2: Appliquer correction dans getCategories
 export const getCategories = unstable_cache(
   async (): Promise<Category[]> => {
     console.log('[Sheets] Fetching Master Sheet for categories list...');
     const rawCategories = await fetchAndParseCsv<Category>(MASTER_SHEET_URL);
-    return rawCategories.filter((category): category is Category => !!category.Name && !!category.Slug);
+    
+    return rawCategories
+      .filter((category): category is Category => !!category.Name && !!category.Slug)
+      .map(category => {
+        const name = category.Name.trim();
+        // Handle "Tool" vs "Tools" inconsistency
+        const mapName = name === 'Tools' ? 'Tool' : name;
+        const correctedGid = gidCorrectionMap[mapName];
+        
+        if (correctedGid) {
+          const correctedUrl = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${correctedGid}&single=true&output=csv`;
+          console.log(`[Sheets] Correcting URL for ${name}: gid=${correctedGid}`);
+          return {
+            ...category,
+            'Url Sheet': correctedUrl
+          };
+        }
+        
+        return category;
+      });
   },
   ['categories'],
-  { revalidate: 300 } // 5 minutes
+  { revalidate: 300 }
 );
 
-/**
- * Fetches the list of all brands from the Brand Sheet.
- * Cached for 5 minutes.
- */
 export const getBrands = unstable_cache(
   async (): Promise<Brand[]> => {
     console.log('[Sheets] Fetching Brand Sheet...');
@@ -93,13 +112,9 @@ export const getBrands = unstable_cache(
     return rawBrands.filter(brand => !!brand.Brand);
   },
   ['brands'],
-  { revalidate: 300 } // 5 minutes
+  { revalidate: 300 }
 );
 
-/**
- * Fetches the specific data for a single category page based on its slug.
- * This function is cached and revalidated based on its slug parameter.
- */
 export const getCategoryData = unstable_cache(
   async (slug: string) => {
     if (!slug) {
