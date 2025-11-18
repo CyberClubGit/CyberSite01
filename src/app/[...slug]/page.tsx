@@ -38,7 +38,7 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
         <div className="flex flex-col items-center space-y-4 text-center">
           <div className="space-y-2">
             <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none capitalize">
-              {category?.Name}
+              {category?.Name || 'Catégorie'}
             </h1>
             <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
               {brand ? `Contenu pour ${category?.Name} sous la marque ${brand.Brand}` : `Contenu à venir pour ${category?.Name}`}
@@ -49,9 +49,10 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
         {categoryData && categoryData.length > 0 && (
           <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {categoryData.map((item, index) => {
-              // Try to find a title, fallback to the first available property
-              const title = item.Title || item.Name || item.Item || Object.values(item)[0] || 'Untitled';
-              const description = item.Description || `Item ${index + 1}`;
+              // Robustly find a title, fallback to the first available property
+              const title = item?.Title || item?.Name || item?.Item || Object.values(item)?.[0] || `Item ${index + 1}`;
+              // Robustly find a description
+              const description = item?.Description || item?.Content || `Détails pour ${title}`;
               
               return (
                 <Card key={index} className="flex flex-col">
@@ -61,8 +62,8 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
                   </CardHeader>
                   <CardContent className="flex-1 text-xs text-muted-foreground">
                     <p className="line-clamp-3">
-                        {Object.entries(item)
-                          .filter(([key]) => key !== 'Title' && key !== 'Name' && key !== 'Item' && key !== 'Description')
+                        {Object.entries(item || {})
+                          .filter(([key]) => !['Title', 'Name', 'Item', 'Description', 'Content'].includes(key))
                           .slice(0, 3)
                           .map(([key, value]) => `${key}: ${value || 'N/A'}`)
                           .join(' | ')
