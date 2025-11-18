@@ -27,7 +27,7 @@ const BRAND_SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_
 
 async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
-    const response = await fetch(url); // Correction: removed problematic revalidate: 0
+    const response = await fetch(url);
     if (!response.ok) {
       console.error(`[Sheets] Failed to fetch CSV from ${url}: ${response.status} ${response.statusText}`);
       return [];
@@ -40,7 +40,12 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
         return [];
     }
 
-    const header = lines.shift()?.split(',') || [];
+    const headerLine = lines.shift();
+    if (!headerLine) {
+        console.warn(`[Sheets] CSV from ${url} has no header line.`);
+        return [];
+    }
+    const header = headerLine.split(',');
     
     return lines
       .filter(line => line.trim() !== '')
