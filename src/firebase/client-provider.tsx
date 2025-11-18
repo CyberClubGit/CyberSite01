@@ -1,7 +1,7 @@
 "use client";
 
 import { initializeFirebaseApp } from "@/firebase/config";
-import { FirebaseProvider }from "@/firebase/provider";
+import { FirebaseProvider } from "@/firebase/provider";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { ReactNode, useMemo } from "react";

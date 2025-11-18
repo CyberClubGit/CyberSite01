@@ -1,4 +1,3 @@
-
 import { unstable_cache } from 'next/cache';
 
 export interface Category {
@@ -42,12 +41,13 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
     if (lines.length < 2) return [];
 
     const header = lines.shift()?.split(',') || [];
+    const headerTrimmed = header.map(h => h.trim());
 
     const data: T[] = lines.map(line => {
       const values = line.split(',');
       const rowObject: { [key: string]: any } = {};
-      header.forEach((key, index) => {
-        rowObject[key.trim()] = values[index]?.trim() || '';
+      headerTrimmed.forEach((key, index) => {
+        rowObject[key] = values[index]?.trim() || '';
       });
       return rowObject as T;
     });
@@ -59,37 +59,18 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   }
 }
 
-const gidCorrectionMap: { [key: string]: string } = {
-    'Home': '177392102',
-    'Projects': '153094389',
-    'Catalog': '581525493',
-    'Research': '275243306',
-    'Tool': '990396131',
-    'Collabs': '2055846949',
-    'Events': '376468249',
-    'Ressources': '1813804988'
-};
-
 export const getCategories = unstable_cache(
   async (): Promise<Category[]> => {
     console.log('[Sheets] Fetching Master Sheet for categories list...');
     const rawCategories = await fetchAndParseCsv<any>(MASTER_SHEET_URL);
 
     return rawCategories.map(category => {
-      const name = category.Name || category.Item;
-      const correctedGid = gidCorrectionMap[name];
-      
-      let correctedUrlSheet = category['Url Sheet'];
-      if (correctedGid) {
-          correctedUrlSheet = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${correctedGid}&single=true&output=csv`;
-      }
-      
       return {
-        Name: name,
+        Name: category.Name,
         'Url Logo Png': category['Url Logo Png'],
         Slug: category.Slug,
         Background: category.Background,
-        'Url Sheet': correctedUrlSheet,
+        'Url Sheet': category['Url Sheet'],
         'Url app': category['Url app'],
       };
     }).filter((category): category is Category => !!category.Name && !!category.Slug);
