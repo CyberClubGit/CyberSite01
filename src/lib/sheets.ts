@@ -32,7 +32,6 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
     console.log(`[Sheets] Fetching: ${url}`);
     
-    // Using a 5 minute revalidation time as a default for fetches
     const response = await fetch(url, { 
       next: { revalidate: 300 } 
     });
