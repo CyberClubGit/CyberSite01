@@ -27,50 +27,6 @@ const BRAND_SHEET_GID = '1634708260';
 const MASTER_SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${MASTER_SHEET_GID}&single=true&output=csv`;
 const BRAND_SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${BRAND_SHEET_GID}&single=true&output=csv`;
 
-// ===== PARSER CSV ROBUSTE =====
-/**
- * Parse une ligne CSV en respectant les guillemets et échappements
- */
-function parseCSVLine(line: string): string[] {
-  const result: string[] = [];
-  let current = '';
-  let inQuotes = false;
-  let i = 0;
-  
-  while (i < line.length) {
-    const char = line[i];
-    const nextChar = line[i + 1];
-    
-    if (char === '"') {
-      if (inQuotes && nextChar === '"') {
-        // Guillemets échappés
-        current += '"';
-        i += 2;
-        continue;
-      } else {
-        // Toggle quote mode
-        inQuotes = !inQuotes;
-        i++;
-        continue;
-      }
-    }
-    
-    if (char === ',' && !inQuotes) {
-      // Fin du champ
-      result.push(current.trim());
-      current = '';
-      i++;
-      continue;
-    }
-    
-    current += char;
-    i++;
-  }
-  
-  result.push(current.trim());
-  return result;
-}
-
 // ===== HELPER: FETCH & PARSE CSV =====
 async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
@@ -81,49 +37,45 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
     });
     
     if (!response.ok) {
-      console.error(`[Sheets] HTTP Error ${response.status}: ${response.statusText} for ${url}`);
+      console.error(`[Sheets] HTTP Error ${response.status}: ${response.statusText}`);
       return [];
     }
     
     const csvText = await response.text();
-    const lines = csvText.trim().replace(/\r\n/g, '\n').split('\n');
+    const lines = csvText.trim().replace(/\r/g, '').split('\n');
     
     if (lines.length < 2) {
       console.warn('[Sheets] No data rows in CSV');
       return [];
     }
 
-    // Parse header avec parseCSVLine()
-    const headerLine = lines.shift()!;
-    const headers = parseCSVLine(headerLine);
-    console.log(`[Sheets] ✅ Headers (${headers.length}) for ${url}:`, headers.join(', '));
+    // Parse header
+    const header = lines[0].split(',').map(h => h.trim());
+    console.log(`[Sheets] Headers: ${header.join(', ')}`);
     
     // Parse data rows
     const data: T[] = [];
-    for (let i = 0; i < lines.length; i++) {
+    for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
       
-      const values = parseCSVLine(line);
-      
-      if (values.length !== headers.length) {
-        console.warn(`[Sheets] Row ${i+1} in ${url}: Expected ${headers.length} columns, got ${values.length}. Line: "${line}"`);
-      }
+      // Split by comma, respecting quotes
+      const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
       
       const row: any = {};
-      headers.forEach((key, idx) => {
-        row[key] = values[idx] || '';
+      header.forEach((key, idx) => {
+        const value = (values[idx] || '').trim().replace(/^"|"$/g, '');
+        row[key] = value;
       });
       
       data.push(row as T);
     }
     
-    console.log(`[Sheets] ✅ Loaded ${data.length} rows from ${url}`);
+    console.log(`[Sheets] Loaded ${data.length} rows`);
     return data;
     
   } catch (error) {
-    const err = error as Error;
-    console.error(`[Sheets] Fetch or Parse error for ${url}:`, err.message);
+    console.error('[Sheets] Fetch error:', error);
     return [];
   }
 }
@@ -134,6 +86,7 @@ export const getCategories = unstable_cache(
     console.log('[Sheets] === Fetching Categories (Master Sheet) ===');
     const rawData = await fetchAndParseCsv<any>(MASTER_SHEET_URL);
     
+    // Transform raw data to Category interface
     const categories = rawData.map(row => ({
       Name: row['Name'] || row['Item'] || '',
       'Url Logo Png': row['Url Logo Png'] || '',
@@ -143,17 +96,15 @@ export const getCategories = unstable_cache(
       'Url app': row['Url app'] || '',
     }));
     
+    // Filter valid categories
     const validCategories = categories.filter(cat => 
       cat.Name && cat.Url && cat['Url Sheet']
     );
     
-    console.log(`[Sheets] Valid categories count: ${validCategories.length}`);
-    if (validCategories.length > 0) {
-        console.log('[Sheets] Valid categories found:');
-        validCategories.forEach(cat => {
-          console.log(`  - ${cat.Name} (Slug: ${cat.Url})`);
-        });
-    }
+    console.log(`[Sheets] Valid categories: ${validCategories.length}`);
+    validCategories.forEach(cat => {
+      console.log(`  - ${cat.Name} (${cat.Url}): ${cat['Url Sheet']}`);
+    });
     
     return validCategories;
   },
@@ -166,9 +117,7 @@ export const getBrands = unstable_cache(
   async (): Promise<Brand[]> => {
     console.log('[Sheets] === Fetching Brands ===');
     const brands = await fetchAndParseCsv<Brand>(BRAND_SHEET_URL);
-    const validBrands = brands.filter(brand => !!brand.Brand);
-    console.log(`[Sheets] Valid brands count: ${validBrands.length}`);
-    return validBrands;
+    return brands.filter(brand => !!brand.Brand);
   },
   ['brands'],
   { revalidate: 300 }
@@ -177,34 +126,41 @@ export const getBrands = unstable_cache(
 // ===== FETCHER: CATEGORY DATA =====
 export const getCategoryData = unstable_cache(
   async (slug: string) => {
-    console.log(`[Sheets] === Fetching Category Data for slug: "${slug}" ===`);
+    console.log(`[Sheets] === Fetching Category Data for: ${slug} ===`);
     
     if (!slug) {
-      console.warn('[Sheets] getCategoryData: Empty slug provided.');
+      console.warn('[Sheets] Empty slug provided');
       return [];
     }
     
+    // Get all categories
     const categories = await getCategories();
+    console.log(`[Sheets] Available categories: ${categories.map(c => c.Url).join(', ')}`);
     
+    // Find matching category by Url (slug)
     const category = categories.find(c => 
       c.Url && c.Url.toLowerCase() === slug.toLowerCase()
     );
     
     if (!category) {
-      console.warn(`[Sheets] getCategoryData: No category found for slug: "${slug}"`);
+      console.warn(`[Sheets] No category found for slug: ${slug}`);
       return [];
     }
     
+    console.log(`[Sheets] Found category: ${category.Name}`);
+    console.log(`[Sheets] Sheet URL: ${category['Url Sheet']}`);
+    
+    // Fetch data from the category's sheet URL
     const sheetUrl = category['Url Sheet'];
-    console.log(`[Sheets] Found category "${category.Name}" with sheet URL: ${sheetUrl}`);
     
-    if (!sheetUrl || !sheetUrl.startsWith('https://')) {
-      console.warn(`[Sheets] getCategoryData: Invalid or missing sheet URL for category: ${category.Name}`);
+    if (!sheetUrl) {
+      console.warn(`[Sheets] No sheet URL for category: ${category.Name}`);
       return [];
     }
     
+    // Fetch the actual data
     const data = await fetchAndParseCsv<any>(sheetUrl);
-    console.log(`[Sheets] ✅ Loaded ${data.length} items for ${category.Name}`);
+    console.log(`[Sheets] Loaded ${data.length} items for ${category.Name}`);
     
     return data;
   },
