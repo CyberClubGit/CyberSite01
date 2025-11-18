@@ -33,7 +33,6 @@ const BRAND_SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_
  */
 async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
   try {
-    // We let the higher-level cache (`unstable_cache`) handle the revalidation strategy.
     const response = await fetch(url);
     if (!response.ok) {
       console.error(`[Sheets] Failed to fetch CSV from ${url}: ${response.status} ${response.statusText}`);
@@ -47,19 +46,15 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
       return [];
     }
 
-    // Extract headers exactly as they are in the sheet.
     const header = lines.shift()!.split(',');
     
     return lines
-      .filter(line => line.trim() !== '') // Ignore empty lines
+      .filter(line => line.trim() !== '')
       .map(line => {
-        // This is a simple regex to handle CSVs, but won't handle all edge cases
-        // like quoted newlines. It's good enough for this specific data structure.
         const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
         
         const obj: { [key: string]: string } = {};
         header.forEach((key, i) => {
-          // Trim whitespace and remove quotes from header and value
           const cleanKey = key.trim();
           const cleanValue = (values[i] || '').trim().replace(/^"|"$/g, '');
           obj[cleanKey] = cleanValue;
@@ -81,7 +76,6 @@ export const getCategories = unstable_cache(
   async (): Promise<Category[]> => {
     console.log('[Sheets] Fetching Master Sheet for categories list...');
     const rawCategories = await fetchAndParseCsv<Category>(MASTER_SHEET_URL);
-    // Ensure that we only return categories that have the minimum required data.
     return rawCategories.filter((category): category is Category => !!category.Name && !!category.Slug);
   },
   ['categories'],
@@ -122,7 +116,6 @@ export const getCategoryData = unstable_cache(
     
     const sheetUrl = category['Url Sheet'];
 
-    // Basic validation to ensure we're not fetching something weird.
     if (!sheetUrl.startsWith('https://docs.google.com/spreadsheets/d/e/')) {
         console.warn(`[Sheets] getCategoryData: Invalid sheet URL "${sheetUrl}" for slug: ${slug}.`);
         return [];
@@ -131,5 +124,5 @@ export const getCategoryData = unstable_cache(
     console.log(`[Sheets] Fetching data for slug "${slug}" from: ${sheetUrl}`);
     return fetchAndParseCsv<any>(sheetUrl);
   },
-  ['categoryData'] // The slug will be part of the cache key automatically
+  ['categoryData']
 );
