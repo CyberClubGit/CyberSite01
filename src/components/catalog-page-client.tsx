@@ -75,17 +75,12 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
 
   return (
     <>
-      <VideoBackground src={category.Background} />
-      <div className="relative z-1">
+      {category.Background && <VideoBackground src={category.Background} />}
+      <div className="relative z-10">
         <section className="w-full py-8 md:py-12">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center mb-12">
               <div className="space-y-2">
-                {category.Background && (
-                  <p className="text-xs text-center break-all mb-4">
-                    [Debug] Vidéo BG: {category.Background}
-                  </p>
-                )}
                 <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none capitalize">
                   {category?.Name || 'Catalogue'}
                 </h1>
@@ -145,7 +140,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
 
             <main>
                 {finalData && finalData.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {finalData.map((item, index) => (
                       <Card key={index} className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
                         {item.displayImageUrl && (

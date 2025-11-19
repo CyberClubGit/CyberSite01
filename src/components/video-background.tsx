@@ -31,7 +31,7 @@ export function VideoBackground({ src }: VideoBackgroundProps) {
         <source src={src} type="video/mp4" />
         Your browser does not support the video tag.
       </video>
-      <div className="absolute inset-0 bg-black/50 z-0"></div>
+      <div className="absolute inset-0 bg-black/50"></div>
     </div>
   );
 }
