@@ -9,7 +9,7 @@ import Image from 'next/image';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { VideoBackground } from './video-background';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from './ui/skeleton';
 
 // Dynamically import ProjectExplorer only on the client side
@@ -116,7 +116,13 @@ export default function DefaultPageLayout({ category, brand, initialData }: Defa
           </section>
         </div>
         <Dialog open={!!selectedProject} onOpenChange={(isOpen) => !isOpen && setSelectedProject(null)}>
-            <DialogContent className="max-w-5xl w-full h-[80vh] p-0 border-0 bg-background/90 backdrop-blur-sm">
+            <DialogContent className="max-w-7xl w-full h-[90vh] p-0 border-0 bg-background/90 backdrop-blur-sm">
+                <DialogHeader className="sr-only">
+                  <DialogTitle>Project Explorer</DialogTitle>
+                  <DialogDescription>
+                    Explore project details and switch between projects using the tabs.
+                  </DialogDescription>
+                </DialogHeader>
                 {selectedProject && <ProjectExplorer projects={finalData} initialProject={selectedProject} />}
             </DialogContent>
         </Dialog>
