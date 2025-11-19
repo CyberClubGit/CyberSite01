@@ -93,29 +93,7 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
                   )}
                   <CardHeader>
                     <CardTitle className="font-headline text-lg leading-tight">{item.title}</CardTitle>
-                    {item.description && (
-                        <CardDescription className="line-clamp-3 h-[60px] text-xs">
-                            {item.description}
-                        </CardDescription>
-                    )}
                   </CardHeader>
-                  <CardContent className="flex-1 space-y-2 text-xs">
-                    {(item.Date) && (
-                         <div className="text-muted-foreground flex flex-wrap gap-x-2">
-                            {item.Date && <span>📅 {item.Date}</span>}
-                        </div>
-                    )}
-                     <div className="flex flex-wrap gap-1">
-                        {item.Type && <Badge variant="secondary">{item.Type}</Badge>}
-                        {item.Style && <Badge variant="secondary">{item.Style}</Badge>}
-                        {item.Activity && parseItemActivities(item.Activity).map((activity, i) => (
-                          <Badge key={i} variant="outline">{activity}</Badge>
-                        ))}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
-                    {item.pdfUrl && <a href={item.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary"><FileText size={14}/> PDF</a>}
-                  </CardFooter>
                 </Card>
             ))}
           </div>
