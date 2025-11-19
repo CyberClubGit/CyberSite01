@@ -89,6 +89,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                   <p className="text-sm text-red-500 mb-2">Boîte de débogage vidéo :</p>
                   <video 
                     key={category.Background}
+                    src={category.Background}
                     width="100%" 
                     controls 
                     muted 
@@ -97,7 +98,6 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                     playsInline
                     className="bg-black"
                   >
-                    <source src={category.Background} type="video/mp4" />
                     Votre navigateur ne supporte pas la balise vidéo.
                   </video>
                 </div>
