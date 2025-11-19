@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Link as LinkIcon, FileText, Download, GalleryHorizontal } from 'lucide-react';
+import { FileText, Download, GalleryHorizontal } from 'lucide-react';
 import { filterItemsByBrandActivity, getActivityForBrand } from '@/lib/activity-filter';
 
 
