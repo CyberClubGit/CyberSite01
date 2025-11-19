@@ -77,7 +77,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
     <>
       {hasBackgroundVideo && <VideoBackground src={category.Background} />}
       <div className={cn(
-        "relative z-10",
+        "relative isolate",
         hasBackgroundVideo ? "bg-transparent" : "bg-background"
       )}>
         <section className="w-full py-8 md:py-12">

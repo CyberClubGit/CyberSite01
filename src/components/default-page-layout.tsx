@@ -16,7 +16,7 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
 
   if (!category.Url) {
     return (
-      <div className={cn("min-h-full", !hasBackgroundVideo && "bg-background")}>
+      <div className={cn("min-h-full bg-background")}>
         <section className="w-full py-8 md:py-12">
             <div className="container px-4 md:px-6 text-center">
                 <p>Catégorie invalide.</p>
@@ -52,7 +52,7 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
     <>
       {hasBackgroundVideo && <VideoBackground src={category.Background} />}
       <div className={cn(
-        "relative z-10",
+        "relative isolate",
         hasBackgroundVideo ? "bg-transparent" : "bg-background"
       )}>
         <section className="w-full py-8 md:py-12">
