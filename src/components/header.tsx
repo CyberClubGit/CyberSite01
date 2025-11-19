@@ -184,7 +184,7 @@ export function Header({ categories, brands }: HeaderProps) {
             <div className="container flex h-16 items-center">
                  <div className="mr-4 flex">
                     <Link href="/" className="mr-6 flex items-center space-x-2">
-                        <span className="font-bold font-headline text-lg">CYBER CLUB</span>
+                        
                     </Link>
                 </div>
                  <div className="flex flex-1 items-center justify-end space-x-4">
@@ -199,7 +199,7 @@ export function Header({ categories, brands }: HeaderProps) {
       <div className="container flex h-16 items-center">
         <div className="mr-auto flex items-center gap-2">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <span className="font-bold font-headline text-lg">CYBER CLUB</span>
+            
           </Link>
         
           <div className="hidden md:flex">
@@ -256,7 +256,7 @@ export function Header({ categories, brands }: HeaderProps) {
                         <SheetTitle className="sr-only">Menu</SheetTitle>
                         <SheetDescription className="sr-only">Main navigation menu and brand selector.</SheetDescription>
                          <Link href="/" className="flex items-center space-x-2" onClick={() => setIsMobileMenuOpen(false)}>
-                            <span className="font-bold font-headline text-lg">CYBER CLUB</span>
+                            
                         </Link>
                     </SheetHeader>
                     <div className="flex flex-col gap-4 p-4">
