@@ -66,7 +66,7 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
               {category?.Name || 'Catégorie'}
             </h1>
             <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-              {brand ? `Contenu pour ${category?.Name} sous la marque ${brand.Brand}` : `Contenu à venir pour ${category?.Name}`}
+              {category?.Description || (brand ? `Contenu pour ${category?.Name} sous la marque ${brand.Brand}` : `Contenu à venir pour ${category?.Name}`)}
             </p>
             {brand && brand.Brand !== 'Cyber Club' && (
               <p className="text-sm text-primary">
@@ -102,13 +102,6 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
             <p>Aucun élément trouvé pour cette catégorie {brand && brand.Brand !== 'Cyber Club' ? `et l'activité "${getActivityForBrand(brand.Brand)}"` : ''}.</p>
           </div>
         )}
-
-        <div className="mt-12 w-full mx-auto bg-muted/50 p-4 rounded-lg">
-          <h2 className="text-2xl font-headline font-bold mb-4 text-center">Données brutes :</h2>
-          <pre className="text-xs bg-background p-4 rounded-md overflow-x-auto max-h-[500px]">
-            {JSON.stringify({ category, brand, data: finalData }, null, 2)}
-          </pre>
-        </div>
       </div>
     </section>
   );

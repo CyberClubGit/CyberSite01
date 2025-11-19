@@ -8,6 +8,7 @@ import {
 // ===== TYPES =====
 export interface Category {
   Name: string;
+  Description: string;
   'Url Logo Png': string;
   Url: string;
   Background: string;
@@ -86,6 +87,7 @@ export const getCategories = unstable_cache(
     // Transform raw data to Category interface
     const categories = rawData.map(row => ({
       Name: row['Name'] || row['Item'] || '',
+      Description: row['Description'] || '',
       'Url Logo Png': row['Url Logo Png'] || '',
       Url: row['Url'] || '',
       Background: row['Background'] || '',
