@@ -2,6 +2,7 @@
 import { getBrands, getCategories, getCategoryData, processGalleryLinks, type Brand, type Category } from '@/lib/sheets';
 import { notFound } from 'next/navigation';
 import { CatalogPageClient } from '@/components/catalog-page-client';
+import DefaultPageLayout from '@/components/default-page-layout';
 
 export default async function CatchAllPage({ params }: { params: { slug: string[] } }) {
   const slug = params.slug || [];
@@ -25,27 +26,25 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
     notFound();
   }
 
-  // Si ce n'est pas la page catalogue, on utilise l'ancien rendu simple
-  if (category.Url.toLowerCase() !== 'catalog') {
-    const { default: DefaultPageLayout } = await import('@/components/default-page-layout');
-    return <DefaultPageLayout category={category} brand={brand} />;
+  const rawCategoryData = await getCategoryData(category.Url);
+  const processedData = rawCategoryData.map(processGalleryLinks);
+  
+  if (category.Url.toLowerCase() === 'catalog') {
+    // Logique spécifique pour la page Catalogue
+    const types = [...new Set(rawCategoryData.map(item => item.Type).filter(Boolean) as string[])];
+    const materials = [...new Set(rawCategoryData.map(item => item.Material).filter(Boolean) as string[])];
+
+    return (
+      <CatalogPageClient 
+        initialData={processedData} 
+        category={category}
+        brand={brand}
+        types={types}
+        materials={materials}
+      />
+    );
   }
   
-  // Logique spécifique pour la page Catalogue
-  const rawCategoryData = await getCategoryData(category.Url);
-  
-  // Extraire les valeurs uniques pour les filtres
-  const types = [...new Set(rawCategoryData.map(item => item.Type).filter(Boolean) as string[])];
-  const materials = [...new Set(rawCategoryData.map(item => item.Material).filter(Boolean) as string[])];
-
-  return (
-    <CatalogPageClient 
-      initialData={rawCategoryData} 
-      category={category}
-      brand={brand}
-      types={types}
-      materials={materials}
-    />
-  );
+  // Pour toutes les autres pages (y compris Projects)
+  return <DefaultPageLayout category={category} brand={brand} initialData={processedData} />;
 }
-

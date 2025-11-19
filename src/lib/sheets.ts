@@ -180,7 +180,16 @@ export const getCategoryData = unstable_cache(
  * 
  * Utiliser cette fonction sur les données après getCategoryData()
  */
-export function processGalleryLinks(item: Record<string, string>) {
+export function processGalleryLinks<T extends Record<string, any>>(item: T): T & {
+  galleryUrls: string[];
+  coverUrl: string | null;
+  stlUrl: string | null;
+  pdfUrl: string | null;
+  reelUrl: string | null;
+  videoUrl: string | null;
+  title: string;
+  description: string;
+} {
   return {
     ...item,
     
@@ -199,15 +208,18 @@ export function processGalleryLinks(item: Record<string, string>) {
       : null,
       
     pdfUrl: item.Pdf
-      ? convertGoogleDriveLinkToDirect(item.Pdf)
+      ? item.Pdf // Keep original for proxying
       : null,
       
     reelUrl: item.Reel
-      ? convertGoogleDriveLinkToDirect(item.Reel)
+      ? item.Reel // Keep original
       : null,
       
     videoUrl: item.Video
       ? convertGoogleDriveLinkToDirect(item.Video)
-            : null,
+      : null,
+      
+    title: item.Title || item.Name || item.Item || 'Untitled',
+    description: item.Description || item.Content || '',
   };
 }
