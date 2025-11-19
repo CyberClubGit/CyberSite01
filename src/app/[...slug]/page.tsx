@@ -1,9 +1,7 @@
-
-import { getBrands, getCategories, getCategoryData, type Brand, type Category } from '@/lib/sheets';
+import { getBrands, getCategories, getCategoryData, processGalleryLinks, type Brand, type Category } from '@/lib/sheets';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { normalizeRowData } from '@/lib/sheets-utils';
 import { Badge } from '@/components/ui/badge';
 import { Link as LinkIcon, FileText, Download, GalleryHorizontal } from 'lucide-react';
 
@@ -30,7 +28,27 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
     notFound();
   }
   
-  const categoryData = await getCategoryData(category.Url);
+  const rawCategoryData = await getCategoryData(category.Url);
+  const categoryData = rawCategoryData.map(processGalleryLinks);
+
+  // Determine a display image for each item
+  const finalData = categoryData.map(item => {
+    let displayImageUrl = null;
+    if (item.coverUrl) {
+      displayImageUrl = item.coverUrl;
+    } else if (item.galleryUrls && item.galleryUrls.length > 0) {
+      displayImageUrl = item.galleryUrls[0];
+    } else if (item['Url Logo Png']) {
+      displayImageUrl = item['Url Logo Png'];
+    }
+
+    return {
+      ...item,
+      title: item.Title || item.Name || item.Item || 'Untitled',
+      description: item.Description || item.Content || '',
+      displayImageUrl,
+    };
+  });
 
   return (
     <section className="w-full py-12 md:py-24 lg:py-32">
@@ -46,18 +64,15 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
           </div>
         </div>
 
-        {categoryData && categoryData.length > 0 && (
+        {finalData && finalData.length > 0 && (
           <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {categoryData.map((rawItem, index) => {
-              const item = normalizeRowData(rawItem);
-              
-              return (
+            {finalData.map((item, index) => (
                 <Card key={index} className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
                   {item.displayImageUrl && (
                     <div className="relative w-full h-48 bg-muted">
                       <Image
                         src={item.displayImageUrl}
-                        alt={item.title || 'Image de l\'item'}
+                        alt={item.title}
                         fill
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className="object-cover"
@@ -73,10 +88,10 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
                     )}
                   </CardHeader>
                   <CardContent className="flex-1 space-y-2 text-xs">
-                    {(item.author || item.date) && (
+                    {(item.Author || item.Date) && (
                          <div className="text-muted-foreground flex flex-wrap gap-x-2">
-                            {item.author && <span>👤 {item.author}</span>}
-                            {item.date && <span>📅 {item.date}</span>}
+                            {item.Author && <span>👤 {item.Author}</span>}
+                            {item.Date && <span>📅 {item.Date}</span>}
                         </div>
                     )}
                      <div className="flex flex-wrap gap-1">
@@ -91,15 +106,14 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
                     {item.galleryUrls.length > 0 && <span className="flex items-center gap-1"><GalleryHorizontal size={14}/> {item.galleryUrls.length} images</span>}
                   </CardFooter>
                 </Card>
-              );
-            })}
+            ))}
           </div>
         )}
 
         <div className="mt-12 w-full mx-auto bg-muted/50 p-4 rounded-lg">
           <h2 className="text-2xl font-headline font-bold mb-4 text-center">Données brutes :</h2>
           <pre className="text-xs bg-background p-4 rounded-md overflow-x-auto max-h-[500px]">
-            {JSON.stringify({ category, brand, data: categoryData }, null, 2)}
+            {JSON.stringify({ category, brand, data: finalData }, null, 2)}
           </pre>
         </div>
       </div>

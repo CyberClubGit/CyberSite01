@@ -1,4 +1,9 @@
 import { unstable_cache } from 'next/cache';
+import { robustCsvParse, rowsToObjects } from './sheets-parser';
+import { 
+  convertGoogleDriveLinkToDirect, 
+  extractAndConvertGalleryLinks 
+} from './google-drive-utils';
 
 // ===== TYPES =====
 export interface Category {
@@ -42,40 +47,32 @@ async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
     }
     
     const csvText = await response.text();
-    const lines = csvText.trim().replace(/\r/g, '').split('\n');
     
-    if (lines.length < 2) {
+    if (!csvText.trim()) {
+      console.warn('[Sheets] No data in CSV');
+      return [];
+    }
+    
+    // ✅ UTILISER LE PARSER ROBUSTE
+    const rows = robustCsvParse(csvText);
+    
+    if (rows.length < 2) {
       console.warn('[Sheets] No data rows in CSV');
       return [];
     }
-
-    // Parse header
-    const header = lines[0].split(',').map(h => h.trim());
-    console.log(`[Sheets] Headers: ${header.join(', ')}`);
     
-    // Parse data rows
-    const data: T[] = [];
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
-      
-      // Split by comma, respecting quotes
-      const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-      
-      const row: any = {};
-      header.forEach((key, idx) => {
-        const value = (values[idx] || '').trim().replace(/^"|"$/g, '');
-        row[key] = value;
-      });
-      
-      data.push(row as T);
-    }
+    // Log headers
+    console.log(`[Sheets] Headers: ${rows[0].join(', ')}`);
     
-    console.log(`[Sheets] Loaded ${data.length} rows`);
+    // Convertir en objets
+    const data = rowsToObjects(rows) as T[];
+    
+    console.log(`[Sheets] ✅ Loaded ${data.length} rows`);
     return data;
     
   } catch (error) {
-    console.error('[Sheets] Fetch error:', error);
+    const err = error as Error;
+    console.error('[Sheets] Fetch error:', err.message);
     return [];
   }
 }
@@ -167,3 +164,40 @@ export const getCategoryData = unstable_cache(
   ['categoryData'],
   { revalidate: 300 }
 );
+
+/**
+ * Post-processing des données pour extraire et convertir les liens Google Drive
+ * 
+ * Utiliser cette fonction sur les données après getCategoryData()
+ */
+export function processGalleryLinks(item: Record<string, string>) {
+  return {
+    ...item,
+    
+    // Extraire et convertir les liens Gallery (multiples)
+    galleryUrls: item.Gallery 
+      ? extractAndConvertGalleryLinks(item.Gallery)
+      : [],
+    
+    // Convertir les liens individuels
+    coverUrl: item.Cover 
+      ? convertGoogleDriveLinkToDirect(item.Cover)
+      : null,
+    
+    stlUrl: item.Stl
+      ? convertGoogleDriveLinkToDirect(item.Stl)
+      : null,
+      
+    pdfUrl: item.Pdf
+      ? convertGoogleDriveLinkToDirect(item.Pdf)
+      : null,
+      
+    reelUrl: item.Reel
+      ? convertGoogleDriveLinkToDirect(item.Reel)
+      : null,
+      
+    videoUrl: item.Video
+      ? convertGoogleDriveLinkToDirect(item.Video)
+      : null,
+  };
+}
