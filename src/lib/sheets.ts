@@ -210,3 +210,5 @@ export function processGalleryLinks(item: Record<string, string>) {
             : null,
   };
 }
+
+export { convertGoogleDriveLinkToDirectVideo };

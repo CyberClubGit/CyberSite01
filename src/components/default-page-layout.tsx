@@ -4,6 +4,9 @@ import { filterItemsByBrandActivity, getActivityForBrand } from '@/lib/activity-
 import Image from 'next/image';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { VideoBackground } from './video-background';
+import { VideoDebugInfo } from './video-debug-info';
+import { convertGoogleDriveLinkToDirectVideo } from '@/lib/google-drive-utils';
 
 interface DefaultPageLayoutProps {
   category: Category;
@@ -44,18 +47,21 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
       displayImageUrl,
     };
   });
+  
+  const backgroundVideoUrl = category.Background ? convertGoogleDriveLinkToDirectVideo(category.Background) : '';
 
   return (
     <>
-      <div className={cn("relative bg-background")}>
+      {backgroundVideoUrl && <VideoBackground src={backgroundVideoUrl} />}
+      <div className={cn("relative bg-transparent")}>
         <section className="w-full py-8 md:py-12 relative z-10">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center mb-12">
               <div className="space-y-2">
-                <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none capitalize">
+                <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none capitalize text-white" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.7)' }}>
                   {category?.Name || 'Catégorie'}
                 </h1>
-                <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
+                <p className="mx-auto max-w-[700px] text-gray-200 md:text-xl" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.7)' }}>
                   {category?.Description || (brand ? `Contenu pour ${category?.Name} sous la marque ${brand.Brand}` : `Contenu à venir pour ${category?.Name}`)}
                 </p>
               </div>
@@ -64,7 +70,7 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
             {finalData && finalData.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {finalData.map((item, index) => (
-                    <Card key={index} className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                    <Card key={index} className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-background/80 backdrop-blur-sm">
                       {item.displayImageUrl && (
                         <div className="relative w-full aspect-[3/4] bg-muted">
                           <Image
@@ -83,8 +89,25 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
                 ))}
               </div>
             ) : (
-              <div className="mt-12 text-center text-muted-foreground">
+              <div className="mt-12 text-center text-gray-300">
                 <p>Aucun élément trouvé pour cette catégorie {brand && brand.Brand !== 'Cyber Club' ? `et l'activité "${getActivityForBrand(brand.Brand)}"` : ''}.</p>
+              </div>
+            )}
+
+            {/* Outils de débogage conservés en bas de page */}
+            {backgroundVideoUrl && (
+              <div className="mt-20 p-4 border-2 border-dashed border-yellow-500 bg-black/50 rounded-lg">
+                <h2 className="text-xl font-headline text-yellow-400 mb-4">Lecteur Vidéo de Débogage :</h2>
+                 <video
+                  key={backgroundVideoUrl}
+                  src={backgroundVideoUrl}
+                  width="100%"
+                  controls
+                  className="bg-black mb-4"
+                >
+                  Votre navigateur ne supporte pas la balise vidéo.
+                </video>
+                <VideoDebugInfo videoUrl={backgroundVideoUrl} />
               </div>
             )}
           </div>
