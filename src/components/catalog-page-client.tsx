@@ -86,7 +86,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
           </div>
         </div>
 
-        <aside className="mb-12">
+        <aside className="sticky top-16 bg-background z-10 py-4 mb-8">
           <div className="flex flex-col md:flex-row gap-4">
               <Accordion type="multiple" className="w-full md:w-auto md:flex-1">
                 <AccordionItem value="type">
