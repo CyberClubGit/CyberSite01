@@ -6,7 +6,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'CYBER CLUB',
-  description: 'CYBER CLUB Portfolio',
+  description: 'CYBER CLUB website',
 };
 
 export default async function RootLayout({

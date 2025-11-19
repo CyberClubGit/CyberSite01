@@ -1,7 +1,12 @@
 
 import { getBrands, getCategories, getCategoryData, type Brand, type Category } from '@/lib/sheets';
 import { notFound } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import Image from 'next/image';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { normalizeRowData } from '@/lib/sheets-utils';
+import { Badge } from '@/components/ui/badge';
+import { Link, FileText, Download } from 'lucide-react';
+
 
 export default async function CatchAllPage({ params }: { params: { slug: string[] } }) {
   const { slug } = params;
@@ -19,11 +24,6 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
 
   if (potentialBrandSlug) {
       brand = brands.find(b => b.Activity && b.Activity.toLowerCase() === potentialBrandSlug.toLowerCase());
-  }
-
-  // Handle root URL case
-  if (slug.length === 0 || (slug.length === 1 && slug[0] === '')) {
-      category = categories.find(c => c.Url && c.Url.toLowerCase() === 'home');
   }
 
   if (!category || !category.Url) {
@@ -48,28 +48,47 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
 
         {categoryData && categoryData.length > 0 && (
           <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {categoryData.map((item, index) => {
-              // Robustly find a title, fallback to the first available property
-              const title = item?.Title || item?.Name || item?.Item || Object.values(item)?.[0] || `Item ${index + 1}`;
-              // Robustly find a description
-              const description = item?.Description || item?.Content || `Détails pour ${title}`;
+            {categoryData.map((rawItem, index) => {
+              const item = normalizeRowData(rawItem);
               
               return (
-                <Card key={index} className="flex flex-col">
+                <Card key={index} className="flex flex-col overflow-hidden">
+                  {item.displayImageUrl && (
+                    <div className="relative w-full h-48 bg-muted">
+                      <Image
+                        src={item.displayImageUrl}
+                        alt={item.title}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  )}
                   <CardHeader>
-                    <CardTitle className="font-headline text-lg">{title}</CardTitle>
-                    <CardDescription className="line-clamp-2">{description}</CardDescription>
+                    <CardTitle className="font-headline text-lg">{item.title}</CardTitle>
+                    {item.description && (
+                        <CardDescription className="line-clamp-3 h-[60px]">
+                            {item.description}
+                        </CardDescription>
+                    )}
                   </CardHeader>
-                  <CardContent className="flex-1 text-xs text-muted-foreground">
-                    <p className="line-clamp-3">
-                        {Object.entries(item || {})
-                          .filter(([key]) => !['Title', 'Name', 'Item', 'Description', 'Content'].includes(key))
-                          .slice(0, 3)
-                          .map(([key, value]) => `${key}: ${value || 'N/A'}`)
-                          .join(' | ')
-                        }
-                    </p>
+                  <CardContent className="flex-1 space-y-2 text-xs">
+                    {(item.author || item.date) && (
+                         <div className="text-muted-foreground flex flex-wrap gap-x-2">
+                            {item.author && <span>👤 {item.author}</span>}
+                            {item.date && <span>📅 {item.date}</span>}
+                        </div>
+                    )}
+                     <div className="flex flex-wrap gap-1">
+                        {item.Type && <Badge variant="secondary">{item.Type}</Badge>}
+                        {item.Style && <Badge variant="secondary">{item.Style}</Badge>}
+                        {item.Activity && <Badge variant="outline">{item.Activity}</Badge>}
+                    </div>
                   </CardContent>
+                  <CardFooter className="flex-wrap gap-2 text-xs">
+                    {item.pdfUrl && <a href={item.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:underline"><FileText size={14}/> PDF</a>}
+                    {item.stlUrl && <a href={item.stlUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:underline"><Download size={14}/> STL</a>}
+                    {item.galleryUrls.length > 0 && <span className="text-muted-foreground">{item.galleryUrls.length} images</span>}
+                  </CardFooter>
                 </Card>
               );
             })}
