@@ -1,18 +1,16 @@
-DESCRIPTION DÉTAILLÉE DU PROCESSUS D'IMPORTATION DES DONNÉES (au 25/07/2024)
+# DESCRIPTION DÉTAILLÉE DU PROCESSUS D'IMPORTATION DES DONNÉES (au 25/07/2024)
 
 Ce document décrit avec précision le mécanisme actuel par lequel l'application importe et gère les données depuis les Google Sheets. Il inclut également ma compréhension de vos objectifs pour le projet "CYBER CLUB".
 
 
 ======================================================================
-PARTIE 1 : COMPRÉHENSION DE VOS INTENTIONS POUR LE PROJET "CYBER CLUB"
+## PARTIE 1 : COMPRÉHENSION DE VOS INTENTIONS POUR LE PROJET "CYBER CLUB"
 ======================================================================
 
----
 ### Vision d'ensemble (résumé)
 ---
 Vous souhaitez construire une plateforme web dynamique et modulable ("CYBER CLUB") qui fonctionne comme un portfolio multi-marques, un catalogue de produits/projets, et potentiellement un site e-commerce. La caractéristique centrale du projet est que **l'intégralité du contenu et de la structure du site doit être pilotée par des Google Sheets**, permettant des mises à jour en temps réel sans intervention sur le code.
 
----
 ### Objectifs détaillés
 ---
 1.  **Architecture 100% "Data-Driven"** :
@@ -31,12 +29,11 @@ Vous souhaitez construire une plateforme web dynamique et modulable ("CYBER CLUB
 
 
 ======================================================================
-PARTIE 2 : FONCTIONNEMENT TECHNIQUE ACTUEL DE L'IMPORTATION
+## PARTIE 2 : FONCTIONNEMENT TECHNIQUE ACTUEL DE L'IMPORTATION
 ======================================================================
 
 Le processus se déroule principalement dans le fichier `src/lib/sheets.ts` et peut être décomposé en 3 étapes majeures.
 
----
 ### Étape 1 : Récupération des Catégories (depuis le Master Sheet)
 ---
 1.  **Appel Initial** : Tout commence par un appel à la fonction `getCategories()`. Cette fonction est la porte d'entrée pour connaître la structure de base du site (les pages comme Home, Projects, Catalog, etc.).
@@ -51,12 +48,10 @@ Le processus se déroule principalement dans le fichier `src/lib/sheets.ts` et p
     *   **Nouvelle solution** : Le parser actuel (`parseCSVLine`) lit la ligne CSV caractère par caractère. Il gère intelligemment les guillemets pour ne découper la ligne en colonnes que sur les virgules qui agissent comme de vrais séparateurs. Cela garantit que les champs contenant des virgules (comme des descriptions ou des listes d'URLs) ne sont pas tronqués. Chaque ligne est transformée en un objet JavaScript fiable.
     *Exemple d'objet généré :* `{ "Name": "Projects", "Url": "projects", "Url Sheet": "...", ... }`
 
----
 ### Étape 2 : Pas de Correctif des GIDs
 ---
 Contrairement aux versions précédentes, il n'y a **PLUS AUCUNE LOGIQUE DE CORRECTION** des `gid` dans le code. Le principe est que le `Master Sheet` est la source de vérité. Si un lien dans la colonne `'Url Sheet'` est incorrect, il doit être corrigé directement dans le Google Sheet, et non dans le code.
 
----
 ### Étape 3 : Récupération des Données Spécifiques à une Page
 ---
 1.  **Navigation de l'utilisateur** : Lorsque vous cliquez sur un lien du menu (ex: "Projects"), le navigateur charge l'URL correspondante (ex: `/projects`).
