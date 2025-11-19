@@ -34,7 +34,8 @@ export function convertGoogleDriveLinkToDirect(url: string): string {
   const fileId = extractGoogleDriveId(url);
   
   if (fileId) {
-    return `https://drive.google.com/thumbnail?id=${fileId}`;
+    // Utiliser le format d'image de plus haute qualité
+    return `https://lh3.googleusercontent.com/d/${fileId}`;
   }
   
   return url; // Fallback: retourner l'URL originale

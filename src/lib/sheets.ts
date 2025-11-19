@@ -88,7 +88,7 @@ export const getCategories = unstable_cache(
     const categories = rawData.map(row => ({
       Name: row['Name'] || row['Item'] || '',
       Description: row['Description'] || '',
-      'Url Logo Png': row['Url Logo Png'] || '',
+      'Url Logo Png': row['Url Logo Png'] ? convertGoogleDriveLinkToDirect(row['Url Logo Png']) : '',
       Url: row['Url'] || '',
       Background: row['Background'] || '',
       'Url Sheet': row['Url Sheet'] || '',
