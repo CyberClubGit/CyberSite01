@@ -86,15 +86,13 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row md:justify-center gap-8">
-          <aside className="md:w-60">
-            <div className="sticky top-24">
-              <h2 className="text-xl font-headline font-semibold mb-4">Filtres</h2>
-              <Accordion type="multiple" defaultValue={['type', 'material']} className="w-full">
+        <aside className="mb-12">
+          <div className="flex flex-col md:flex-row gap-4">
+              <Accordion type="multiple" className="w-full md:w-auto md:flex-1">
                 <AccordionItem value="type">
-                  <AccordionTrigger className="font-headline">Type</AccordionTrigger>
+                  <AccordionTrigger className="font-headline px-4">Type</AccordionTrigger>
                   <AccordionContent>
-                    <div className="space-y-2">
+                    <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                       {types.map(type => (
                         <div key={type} className="flex items-center space-x-2">
                           <Checkbox
@@ -108,10 +106,12 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                     </div>
                   </AccordionContent>
                 </AccordionItem>
+              </Accordion>
+               <Accordion type="multiple" className="w-full md:w-auto md:flex-1">
                 <AccordionItem value="material">
-                  <AccordionTrigger className="font-headline">Matériau</AccordionTrigger>
+                  <AccordionTrigger className="font-headline px-4">Matériau</AccordionTrigger>
                   <AccordionContent>
-                    <div className="space-y-2">
+                     <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                       {materials.map(material => (
                         <div key={material} className="flex items-center space-x-2">
                           <Checkbox
@@ -126,17 +126,17 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
-               {(selectedTypes.length > 0 || selectedMaterials.length > 0) && (
-                <Button variant="ghost" onClick={resetFilters} className="w-full mt-4 justify-start p-0 h-auto text-muted-foreground hover:text-foreground">
-                  Réinitialiser les filtres
-                </Button>
-              )}
-            </div>
-          </aside>
+          </div>
+          {(selectedTypes.length > 0 || selectedMaterials.length > 0) && (
+            <Button variant="ghost" onClick={resetFilters} className="w-full mt-4 justify-start p-0 h-auto text-muted-foreground hover:text-foreground">
+              Réinitialiser les filtres
+            </Button>
+          )}
+        </aside>
 
-          <main className="flex-1">
+        <main>
             {finalData && finalData.length > 0 ? (
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {finalData.map((item, index) => (
                   <Card key={index} className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
                     {item.displayImageUrl && (
@@ -162,7 +162,6 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
               </div>
             )}
           </main>
-        </div>
       </div>
     </section>
   );
