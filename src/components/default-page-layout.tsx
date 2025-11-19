@@ -97,7 +97,7 @@ export default function DefaultPageLayout({ category, brand, initialData }: Defa
                               alt={item.title}
                               width={500}
                               height={500}
-                              className="object-cover w-full h-auto"
+                              className="object-contain w-full h-auto"
                             />
                           </div>
                         )}
@@ -116,7 +116,7 @@ export default function DefaultPageLayout({ category, brand, initialData }: Defa
           </section>
         </div>
         <Dialog open={!!selectedProject} onOpenChange={(isOpen) => !isOpen && setSelectedProject(null)}>
-            <DialogContent className="max-w-5xl w-full h-[80vh] p-0 border-0">
+            <DialogContent className="max-w-5xl w-full h-[80vh] p-0 border-0 bg-background/90 backdrop-blur-sm">
                 {selectedProject && <ProjectDetails project={selectedProject} />}
             </DialogContent>
         </Dialog>

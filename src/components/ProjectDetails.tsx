@@ -7,6 +7,7 @@ import {
     Link as LinkIcon,
     Paperclip,
     Film,
+    Download,
 } from 'lucide-react';
 import { getEmbeddableVideoUrl } from '@/lib/linkConverter';
 import { HorizontalPdfViewer } from './HorizontalPdfViewer';
@@ -22,12 +23,18 @@ interface ProjectDetailsProps {
 
 export function ProjectDetails({ project }: ProjectDetailsProps) {
   const videoUrl = getEmbeddableVideoUrl(project.reelUrl);
-  const members = project.Members?.split(',').map(m => m.trim()) || [];
-  const tags = project.Tags?.split(',').map(t => t.trim()) || [];
+  
+  // Utiliser les champs 'Members' et 'Activity' pour les tags/métadonnées
+  const members = project.Members?.split(',').map(m => m.trim()).filter(Boolean) || [];
+  const tags = project.Activity?.split(',').map(t => t.trim()).filter(Boolean) || [];
+
   const pdfs = [project.pdfUrl, ...(project.galleryUrls || [])].filter(Boolean) as string[];
 
+  // Utiliser la bonne clé pour le lien de l'institution
+  const institutionLink = project['Liens Institution'];
+
   return (
-    <div className="w-full max-w-7xl mx-auto p-6 md:p-8 bg-background text-foreground">
+    <div className="w-full max-w-7xl mx-auto p-6 md:p-8 bg-background text-foreground h-full overflow-y-auto">
         <div className="flex flex-col lg:flex-row gap-8 h-full">
 
             {/* Colonne de Gauche */}
@@ -36,19 +43,27 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
                     {project.title}
                 </h1>
                 
-                <div className="flex items-center gap-4 text-muted-foreground">
-                    <span className='font-semibold'>{project.Institution}</span>
-                    {project.Link && (
+                <div className="flex items-center flex-wrap gap-4 text-muted-foreground">
+                    {project.Institution && <span className='font-semibold'>{project.Institution}</span>}
+                    {institutionLink && (
                         <Button asChild variant="outline" size="sm">
-                           <a href={project.Link} target="_blank" rel="noopener noreferrer">
+                           <a href={institutionLink} target="_blank" rel="noopener noreferrer">
                                 <LinkIcon className="mr-2 h-4 w-4" />
-                                Voir
+                                Visiter le site
+                           </a>
+                        </Button>
+                    )}
+                    {project.stlUrl && (
+                        <Button asChild variant="outline" size="sm">
+                           <a href={project.stlUrl} target="_blank" rel="noopener noreferrer" download>
+                                <Download className="mr-2 h-4 w-4" />
+                                Télécharger STL
                            </a>
                         </Button>
                     )}
                 </div>
 
-                <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+                <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-muted-foreground">
                    {members.length > 0 && (
                         <div className="flex items-center gap-2">
                            <Users className="h-4 w-4" />
@@ -75,7 +90,7 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
                     <>
                         <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
                         <div className="space-y-4">
-                           <h3 className="font-headline text-lg font-semibold flex items-center gap-2"><Paperclip /> Documents</h3>
+                           <h3 className="font-headline text-lg font-semibold flex items-center gap-2"><Paperclip /> Documents & Galerie</h3>
                            <HorizontalPdfViewer files={pdfs} />
                         </div>
                     </>
