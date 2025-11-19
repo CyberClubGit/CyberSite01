@@ -24,6 +24,8 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
     );
   }
 
+  const isProjectsPage = category.Url.toLowerCase() === 'projects';
+
   const rawCategoryData = await getCategoryData(category.Url);
   const filteredData = filterItemsByBrandActivity(rawCategoryData, brand?.Brand);
   const categoryData = filteredData.map(processGalleryLinks);
@@ -49,6 +51,7 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
   return (
       <div className={cn("relative bg-transparent")}>
         {category.Background && <VideoBackground src={category.Background} />}
+        {isProjectsPage && <div className="projects-background"></div>}
         <section className="w-full py-8 md:py-12 relative z-10">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center mb-12">

@@ -97,3 +97,19 @@
   border-bottom-color: var(--brand-color) !important;
   border-bottom-width: 2px;
 }
+
+.projects-background {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100vh;
+    background-image: repeating-linear-gradient(
+        45deg,
+        hsla(0, 0%, 100%, 0),
+        hsla(0, 0%, 100%, 0) 4px,
+        var(--brand-color) 5px,
+        var(--brand-color) 5.5px
+    );
+    opacity: 0.15;
+    z-index: 0;
+}
