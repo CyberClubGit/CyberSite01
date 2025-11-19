@@ -1,9 +1,11 @@
+
 import { getBrands, getCategories, getCategoryData, processGalleryLinks, type Brand, type Category } from '@/lib/sheets';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Link as LinkIcon, FileText, Download, GalleryHorizontal } from 'lucide-react';
+import { filterItemsByBrandActivity, getActivityForBrand } from '@/lib/activity-filter';
 
 
 export default async function CatchAllPage({ params }: { params: { slug: string[] } }) {
@@ -29,9 +31,12 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
   }
   
   const rawCategoryData = await getCategoryData(category.Url);
+
+  // ✅ FILTRER les données par activité de la marque sélectionnée
+  const filteredData = filterItemsByBrandActivity(rawCategoryData, brand?.Brand);
   
-  // Utiliser processGalleryLinks pour nettoyer et structurer les données
-  const categoryData = rawCategoryData.map(processGalleryLinks);
+  // Utiliser processGalleryLinks pour nettoyer et structurer les données filtrées
+  const categoryData = filteredData.map(processGalleryLinks);
 
   // Déterminer une image à afficher et un titre pour chaque item
   const finalData = categoryData.map(item => {
@@ -63,10 +68,15 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
             <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
               {brand ? `Contenu pour ${category?.Name} sous la marque ${brand.Brand}` : `Contenu à venir pour ${category?.Name}`}
             </p>
+            {brand && brand.Brand !== 'Cyber Club' && (
+              <p className="text-sm text-primary">
+                Affichage de {finalData.length} sur {rawCategoryData.length} éléments pour l'activité : "{getActivityForBrand(brand.Brand)}"
+              </p>
+            )}
           </div>
         </div>
 
-        {finalData && finalData.length > 0 && (
+        {finalData && finalData.length > 0 ? (
           <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {finalData.map((item, index) => (
                 <Card key={index} className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
@@ -109,6 +119,10 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
                   </CardFooter>
                 </Card>
             ))}
+          </div>
+        ) : (
+          <div className="mt-12 text-center text-muted-foreground">
+            <p>Aucun élément trouvé pour cette catégorie {brand && brand.Brand !== 'Cyber Club' ? `et l'activité "${getActivityForBrand(brand.Brand)}"` : ''}.</p>
           </div>
         )}
 
