@@ -1,3 +1,4 @@
+
 DESCRIPTION DÉTAILLÉE DE L'ARCHITECTURE DE DONNÉES (au 26/07/2024)
 
 Ce document est la référence technique de l'application "CYBER CLUB". Il décrit avec précision le mécanisme par lequel l'application importe, interprète, filtre et affiche le contenu, qui est entièrement piloté par des Google Sheets.
