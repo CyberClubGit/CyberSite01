@@ -76,7 +76,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   return (
     <>
       {category.Background && <VideoBackground src={category.Background} />}
-      <div className="relative z-10">
+      <div className="relative">
         <section className="w-full py-8 md:py-12">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center mb-12">
@@ -90,7 +90,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
               </div>
             </div>
 
-            <aside className="sticky top-16 bg-background/80 backdrop-blur-sm z-10 py-4 mb-8 rounded-lg">
+            <aside className="sticky top-16 bg-background/80 backdrop-blur-sm z-20 py-4 mb-8 rounded-lg">
               <div className="flex flex-col md:flex-row gap-4">
                   <Accordion type="multiple" className="w-full md:w-auto md:flex-1">
                     <AccordionItem value="type">
