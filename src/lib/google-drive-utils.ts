@@ -31,6 +31,7 @@ export function convertGoogleDriveLinkToDirect(url: string): string {
   const fileId = extractGoogleDriveId(url);
   
   if (fileId) {
+    // Utilise le format lh3 pour les images/miniatures, qui est plus fiable pour <img>
     return `https://lh3.googleusercontent.com/d/${fileId}`;
   }
   
@@ -39,12 +40,13 @@ export function convertGoogleDriveLinkToDirect(url: string): string {
 
 /**
  * Convertir un lien Google Drive en lien direct pour une vidéo MP4.
- * Utilise le format lh3.googleusercontent.com qui est plus fiable pour le streaming direct.
+ * Utilise le format `uc?export=download` qui force le téléchargement direct du contenu.
+ * C'EST LE FORMAT LE PLUS FIABLE POUR LA BALISE <video>.
  */
 export function convertGoogleDriveLinkToDirectVideo(url: string): string {
   const fileId = extractGoogleDriveId(url);
   if (fileId) {
-    return `https://lh3.googleusercontent.com/d/${fileId}`;
+    return `https://drive.google.com/uc?export=download&id=${fileId}`;
   }
   return url;
 }
