@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { VideoBackground } from './video-background';
 import { cn } from '@/lib/utils';
+import { VideoDebugInfo } from './video-debug-info';
 
 interface DefaultPageLayoutProps {
   category: Category;
@@ -52,22 +53,24 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
     <>
       <div className={cn(
         "relative",
-        hasBackgroundVideo ? "bg-transparent" : "bg-background"
+        !hasBackgroundVideo && "bg-background"
       )}>
-        <section className="w-full py-8 md:py-12">
+        {hasBackgroundVideo && <VideoBackground src={category.Background} />}
+        <section className="w-full py-8 md:py-12 relative z-10">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center mb-12">
               
               {/* === BOÎTE DE DÉBOGAGE VIDÉO === */}
               {category.Background && (
-                <div className="w-full max-w-md border-2 border-red-500 p-2 my-4">
-                  <p className="text-sm text-red-500 mb-2">Boîte de débogage vidéo :</p>
+                <>
+                <div className="w-full max-w-2xl border-2 border-red-500 p-2 my-4 bg-black">
+                  <p className="text-sm text-red-500 mb-2 font-headline">Lecteur Vidéo de Débogage :</p>
                   <video 
                     key={category.Background}
                     src={category.Background}
                     width="100%" 
                     controls 
-                    muted 
+                    muted
                     autoPlay 
                     loop 
                     playsInline
@@ -76,6 +79,8 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
                     Votre navigateur ne supporte pas la balise vidéo.
                   </video>
                 </div>
+                 <VideoDebugInfo videoUrl={category.Background} />
+                </>
               )}
               {/* ================================ */}
 
