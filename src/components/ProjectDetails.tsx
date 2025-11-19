@@ -24,12 +24,11 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
   const videoUrl = getEmbeddableVideoUrl(project.reelUrl);
   const members = project.Members?.split(',').map(m => m.trim()) || [];
   const tags = project.Tags?.split(',').map(t => t.trim()) || [];
-  const descriptionWords = project.description?.split(' ') || [];
   const pdfs = [project.pdfUrl, ...(project.galleryUrls || [])].filter(Boolean) as string[];
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6 md:p-8 bg-background text-foreground">
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-8 h-full">
 
             {/* Colonne de Gauche */}
             <div className="lg:w-2/3 flex flex-col space-y-6">
@@ -85,8 +84,8 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
 
             {/* Colonne de Droite */}
             {videoUrl && (
-                <div className="lg:w-1/3">
-                    <div className="lg:sticky lg:top-8">
+                <div className="lg:w-1/3 flex flex-col justify-end">
+                    <div className="w-full">
                         <div className="space-y-4">
                             <h3 className="font-headline text-lg font-semibold flex items-center gap-2"><Film /> Reel</h3>
                             <div className="aspect-[9/16] w-full rounded-2xl overflow-hidden shadow-2xl border border-border">
