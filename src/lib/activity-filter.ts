@@ -1,6 +1,6 @@
 
 /**
- * Mapping Brand -> Activity
+ * Mapping Brand → Activity
  * Source: Site-Database-Activity.csv
  */
 export const BRAND_ACTIVITY_MAP: Record<string, string | null> = {
@@ -21,7 +21,37 @@ export function getActivityForBrand(brandName: string): string | null {
 }
 
 /**
+ * Parser les activities multiples d'un item
+ * Format attendu: "Design, Architecture, Nature" ou "Design"
+ */
+export function parseItemActivities(activityString: string): string[] {
+  if (!activityString || typeof activityString !== 'string') {
+    return [];
+  }
+  
+  return activityString
+    .split(',')                    // Séparer par virgule
+    .map(activity => activity.trim())  // Nettoyer espaces
+    .filter(activity => activity.length > 0);  // Supprimer vides
+}
+
+/**
+ * Vérifier si un item contient une Activity spécifique
+ * Gère les multi-activities (ex: "Design, Architecture, Nature")
+ */
+export function itemHasActivity(itemActivityString: string, targetActivity: string): boolean {
+  const itemActivities = parseItemActivities(itemActivityString);
+  const normalizedTarget = targetActivity.toLowerCase().trim();
+  
+  return itemActivities.some(activity => 
+    activity.toLowerCase() === normalizedTarget
+  );
+}
+
+
+/**
  * Filtrer les items par Activity selon le Brand sélectionné
+ * ✅ GÈRE LES MULTI-ACTIVITIES
  * 
  * @param items - Liste complète des items
  * @param selectedBrandName - Nom du Brand actuellement sélectionné
@@ -44,10 +74,9 @@ export function filterItemsByBrandActivity<T extends Record<string, any>>(
     return items;
   }
   
-  // Filtrer les items qui ont cette Activity
+  // ✅ FILTRER en vérifiant si l'Activity est PRÉSENTE (pas strictement égale)
   return items.filter(item => {
-    // Gère les variations de casse et de nom de colonne ('Activity' vs 'activity')
-    const itemActivity = item.Activity || item.activity || '';
-    return itemActivity.toLowerCase() === targetActivity.toLowerCase();
+    const itemActivityString = item.Activity || item.activity || '';
+    return itemHasActivity(itemActivityString, targetActivity);
   });
 }
