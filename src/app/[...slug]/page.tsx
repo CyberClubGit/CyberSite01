@@ -81,7 +81,7 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
             {finalData.map((item, index) => (
                 <Card key={index} className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
                   {item.displayImageUrl && (
-                    <div className="relative w-full h-48 bg-muted">
+                    <div className="relative w-full aspect-[3/4] bg-muted">
                       <Image
                         src={item.displayImageUrl}
                         alt={item.title}
