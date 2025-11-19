@@ -68,11 +68,6 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
             <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
               {category?.Description || (brand ? `Contenu pour ${category?.Name} sous la marque ${brand.Brand}` : `Contenu à venir pour ${category?.Name}`)}
             </p>
-            {brand && brand.Brand !== 'Cyber Club' && (
-              <p className="text-sm text-primary">
-                Affichage de {finalData.length} sur {rawCategoryData.length} éléments pour l'activité : "{getActivityForBrand(brand.Brand)}"
-              </p>
-            )}
           </div>
         </div>
 
