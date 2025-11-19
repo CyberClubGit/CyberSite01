@@ -70,13 +70,13 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
                 {finalData.map((item, index) => (
                     <Card key={index} className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-background/80 backdrop-blur-sm">
                       {item.displayImageUrl && (
-                        <div className="relative w-full aspect-[3/4] bg-muted">
+                        <div className="relative w-full bg-muted">
                           <Image
                             src={item.displayImageUrl}
                             alt={item.title}
-                            fill
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                            className="object-cover"
+                            width={500}
+                            height={500}
+                            className="object-cover w-full h-auto"
                           />
                         </div>
                       )}
