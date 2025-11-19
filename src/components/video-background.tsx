@@ -12,7 +12,7 @@ export function VideoBackground({ src }: VideoBackgroundProps) {
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.play().catch(error => {
-        console.error("Video play failed:", error);
+        // Silently fail if autoplay is blocked
       });
     }
   }, [src]);
@@ -33,6 +33,7 @@ export function VideoBackground({ src }: VideoBackgroundProps) {
         <source src={src} type="video/mp4" />
         Votre navigateur ne supporte pas la lecture de vidéos.
       </video>
+      <div className="absolute inset-0 w-full h-full bg-white/50 dark:bg-black/50"></div>
     </div>
   );
 }
