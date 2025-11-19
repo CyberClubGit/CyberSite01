@@ -204,7 +204,7 @@ export function Header({ categories, brands }: HeaderProps) {
         
           <div className="hidden md:flex">
              <Select onValueChange={handleBrandChange} value={selectedBrand}>
-                <SelectTrigger className="min-w-[195px] w-auto brand-selector font-headline">
+                <SelectTrigger className="min-w-[254px] w-auto brand-selector font-headline">
                   <SelectValue placeholder="Select Brand" />
                 </SelectTrigger>
                 <SelectContent>
