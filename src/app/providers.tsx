@@ -20,7 +20,7 @@ export function Providers({ children, categories, brands }: ProvidersProps) {
         enableSystem
         disableTransitionOnChange
       >
-        <div className="flex min-h-screen flex-col text-foreground">
+        <div className="flex min-h-screen flex-col text-foreground bg-transparent">
           <Header categories={categories} brands={brands} />
           <main className="flex-1">{children}</main>
           <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">

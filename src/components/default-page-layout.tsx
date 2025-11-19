@@ -14,7 +14,7 @@ interface DefaultPageLayoutProps {
 export default async function DefaultPageLayout({ category, brand }: DefaultPageLayoutProps) {
   if (!category.Url) {
     return (
-      <div className={cn("min-h-full bg-background")}>
+      <div className={cn("min-h-full bg-transparent")}>
         <section className="w-full py-8 md:py-12">
             <div className="container px-4 md:px-6 text-center">
                 <p>Catégorie invalide.</p>
@@ -47,7 +47,7 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
   });
 
   return (
-      <div className={cn("relative bg-background")}>
+      <div className={cn("relative bg-transparent")}>
         {category.Background && <VideoBackground src={category.Background} />}
         <section className="w-full py-8 md:py-12 relative z-10">
           <div className="container px-4 md:px-6">
@@ -65,7 +65,7 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
             {finalData && finalData.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {finalData.map((item, index) => (
-                    <Card key={index} className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                    <Card key={index} className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-background/80 backdrop-blur-sm">
                       {item.displayImageUrl && (
                         <div className="relative w-full aspect-[3/4] bg-muted">
                           <Image
