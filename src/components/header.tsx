@@ -42,6 +42,7 @@ export function Header({ categories, brands }: HeaderProps) {
   const getCurrentCategorySlug = useCallback(() => {
     const pathParts = pathname.split('/').filter(p => p);
     if (pathParts.length === 0) return 'home';
+    if (pathParts[0] === 'home' && pathParts.length === 1) return 'home';
 
     const catSlugs = categories.map(c => c.Url?.toLowerCase());
 
@@ -147,7 +148,7 @@ export function Header({ categories, brands }: HeaderProps) {
 
   const renderNavLinks = (isMobile = false) => (
     categories && categories
-      .filter(category => category.Name && category.Url)
+      .filter(category => category.Name && category.Url && category.Url.trim() !== '')
       .map((category) => {
           const linkHref = getLinkHref(category.Url.toLowerCase());
           const isActive = (currentCategorySlug || 'home').toLowerCase() === category.Url.toLowerCase();
@@ -203,19 +204,19 @@ export function Header({ categories, brands }: HeaderProps) {
         
           <div className="hidden md:flex">
              <Select onValueChange={handleBrandChange} value={selectedBrand}>
-                <SelectTrigger className="w-[150px] brand-selector font-headline">
+                <SelectTrigger className="min-w-[195px] w-auto brand-selector font-headline">
                   <SelectValue placeholder="Select Brand" />
                 </SelectTrigger>
                 <SelectContent>
                   {brands && brands.map((brand) => (
                     <SelectItem key={brand.Brand} value={brand.Brand}>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 whitespace-nowrap">
                         {brand.Logo && (
                           <Image
                             src={brand.Logo}
                             alt={`${brand.Brand} logo`}
-                            width={20}
-                            height={20}
+                            width={24}
+                            height={24}
                             className="object-contain dark:invert"
                           />
                         )}
@@ -266,13 +267,13 @@ export function Header({ categories, brands }: HeaderProps) {
                           <SelectContent>
                             {brands && brands.map((brand) => (
                               <SelectItem key={brand.Brand} value={brand.Brand}>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 whitespace-nowrap">
                                   {brand.Logo && (
                                     <Image
                                       src={brand.Logo}
                                       alt={`${brand.Brand} logo`}
-                                      width={20}
-                                      height={20}
+                                      width={24}
+                                      height={24}
                                       className="object-contain dark:invert"
                                     />
                                   )}
