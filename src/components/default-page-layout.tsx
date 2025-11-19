@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { getCategoryData, processGalleryLinks, type Brand, type Category } from '@/lib/sheets';
 import { filterItemsByBrandActivity, getActivityForBrand } from '@/lib/activity-filter';
 import Image from 'next/image';
@@ -9,7 +10,14 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { VideoBackground } from './video-background';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { ProjectDetails } from './ProjectDetails';
+import { Skeleton } from './ui/skeleton';
+
+// Dynamically import ProjectDetails only on the client side
+const ProjectDetails = dynamic(() => import('./ProjectDetails').then(mod => mod.ProjectDetails), {
+  ssr: false,
+  loading: () => <div className="w-full h-full bg-background p-8"><Skeleton className="w-full h-full" /></div>
+});
+
 
 type ProcessedItem = ReturnType<typeof processGalleryLinks>;
 
@@ -108,7 +116,7 @@ export default function DefaultPageLayout({ category, brand, initialData }: Defa
           </section>
         </div>
         <Dialog open={!!selectedProject} onOpenChange={(isOpen) => !isOpen && setSelectedProject(null)}>
-            <DialogContent className="max-w-7xl w-full h-[90vh] p-0 border-0">
+            <DialogContent className="max-w-5xl w-full h-[80vh] p-0 border-0">
                 {selectedProject && <ProjectDetails project={selectedProject} />}
             </DialogContent>
         </Dialog>
