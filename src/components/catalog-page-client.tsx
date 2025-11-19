@@ -73,7 +73,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   };
 
   return (
-    <section className="w-full py-12 md:py-24 lg:py-32">
+    <section className="w-full py-8 md:py-12">
       <div className="container px-4 md:px-6">
         <div className="flex flex-col items-center space-y-4 text-center mb-12">
           <div className="space-y-2">

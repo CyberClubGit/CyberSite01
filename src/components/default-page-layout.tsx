@@ -12,7 +12,7 @@ interface DefaultPageLayoutProps {
 export default async function DefaultPageLayout({ category, brand }: DefaultPageLayoutProps) {
   if (!category.Url) {
     return (
-        <section className="w-full py-12 md:py-24 lg:py-32">
+        <section className="w-full py-8 md:py-12">
             <div className="container px-4 md:px-6 text-center">
                 <p>Catégorie invalide.</p>
             </div>
@@ -43,7 +43,7 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
   });
 
   return (
-    <section className="w-full py-12 md:py-24 lg:py-32">
+    <section className="w-full py-8 md:py-12">
       <div className="container px-4 md:px-6">
         <div className="flex flex-col items-center space-y-4 text-center">
           <div className="space-y-2">
@@ -86,4 +86,3 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
     </section>
   );
 }
-
