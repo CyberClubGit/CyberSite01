@@ -86,8 +86,8 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <aside className="md:col-span-1">
+        <div className="flex flex-col md:flex-row md:justify-center gap-8">
+          <aside className="md:w-60">
             <div className="sticky top-24">
               <h2 className="text-xl font-headline font-semibold mb-4">Filtres</h2>
               <Accordion type="multiple" defaultValue={['type', 'material']} className="w-full">
@@ -134,7 +134,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
             </div>
           </aside>
 
-          <main className="md:col-span-3">
+          <main className="flex-1">
             {finalData && finalData.length > 0 ? (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {finalData.map((item, index) => (
