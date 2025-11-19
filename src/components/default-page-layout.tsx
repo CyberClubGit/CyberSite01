@@ -51,7 +51,10 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
   return (
     <>
       {hasBackgroundVideo && <VideoBackground src={category.Background} />}
-      <div className={cn("relative min-h-full", !hasBackgroundVideo && "bg-background")}>
+      <div className={cn(
+        "relative z-10",
+        hasBackgroundVideo ? "bg-transparent" : "bg-background"
+      )}>
         <section className="w-full py-8 md:py-12">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center mb-12">

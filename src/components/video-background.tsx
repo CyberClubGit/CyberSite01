@@ -19,7 +19,7 @@ export function VideoBackground({ src }: VideoBackgroundProps) {
   }
 
   return (
-    <div className="fixed inset-0 w-full h-full">
+    <div className="fixed inset-0 w-full h-full z-0">
       <video
         key={src} 
         className="absolute top-0 left-0 w-full h-full object-cover"
