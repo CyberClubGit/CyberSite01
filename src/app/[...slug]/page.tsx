@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Download, GalleryHorizontal } from 'lucide-react';
-import { filterItemsByBrandActivity, getActivityForBrand } from '@/lib/activity-filter';
+import { filterItemsByBrandActivity, getActivityForBrand, parseItemActivities } from '@/lib/activity-filter';
 
 
 export default async function CatchAllPage({ params }: { params: { slug: string[] } }) {
@@ -109,7 +109,9 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
                      <div className="flex flex-wrap gap-1">
                         {item.Type && <Badge variant="secondary">{item.Type}</Badge>}
                         {item.Style && <Badge variant="secondary">{item.Style}</Badge>}
-                        {item.Activity && <Badge variant="outline">{item.Activity}</Badge>}
+                        {item.Activity && parseItemActivities(item.Activity).map((activity, i) => (
+                          <Badge key={i} variant="outline">{activity}</Badge>
+                        ))}
                     </div>
                   </CardContent>
                   <CardFooter className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
