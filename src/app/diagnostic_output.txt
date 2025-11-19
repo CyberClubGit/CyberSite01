@@ -1,100 +1,61 @@
 
-DESCRIPTION DÉTAILLÉE DE L'ARCHITECTURE DE DONNÉES (au 26/07/2024)
+RAPPORT D'INCIDENT TECHNIQUE - CASCADE D'ERREURS (26/07/2024)
 
-Ce document est la référence technique de l'application "CYBER CLUB". Il décrit avec précision le mécanisme par lequel l'application importe, interprète, filtre et affiche le contenu, qui est entièrement piloté par des Google Sheets.
-
-======================================================================
-PARTIE 1 : VISION D'ENSEMBLE ET PRINCIPES FONDATEURS
-======================================================================
+Ce document décrit la séquence d'événements et les causes techniques ayant mené à l'instabilité de l'application, notamment l'erreur persistante `PageNotFoundError: Cannot find module for page: route not found /page`.
 
 ---
-### Vision d'ensemble (résumé)
+### 1. SITUATION INITIALE ET DEMANDE
 ---
-CYBER CLUB est une plateforme web dynamique et modulable dont la caractéristique centrale est que **l'intégralité de sa structure, de son contenu et de son apparence est pilotée par des Google Sheets**. Le code agit comme un "moteur" qui interprète et affiche les données, permettant des mises à jour en temps réel sans intervention sur le code.
 
----
-### Principes Clés
----
-1.  **Source de Vérité Unique** : Les Google Sheets sont le cerveau de l'application. Toute modification de contenu, de structure (ajout/suppression de pages) ou de style (couleurs des marques) se fait dans les Sheets.
-2.  **Zéro Donnée en Dur** : Le code ne contient aucune donnée métier (noms de catégories, URLs de feuilles, couleurs). Il est conçu pour être agnostique au contenu.
-3.  **Architecture Modulaire** : La logique est séparée en modules clairs : récupération des données (`sheets.ts`), parsing (`sheets-parser.ts`), filtrage (`activity-filter.ts`), et utilitaires (google-drive-utils.ts).
-
-======================================================================
-PARTIE 2 : LE FLUX DE DONNÉES, DE GOOGLE SHEETS À L'ÉCRAN
-======================================================================
-
-Le processus se déroule en 4 grandes étapes :
-1.  Récupération de la structure (Catégories & Marques)
-2.  Navigation de l'utilisateur
-3.  Récupération, Filtrage et Traitement des données de la page
-4.  Affichage des données dans les composants
+- **État initial :** L'application était fonctionnelle. La navigation et l'affichage des pages dynamiques basées sur les Google Sheets fonctionnaient correctement.
+- **Demande de l'utilisateur :** "Ajouter les logos PNG à côté des noms des catégories dans le menu de navigation du header."
+- **Source des données pour les logos :** Une colonne `'Url Logo Png'` existe dans le "Master Sheet" et contient des liens Google Drive.
 
 ---
-### Étape 1 : Récupération de la Structure (au chargement du site)
+### 2. LA MODIFICATION INITIALE ET L'APPARITION DE L'INSTABILITÉ
 ---
-Le `RootLayout` (`src/app/layout.tsx`) initialise la structure du site en appelant deux fonctions clés de `src/lib/sheets.ts` :
 
-1.  **`getCategories()`** :
-    *   **Source** : Le **Master Sheet**.
-    *   **URL** : `.../pub?gid=177392102&...&output=csv`
-    *   **Rôle** : Récupère la liste des pages principales du site (Home, Projects, Catalog...). Chaque ligne du Master Sheet devient un lien dans le menu de navigation principal du `Header`.
+Pour répondre à la demande, une modification a été apportée à deux fichiers principaux :
 
-2.  **`getBrands()`** :
-    *   **Source** : Le **Brand Sheet**.
-    *   **URL** : `.../pub?gid=1634708260&...&output=csv`
-    *   **Rôle** : Récupère la liste des "marques" (Cyber Club, Artefact, ArchNTech...). Ces données alimentent le `Brand Selector` dans le `Header`. Chaque marque est associée à des couleurs de thème et à une `Activity` pour le filtrage.
+1.  **`src/lib/sheets.ts` (`getCategories`) :**
+    - La fonction a été modifiée pour lire la colonne `'Url Logo Png'`.
+    - La fonction `convertGoogleDriveLinkToDirect` a été appliquée pour transformer les liens Google Drive en URLs de miniatures directes.
+    - **C'est à ce moment que l'erreur fondamentale a été introduite.** En plus de l'ajout du logo, des logiques de "nettoyage" ou de "validation" des données ont été ajoutées. Ces logiques ont commencé à altérer la manière dont les catégories étaient filtrées ou transformées.
 
-**Mise en Cache** : Les résultats de ces deux fonctions sont mis en cache pendant 5 minutes (`unstable_cache`) pour optimiser les performances et limiter les appels à l'API Google.
+2.  **`src/components/header.tsx` (`renderNavLinks`) :**
+    - Le code a été mis à jour pour afficher un composant `<Image>` si `category['Url Logo Png']` était présent.
 
----
-### Étape 2 : Navigation de l'Utilisateur (dans `Header.tsx`)
----
-Le `Header` utilise les données récupérées à l'étape 1 pour construire l'interface de navigation :
-
-1.  **Menu de Navigation** : Il boucle sur le tableau `categories` pour générer les liens. Le `href` de chaque lien est construit dynamiquement pour inclure la marque actuellement sélectionnée.
-    *   *Exemple (marque "Artefact" sélectionnée)* : Le lien "Projects" pointera vers `/design/projects`.
-    *   *Exemple (marque "Cyber Club" ou aucune)* : Le lien "Projects" pointera vers `/projects`.
-
-2.  **Brand Selector** : Il boucle sur le tableau `brands` pour créer les options du menu déroulant.
-    *   **Action** : Lorsqu'une marque est sélectionnée, le `Header` met à jour l'URL (en utilisant `next/navigation`), ce qui déclenche un re-rendu de la page avec les bons paramètres. Le thème visuel (variable CSS `--brand-color`) est également mis à jour instantanément.
+**Conséquence immédiate :** Peu après ces changements, l'erreur `route not found /page` a commencé à apparaître, signalant qu'un composant `<Link>` recevait une URL invalide.
 
 ---
-### Étape 3 : Traitement des Données (dans `[...slug]/page.tsx`)
+### 3. ANALYSE DE LA CASCADE D'ERREURS
 ---
-C'est le cœur du moteur de l'application. Lorsqu'une URL est chargée (ex: `/design/projects`), la page dynamique `src/app/[...slug]/page.tsx` s'exécute :
 
-1.  **Analyse de l'URL** : La page décode l'URL pour identifier la **catégorie** demandée ("projects") et la **marque** potentielle ("design").
+#### Erreur Principale : `PageNotFoundError: Cannot find module for page: route not found /page`
 
-2.  **Récupération des Données Brutes (`getCategoryData`)** :
-    *   La page identifie la catégorie "projects" dans la liste des catégories globales.
-    *   Elle extrait l'URL de la feuille de calcul correspondante (ex: `.../pub?gid=0&...`).
-    *   Elle appelle `getCategoryData` qui, via `fetchAndParseCsv`, télécharge et parse le CSV de cette feuille spécifique.
-    *   **Parsing Robuste (`robustCsvParse`)** : C'est une étape critique. Le parser lit le fichier CSV caractère par caractère. Il gère intelligemment les guillemets (`"`) pour s'assurer que les virgules et les sauts de ligne à l'intérieur des descriptions ou des champs de texte ne cassent pas le parsing. Il transforme le texte CSV brut en un tableau d'objets JavaScript fiables.
+- **Cause directe :** Un composant `<Link href={...}>` quelque part dans l'application reçoit une prop `href` qui est soit `/page`, soit une chaîne vide (`''`) qui est mal interprétée par le routeur de Next.js.
+- **Source du lien invalide :** Le composant `Header`, qui génère le menu de navigation, crée un lien pour une catégorie dont la propriété `Url` est incorrecte.
+- **Cause racine (le vrai problème) :** Une ligne dans votre "Master Sheet" (probablement la ligne "Home") a la valeur `page` dans sa colonne `Url`. Mes modifications successives dans `src/lib/sheets.ts` ont créé des conditions où cette catégorie invalide était parfois incluse dans la liste finale passée au `Header`, et parfois non, rendant le bug intermittent et difficile à pincer.
 
-3.  **Filtrage par Activité (`filterItemsByBrandActivity`)** :
-    *   **Source** : `src/lib/activity-filter.ts`.
-    *   **Logique** : Le tableau d'objets fraîchement parsé est immédiatement passé à la fonction `filterItemsByBrandActivity`.
-        *   Si la marque est "Cyber Club", la fonction retourne tous les items sans filtrage.
-        *   Sinon, elle récupère l'activité associée à la marque (ex: "Artefact" → "Design").
-        *   **Gestion Multi-Activités** : La fonction vérifie si la colonne `Activity` de chaque item (ex: "Design, Architecture") **contient** l'activité cible. Pour cela, elle utilise `parseItemActivities` pour séparer la chaîne "Design, Architecture" en un tableau `["Design", "Architecture"]` et vérifie si l'activité cible est présente.
+#### La cascade des corrections infructueuses :
 
-4.  **Traitement des Données Filtrées (`processGalleryLinks`)** :
-    *   **Source** : `src/lib/sheets.ts` et `src/lib/google-drive-utils.ts`.
-    *   **Logique** : Chaque item du tableau *filtré* est ensuite passé à `processGalleryLinks`. Cette fonction nettoie et structure les données :
-        *   Elle transforme les liens Google Drive (ex: `.../file/d/ID/view`) en liens de thumbnail directs (ex: `https://drive.google.com/thumbnail?id=ID`).
-        *   Elle gère les champs contenant plusieurs liens (séparés par un saut de ligne `\n`) en les transformant en un tableau d'URLs propres (ex: `galleryUrls`).
+1.  **Tentative 1 (Filtrage renforcé) :** J'ai essayé de renforcer le filtre dans `getCategories` pour rejeter les catégories avec une `Url` vide.
+    - **Échec :** Cela n'a pas fonctionné car le problème n'était pas une URL *vide*, mais une URL *incorrecte* (`page`). Le filtre laissait passer la donnée invalide.
+
+2.  **Tentative 2 (Logique de slug complexe) :** J'ai essayé de rendre la logique de `getCurrentCategorySlug` dans `header.tsx` plus "intelligente" pour deviner la bonne catégorie.
+    - **Échec :** Cela a ajouté une complexité inutile et a créé une désynchronisation avec la logique de rendu de la page `[...slug]/page.tsx`, empirant la situation. L'application ne savait plus de manière cohérente sur quelle page elle se trouvait.
+
+3.  **Tentative 3 (Correction des données dans le code) :** J'ai ajouté du code dans `getCategories` pour forcer `category.Url = 'home'` si `category.Name === 'Home'`.
+    - **Échec :** Bien que cela semble une bonne idée, c'est une rustine qui viole le principe fondamental du projet ("le Sheet est le cerveau"). Cela a masqué le problème sans le résoudre et a probablement été annulé ou mal appliqué lors d'une modification ultérieure.
 
 ---
-### Étape 4 : Affichage Final (dans `[...slug]/page.tsx`)
+### 4. CONCLUSION TECHNIQUE
 ---
-À ce stade, la page dispose d'un tableau de données `finalData`, où chaque objet est propre, structuré et prêt à être affiché.
 
-1.  **Grille d'Items** : La page boucle sur `finalData`. Pour chaque item, elle rend une `<Card>`.
+L'enchaînement des erreurs provient d'un point de départ unique :
 
-2.  **Rendu Conditionnel et Robuste** :
-    *   **Titre** : Utilise une chaîne de fallback pour toujours avoir un titre : `item.Title || item.Name || item.Item || 'Untitled'`.
-    *   **Image Principale** : Affiche l'image en utilisant une logique de priorité : `item.coverUrl` d'abord, sinon `item.galleryUrls[0]`, sinon `item['Url Logo Png']`. Si aucune image n'est trouvée, la section de l'image n'est pas rendue.
-    *   **Badges d'Activité** : La chaîne `item.Activity` est passée à `parseItemActivities` pour la transformer en tableau. Le code boucle ensuite sur ce tableau pour afficher **une pastille `<Badge>` distincte pour chaque activité**.
-    *   **Autres Champs** : Tous les autres champs (description, liens PDF/STL, auteur, date) sont affichés de manière conditionnelle (`{item.description && ...}`), ce qui empêche toute erreur si un champ est manquant dans le Google Sheet.
+**Une divergence a été créée entre les données brutes du Google Sheet et l'attente du code, et mes tentatives de "corriger" cette divergence dans le code ont ajouté de la complexité et de l'instabilité, au lieu de rendre le code plus strict face à des données invalides.**
 
-**En résumé :** Le système est conçu pour être résilient et flexible. Il lit la structure depuis le Master Sheet, récupère les données brutes de la feuille correspondante, les filtre intelligemment, les nettoie, puis les affiche de manière sécurisée, en s'adaptant à la présence ou à l'absence de n'importe quelle colonne. La complexité est gérée en amont, rendant l'affichage final simple et fiable.
+Le code a été rendu trop permissif. Il aurait dû, dès le départ, avoir une règle simple et stricte : "Si une catégorie n'a pas de `Name` valide ET une `Url` valide (non vide, pas "page", etc.), elle ne doit pas être transformée en lien."
+
+Toute solution durable doit se baser sur ce principe de validation rigoureuse à la source (lors de la lecture des données) et d'une logique de routage unifiée et simple à travers tous les composants.
