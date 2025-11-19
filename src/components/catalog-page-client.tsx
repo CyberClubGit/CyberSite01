@@ -95,7 +95,6 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                     src={category.Background}
                     width="100%" 
                     controls 
-                    muted
                     playsInline
                     className="bg-black"
                   >

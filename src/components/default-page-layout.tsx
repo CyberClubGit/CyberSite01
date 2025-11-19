@@ -70,7 +70,6 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
                     src={category.Background}
                     width="100%" 
                     controls 
-                    muted
                     playsInline
                     className="bg-black"
                   >
