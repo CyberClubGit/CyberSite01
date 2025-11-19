@@ -43,8 +43,8 @@ export function convertGoogleDriveLinkToDirect(url: string): string {
 export function convertGoogleDriveLinkToDirectVideo(url: string): string {
   const fileId = extractGoogleDriveId(url);
   if (fileId) {
-    // Ce format force le téléchargement direct du contenu, ce qui est ce que la balise <video> attend.
-    return `https://drive.google.com/uc?export=view&id=${fileId}`;
+    // Ce format est plus fiable pour le streaming direct dans une balise <video>
+    return `https://drive.google.com/uc?export=download&id=${fileId}`;
   }
   return url;
 }
