@@ -19,7 +19,7 @@ export function VideoBackground({ src }: VideoBackgroundProps) {
   }
 
   return (
-    <div className="fixed inset-0 w-full h-full overflow-hidden">
+    <div className="fixed inset-0 w-full h-full overflow-hidden -z-10">
       <video
         key={src} // Important to re-mount the video element on src change
         className="absolute top-1/2 left-1/2 w-full h-full object-cover transform -translate-x-1/2 -translate-y-1/2"
