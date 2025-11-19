@@ -100,9 +100,8 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
                     )}
                   </CardHeader>
                   <CardContent className="flex-1 space-y-2 text-xs">
-                    {(item.Author || item.Date) && (
+                    {(item.Date) && (
                          <div className="text-muted-foreground flex flex-wrap gap-x-2">
-                            {item.Author && <span>👤 {item.Author}</span>}
                             {item.Date && <span>📅 {item.Date}</span>}
                         </div>
                     )}
@@ -116,8 +115,6 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
                   </CardContent>
                   <CardFooter className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
                     {item.pdfUrl && <a href={item.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary"><FileText size={14}/> PDF</a>}
-                    {item.stlUrl && <a href={item.stlUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary"><Download size={14}/> STL</a>}
-                    {item.galleryUrls && item.galleryUrls.length > 0 && <span className="flex items-center gap-1"><GalleryHorizontal size={14}/> {item.galleryUrls.length} images</span>}
                   </CardFooter>
                 </Card>
             ))}
