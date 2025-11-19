@@ -74,9 +74,9 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   const hasBackgroundVideo = category.Background && category.Background.length > 0;
 
   return (
-    <div className={cn("min-h-full", !hasBackgroundVideo && "bg-background")}>
+    <>
       {hasBackgroundVideo && <VideoBackground src={category.Background} />}
-      <div className="relative isolate">
+      <div className={cn("relative min-h-full", !hasBackgroundVideo && "bg-background")}>
         <section className="w-full py-8 md:py-12">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center mb-12">
@@ -169,6 +169,6 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
           </div>
         </section>
       </div>
-    </div>
+    </>
   );
 }

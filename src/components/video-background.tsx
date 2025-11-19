@@ -19,10 +19,10 @@ export function VideoBackground({ src }: VideoBackgroundProps) {
   }
 
   return (
-    <div className="fixed inset-0 w-full h-full -z-10">
+    <div className="fixed inset-0 w-full h-full">
       <video
         key={src} 
-        className="absolute top-1/2 left-1/2 w-full h-full object-cover transform -translate-x-1/2 -translate-y-1/2"
+        className="absolute top-0 left-0 w-full h-full object-cover"
         autoPlay
         loop
         muted

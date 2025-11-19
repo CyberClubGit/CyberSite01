@@ -12,13 +12,17 @@ interface DefaultPageLayoutProps {
 }
 
 export default async function DefaultPageLayout({ category, brand }: DefaultPageLayoutProps) {
+  const hasBackgroundVideo = category.Background && category.Background.length > 0;
+
   if (!category.Url) {
     return (
-        <section className="w-full py-8 md:py-12 bg-background">
+      <div className={cn("min-h-full", !hasBackgroundVideo && "bg-background")}>
+        <section className="w-full py-8 md:py-12">
             <div className="container px-4 md:px-6 text-center">
                 <p>Catégorie invalide.</p>
             </div>
         </section>
+      </div>
     );
   }
 
@@ -44,12 +48,10 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
     };
   });
 
-  const hasBackgroundVideo = category.Background && category.Background.length > 0;
-
   return (
-    <div className={cn("min-h-full", !hasBackgroundVideo && "bg-background")}>
+    <>
       {hasBackgroundVideo && <VideoBackground src={category.Background} />}
-      <div className="relative isolate">
+      <div className={cn("relative min-h-full", !hasBackgroundVideo && "bg-background")}>
         <section className="w-full py-8 md:py-12">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center mb-12">
@@ -92,6 +94,6 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
           </div>
         </section>
       </div>
-    </div>
+    </>
   );
 }
