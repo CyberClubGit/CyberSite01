@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { normalizeRowData } from '@/lib/sheets-utils';
 import { Badge } from '@/components/ui/badge';
-import { Link, FileText, Download } from 'lucide-react';
+import { Link as LinkIcon, FileText, Download, GalleryHorizontal } from 'lucide-react';
 
 
 export default async function CatchAllPage({ params }: { params: { slug: string[] } }) {
@@ -52,21 +52,22 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
               const item = normalizeRowData(rawItem);
               
               return (
-                <Card key={index} className="flex flex-col overflow-hidden">
+                <Card key={index} className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
                   {item.displayImageUrl && (
                     <div className="relative w-full h-48 bg-muted">
                       <Image
                         src={item.displayImageUrl}
-                        alt={item.title}
+                        alt={item.title || 'Image de l\'item'}
                         fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className="object-cover"
                       />
                     </div>
                   )}
                   <CardHeader>
-                    <CardTitle className="font-headline text-lg">{item.title}</CardTitle>
+                    <CardTitle className="font-headline text-lg leading-tight">{item.title}</CardTitle>
                     {item.description && (
-                        <CardDescription className="line-clamp-3 h-[60px]">
+                        <CardDescription className="line-clamp-3 h-[60px] text-xs">
                             {item.description}
                         </CardDescription>
                     )}
@@ -84,10 +85,10 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
                         {item.Activity && <Badge variant="outline">{item.Activity}</Badge>}
                     </div>
                   </CardContent>
-                  <CardFooter className="flex-wrap gap-2 text-xs">
-                    {item.pdfUrl && <a href={item.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:underline"><FileText size={14}/> PDF</a>}
-                    {item.stlUrl && <a href={item.stlUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:underline"><Download size={14}/> STL</a>}
-                    {item.galleryUrls.length > 0 && <span className="text-muted-foreground">{item.galleryUrls.length} images</span>}
+                  <CardFooter className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
+                    {item.pdfUrl && <a href={item.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary"><FileText size={14}/> PDF</a>}
+                    {item.stlUrl && <a href={item.stlUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary"><Download size={14}/> STL</a>}
+                    {item.galleryUrls.length > 0 && <span className="flex items-center gap-1"><GalleryHorizontal size={14}/> {item.galleryUrls.length} images</span>}
                   </CardFooter>
                 </Card>
               );
@@ -96,8 +97,8 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
         )}
 
         <div className="mt-12 w-full mx-auto bg-muted/50 p-4 rounded-lg">
-          <h2 className="text-2xl font-headline font-bold mb-4 text-center">Données brutes de la feuille :</h2>
-          <pre className="text-xs bg-background p-4 rounded-md overflow-x-auto">
+          <h2 className="text-2xl font-headline font-bold mb-4 text-center">Données brutes :</h2>
+          <pre className="text-xs bg-background p-4 rounded-md overflow-x-auto max-h-[500px]">
             {JSON.stringify({ category, brand, data: categoryData }, null, 2)}
           </pre>
         </div>
