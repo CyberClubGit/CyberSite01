@@ -115,7 +115,13 @@ export const getCategories = unstable_cache(
 export const getBrands = unstable_cache(
   async (): Promise<Brand[]> => {
     console.log('[Sheets] === Fetching Brands ===');
-    const brands = await fetchAndParseCsv<Brand>(BRAND_SHEET_URL);
+    const rawBrands = await fetchAndParseCsv<Brand>(BRAND_SHEET_URL);
+    
+    const brands = rawBrands.map(brand => ({
+      ...brand,
+      Logo: brand.Logo ? convertGoogleDriveLinkToDirect(brand.Logo) : '',
+    }));
+
     return brands.filter(brand => !!brand.Brand);
   },
   ['brands'],
@@ -200,6 +206,6 @@ export function processGalleryLinks(item: Record<string, string>) {
       
     videoUrl: item.Video
       ? convertGoogleDriveLinkToDirect(item.Video)
-      : null,
+            : null,
   };
 }

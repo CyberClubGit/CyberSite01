@@ -166,7 +166,7 @@ export function Header({ categories, brands }: HeaderProps) {
                       alt={`${category.Name} logo`}
                       width={20}
                       height={20}
-                      className="object-contain dark:mix-blend-difference dark:invert"
+                      className="object-contain dark:invert"
                     />
                   )}
                   <span>{category.Name}</span>
@@ -203,13 +203,24 @@ export function Header({ categories, brands }: HeaderProps) {
         
           <div className="hidden md:flex">
              <Select onValueChange={handleBrandChange} value={selectedBrand}>
-                <SelectTrigger className="w-[150px] brand-selector">
+                <SelectTrigger className="w-[150px] brand-selector font-headline">
                   <SelectValue placeholder="Select Brand" />
                 </SelectTrigger>
                 <SelectContent>
                   {brands && brands.map((brand) => (
                     <SelectItem key={brand.Brand} value={brand.Brand}>
-                      {brand.Brand}
+                      <div className="flex items-center gap-2">
+                        {brand.Logo && (
+                          <Image
+                            src={brand.Logo}
+                            alt={`${brand.Brand} logo`}
+                            width={20}
+                            height={20}
+                            className="object-contain dark:invert"
+                          />
+                        )}
+                        <span>{brand.Brand}</span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -249,13 +260,24 @@ export function Header({ categories, brands }: HeaderProps) {
                     </SheetHeader>
                     <div className="flex flex-col gap-4 p-4">
                        <Select onValueChange={(value) => { handleBrandChange(value); setIsMobileMenuOpen(false); }} value={selectedBrand}>
-                          <SelectTrigger className="w-full brand-selector">
+                          <SelectTrigger className="w-full brand-selector font-headline">
                             <SelectValue placeholder="Select Brand" />
                           </SelectTrigger>
                           <SelectContent>
                             {brands && brands.map((brand) => (
                               <SelectItem key={brand.Brand} value={brand.Brand}>
-                                {brand.Brand}
+                                <div className="flex items-center gap-2">
+                                  {brand.Logo && (
+                                    <Image
+                                      src={brand.Logo}
+                                      alt={`${brand.Brand} logo`}
+                                      width={20}
+                                      height={20}
+                                      className="object-contain dark:invert"
+                                    />
+                                  )}
+                                  <span>{brand.Brand}</span>
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
