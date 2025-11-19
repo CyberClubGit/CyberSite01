@@ -205,12 +205,12 @@ export function Header({ categories, brands }: HeaderProps) {
           <div className="hidden md:flex">
              <Select onValueChange={handleBrandChange} value={selectedBrand}>
                 <SelectTrigger className="min-w-[254px] w-auto brand-selector font-headline">
-                  <SelectValue placeholder="Select Brand" />
+                  <SelectValue placeholder="Select Brand" className="uppercase" />
                 </SelectTrigger>
                 <SelectContent>
                   {brands && brands.map((brand) => (
                     <SelectItem key={brand.Brand} value={brand.Brand}>
-                      <div className="flex items-center gap-2 whitespace-nowrap">
+                      <div className="flex items-center gap-2 whitespace-nowrap font-headline">
                         {brand.Logo && (
                           <Image
                             src={brand.Logo}
@@ -262,12 +262,12 @@ export function Header({ categories, brands }: HeaderProps) {
                     <div className="flex flex-col gap-4 p-4">
                        <Select onValueChange={(value) => { handleBrandChange(value); setIsMobileMenuOpen(false); }} value={selectedBrand}>
                           <SelectTrigger className="w-full brand-selector font-headline">
-                            <SelectValue placeholder="Select Brand" />
+                            <SelectValue placeholder="Select Brand" className="uppercase" />
                           </SelectTrigger>
                           <SelectContent>
                             {brands && brands.map((brand) => (
                               <SelectItem key={brand.Brand} value={brand.Brand}>
-                                <div className="flex items-center gap-2 whitespace-nowrap">
+                                <div className="flex items-center gap-2 whitespace-nowrap font-headline">
                                   {brand.Logo && (
                                     <Image
                                       src={brand.Logo}
