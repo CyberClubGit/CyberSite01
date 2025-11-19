@@ -75,14 +75,35 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
 
   return (
     <>
-      {hasBackgroundVideo && <VideoBackground src={category.Background} />}
       <div className={cn(
-        "relative isolate",
+        "relative",
         hasBackgroundVideo ? "bg-transparent" : "bg-background"
       )}>
         <section className="w-full py-8 md:py-12">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center mb-12">
+              
+              {/* === BOÎTE DE DÉBOGAGE VIDÉO === */}
+              {category.Background && (
+                <div className="w-full max-w-md border-2 border-red-500 p-2 my-4">
+                  <p className="text-sm text-red-500 mb-2">Boîte de débogage vidéo :</p>
+                  <video 
+                    key={category.Background}
+                    width="100%" 
+                    controls 
+                    muted 
+                    autoPlay 
+                    loop 
+                    playsInline
+                    className="bg-black"
+                  >
+                    <source src={category.Background} type="video/mp4" />
+                    Votre navigateur ne supporte pas la balise vidéo.
+                  </video>
+                </div>
+              )}
+              {/* ================================ */}
+
               <div className="space-y-2">
                 <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none capitalize">
                   {category?.Name || 'Catalogue'}
