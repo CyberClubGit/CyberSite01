@@ -9,7 +9,7 @@ import { Link as LinkIcon, FileText, Download, GalleryHorizontal } from 'lucide-
 
 
 export default async function CatchAllPage({ params }: { params: { slug: string[] } }) {
-  const { slug } = params;
+  const slug = params.slug || [];
   
   const categories = await getCategories();
   const brands = await getBrands();
