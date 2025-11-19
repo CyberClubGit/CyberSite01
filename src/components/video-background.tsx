@@ -24,7 +24,7 @@ export function VideoBackground({ src }: VideoBackgroundProps) {
       <video
         ref={videoRef}
         key={src}
-        className="absolute top-1/2 left-1/2 w-full h-full object-cover transform -translate-x-1/2 -translate-y-1/2"
+        className="absolute top-1/2 left-1/2 w-full h-full object-cover transform -translate-x-1/2 -translate-y-1/2 mix-blend-difference dark:mix-blend-normal"
         autoPlay
         loop
         muted
