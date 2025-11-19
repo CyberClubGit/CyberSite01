@@ -35,6 +35,7 @@
     --radius: 0.5rem;
 
     --brand-color: #000000;
+    --diagonal-line-thickness: 1px;
   }
  
   .dark {
@@ -55,8 +56,7 @@
  
     --muted: 0 0% 14.9%;
     --muted-foreground: 0 0% 63.9%;
- 
-    --accent: 0 0% 14.9%;
+ accent: 0 0% 14.9%;
     --accent-foreground: 0 0% 98%;
  
     --destructive: 0 62.8% 30.6%;
@@ -67,6 +67,7 @@
     --ring: 0 0% 83.1%;
 
     --brand-color: #FFFFFF;
+    --diagonal-line-thickness: 1.4px;
   }
 }
  
@@ -108,7 +109,7 @@
         hsla(0, 0%, 100%, 0),
         hsla(0, 0%, 100%, 0) 10px,
         var(--brand-color) 10px,
-        var(--brand-color) 11px
+        var(--brand-color) calc(10px + var(--diagonal-line-thickness))
     );
     opacity: 0.1;
     z-index: 0;
