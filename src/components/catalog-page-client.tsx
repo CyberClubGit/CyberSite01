@@ -5,7 +5,6 @@ import { useState, useMemo } from 'react';
 import type { Brand, Category } from '@/lib/sheets';
 import { filterItemsByBrandActivity } from '@/lib/activity-filter';
 import { processGalleryLinks } from '@/lib/sheets';
-import { convertGoogleDriveLinkToDirectVideo } from '@/lib/google-drive-utils';
 import Image from 'next/image';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,9 +12,6 @@ import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
-import { VideoBackground } from './video-background';
-import { VideoDebugInfo } from './video-debug-info';
-
 
 interface CatalogPageClientProps {
   initialData: any[];
@@ -69,20 +65,17 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
     setSelectedMaterials([]);
   };
 
-  const backgroundVideoUrl = category.Background ? convertGoogleDriveLinkToDirectVideo(category.Background) : '';
-
   return (
     <>
-      {backgroundVideoUrl && <VideoBackground src={backgroundVideoUrl} />}
-      <div className={cn("relative bg-transparent")}>
+      <div className={cn("relative bg-background")}>
         <section className="w-full py-8 md:py-12 relative z-10">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center mb-12">
               <div className="space-y-2">
-                <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none capitalize text-white" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.7)' }}>
+                <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none capitalize">
                   {category?.Name || 'Catalogue'}
                 </h1>
-                <p className="mx-auto max-w-[700px] text-gray-200 md:text-xl" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.7)' }}>
+                <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
                   {category?.Description || (brand ? `Contenu pour ${category?.Name} sous la marque ${brand.Brand}` : `Contenu à venir pour ${category?.Name}`)}
                 </p>
               </div>
@@ -140,7 +133,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                 {finalData && finalData.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {finalData.map((item, index) => (
-                      <Card key={index} className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-background/80 backdrop-blur-sm">
+                      <Card key={index} className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
                         {item.displayImageUrl && (
                           <div className="relative w-full aspect-[3/4] bg-muted">
                             <Image
@@ -159,28 +152,11 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                     ))}
                   </div>
                 ) : (
-                  <div className="mt-12 text-center text-gray-300 md:mt-0 md:flex md:items-center md:justify-center h-full">
+                  <div className="mt-12 text-center text-muted-foreground md:mt-0 md:flex md:items-center md:justify-center h-full">
                     <p>Aucun élément ne correspond à votre sélection.</p>
                   </div>
                 )}
               </main>
-
-              {/* Outils de débogage conservés en bas de page */}
-              {backgroundVideoUrl && (
-                <div className="mt-20 p-4 border-2 border-dashed border-yellow-500 bg-black/50 rounded-lg">
-                  <h2 className="text-xl font-headline text-yellow-400 mb-4">Lecteur Vidéo de Débogage :</h2>
-                  <video
-                    key={backgroundVideoUrl}
-                    src={backgroundVideoUrl}
-                    width="100%"
-                    controls
-                    className="bg-black mb-4"
-                  >
-                    Votre navigateur ne supporte pas la balise vidéo.
-                  </video>
-                  <VideoDebugInfo videoUrl={backgroundVideoUrl} />
-                </div>
-              )}
           </div>
         </section>
       </div>
