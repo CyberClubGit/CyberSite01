@@ -2,6 +2,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useState, useCallback } from 'react';
 import { useTheme } from 'next-themes';
 import { Moon, Sun, Menu } from 'lucide-react';
@@ -158,7 +159,18 @@ export function Header({ categories, brands }: HeaderProps) {
                 onClick={() => isMobile && setIsMobileMenuOpen(false)}
                 className={`text-sm font-medium transition-colors hover:text-primary menu-link ${isActive ? 'active' : ''} ${isMobile ? 'block w-full text-left p-2' : ''}`}
             >
-                {category.Name}
+                <div className="flex items-center gap-2">
+                  {category['Url Logo Png'] && (
+                    <Image
+                      src={category['Url Logo Png']}
+                      alt={`${category.Name} logo`}
+                      width={20}
+                      height={20}
+                      className="object-contain"
+                    />
+                  )}
+                  <span>{category.Name}</span>
+                </div>
             </Link>
           )
       })
