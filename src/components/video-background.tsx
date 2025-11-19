@@ -24,7 +24,7 @@ export function VideoBackground({ src }: VideoBackgroundProps) {
       <video
         ref={videoRef}
         key={src}
-        className="absolute top-1/2 left-1/2 w-full h-full object-cover transform -translate-x-1/2 -translate-y-1/2 invert dark:invert-0 transition-all duration-300"
+        className="absolute top-1/2 left-1/2 w-full h-full object-cover transform -translate-x-1/2 -translate-y-1/2 invert dark:invert-0"
         autoPlay
         loop
         muted
@@ -33,7 +33,7 @@ export function VideoBackground({ src }: VideoBackgroundProps) {
         <source src={src} type="video/mp4" />
         Votre navigateur ne supporte pas la lecture de vidéos.
       </video>
-      <div className="absolute inset-0 w-full h-full bg-white/50 dark:bg-black/50"></div>
+      <div className="absolute inset-0 w-full h-full bg-white/80 dark:bg-black/80"></div>
     </div>
   );
 }
