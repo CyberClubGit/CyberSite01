@@ -29,9 +29,11 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
   }
   
   const rawCategoryData = await getCategoryData(category.Url);
+  
+  // Utiliser processGalleryLinks pour nettoyer et structurer les données
   const categoryData = rawCategoryData.map(processGalleryLinks);
 
-  // Determine a display image for each item
+  // Déterminer une image à afficher et un titre pour chaque item
   const finalData = categoryData.map(item => {
     let displayImageUrl = null;
     if (item.coverUrl) {
@@ -103,7 +105,7 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
                   <CardFooter className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
                     {item.pdfUrl && <a href={item.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary"><FileText size={14}/> PDF</a>}
                     {item.stlUrl && <a href={item.stlUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary"><Download size={14}/> STL</a>}
-                    {item.galleryUrls.length > 0 && <span className="flex items-center gap-1"><GalleryHorizontal size={14}/> {item.galleryUrls.length} images</span>}
+                    {item.galleryUrls && item.galleryUrls.length > 0 && <span className="flex items-center gap-1"><GalleryHorizontal size={14}/> {item.galleryUrls.length} images</span>}
                   </CardFooter>
                 </Card>
             ))}
