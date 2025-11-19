@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import type { Brand, Category } from '@/lib/sheets';
-import { filterItemsByBrandActivity, getActivityForBrand } from '@/lib/activity-filter';
+import { filterItemsByBrandActivity } from '@/lib/activity-filter';
 import { processGalleryLinks } from '@/lib/sheets';
 import Image from 'next/image';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,9 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from './ui/button';
-import { VideoBackground } from './video-background';
 import { cn } from '@/lib/utils';
-import { VideoDebugInfo } from './video-debug-info';
 
 interface CatalogPageClientProps {
   initialData: any[];
@@ -72,40 +70,12 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
     setSelectedMaterials([]);
   };
 
-  const hasBackgroundVideo = category.Background && category.Background.length > 0;
-
   return (
     <>
-      <div className={cn(
-        "relative",
-        !hasBackgroundVideo && "bg-background"
-      )}>
-        {hasBackgroundVideo && <VideoBackground src={category.Background} />}
+      <div className={cn("relative bg-background")}>
         <section className="w-full py-8 md:py-12 relative z-10">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center mb-12">
-              
-              {/* === BOÎTE DE DÉBOGAGE VIDÉO === */}
-              {category.Background && (
-                <>
-                <div className="w-full max-w-2xl border-2 border-red-500 p-2 my-4 bg-black">
-                  <p className="text-sm text-red-500 mb-2 font-headline">Lecteur Vidéo de Débogage :</p>
-                  <video
-                    key={category.Background}
-                    src={category.Background}
-                    width="100%" 
-                    controls 
-                    playsInline
-                    className="bg-black"
-                  >
-                    Votre navigateur ne supporte pas la balise vidéo.
-                  </video>
-                </div>
-                 <VideoDebugInfo videoUrl={category.Background} />
-                </>
-              )}
-              {/* ================================ */}
-
               <div className="space-y-2">
                 <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none capitalize">
                   {category?.Name || 'Catalogue'}
