@@ -28,7 +28,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   const handleFilterChange = (filterType: 'type' | 'material', value: string) => {
     if (filterType === 'type') {
       setSelectedTypes(prev =>
-        prev.includes(value) ? prev.filter(t => t !== value) : [...prev, value]
+        prev.includes(value) ? prev.filter(t => t !== value) : [...prev, t]
       );
     } else if (filterType === 'material') {
       setSelectedMaterials(prev =>
@@ -74,9 +74,9 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   };
 
   return (
-    <>
+    <div className="relative">
       {category.Background && <VideoBackground src={category.Background} />}
-      <div className="relative">
+      <div className={category.Background ? 'relative z-10 bg-transparent' : 'relative z-10'}>
         <section className="w-full py-8 md:py-12">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center mb-12">
@@ -169,6 +169,6 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
           </div>
         </section>
       </div>
-    </>
+    </div>
   );
 }
