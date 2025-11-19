@@ -93,7 +93,7 @@
 
 
 .menu-link.active {
-  color: var(--brand-color) !important;
+  color: hsl(var(--foreground));
   border-bottom-color: var(--brand-color) !important;
   border-bottom-width: 2px;
 }
