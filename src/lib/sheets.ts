@@ -2,7 +2,8 @@ import { unstable_cache } from 'next/cache';
 import { robustCsvParse, rowsToObjects } from './sheets-parser';
 import { 
   convertGoogleDriveLinkToDirect, 
-  extractAndConvertGalleryLinks 
+  extractAndConvertGalleryLinks,
+  convertGoogleDriveLinkToDirectVideo
 } from './google-drive-utils';
 
 // ===== TYPES =====
@@ -90,7 +91,7 @@ export const getCategories = unstable_cache(
       Description: row['Description'] || '',
       'Url Logo Png': row['Url Logo Png'] ? convertGoogleDriveLinkToDirect(row['Url Logo Png']) : '',
       Url: row['Url'] || '',
-      Background: row['Background'] || '',
+      Background: row['Background'] ? convertGoogleDriveLinkToDirectVideo(row['Background']) : '',
       'Url Sheet': row['Url Sheet'] || '',
       'Url app': row['Url app'] || '',
     }));

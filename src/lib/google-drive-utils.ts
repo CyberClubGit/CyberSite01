@@ -25,16 +25,12 @@ export function extractGoogleDriveId(url: string): string | null {
 }
 
 /**
- * Convertir un lien Google Drive en lien direct (thumbnail)
- * 
- * Input:  https://drive.google.com/file/d/1ABC/view
- * Output: https://drive.google.com/thumbnail?id=1ABC
+ * Convertir un lien Google Drive en lien direct (thumbnail/image)
  */
 export function convertGoogleDriveLinkToDirect(url: string): string {
   const fileId = extractGoogleDriveId(url);
   
   if (fileId) {
-    // Utiliser le format d'image de plus haute qualité
     return `https://lh3.googleusercontent.com/d/${fileId}`;
   }
   
@@ -42,10 +38,20 @@ export function convertGoogleDriveLinkToDirect(url: string): string {
 }
 
 /**
+ * Convertir un lien Google Drive en lien direct pour une vidéo MP4.
+ */
+export function convertGoogleDriveLinkToDirectVideo(url: string): string {
+  const fileId = extractGoogleDriveId(url);
+  if (fileId) {
+    // Ce format force le téléchargement direct du contenu, ce qui est ce que la balise <video> attend.
+    return `https://drive.google.com/uc?export=view&id=${fileId}`;
+  }
+  return url;
+}
+
+
+/**
  * Séparer les liens multiples dans une cellule
- * 
- * Dans Google Sheets, quand tu fais Alt+Enter, ça crée un \n
- * Cette fonction détecte et sépare ces liens
  */
 export function splitMultipleLinks(cellContent: string): string[] {
   if (!cellContent || typeof cellContent !== 'string') return [];
@@ -58,8 +64,6 @@ export function splitMultipleLinks(cellContent: string): string[] {
 
 /**
  * Extraire et convertir tous les liens Google Drive d'une cellule
- * 
- * Use case: Colonne "Gallery" avec plusieurs liens séparés par \n
  */
 export function extractAndConvertGalleryLinks(cellContent: string): string[] {
   const links = splitMultipleLinks(cellContent);
