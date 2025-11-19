@@ -67,7 +67,7 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
                 <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
                 
                 {project.description && (
-                    <div className="text-xs md:text-sm leading-relaxed text-muted-foreground">
+                    <div className="text-[0.625rem] md:text-xs leading-relaxed text-muted-foreground">
                        {project.description.split('\n').map((paragraph, i) => <p key={i} className="mb-4">{paragraph}</p>)}
                     </div>
                 )}
