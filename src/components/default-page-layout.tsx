@@ -51,6 +51,11 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center mb-12">
               <div className="space-y-2">
+                {category.Background && (
+                  <p className="text-xs text-center break-all mb-4">
+                    [Debug] Vidéo BG: {category.Background}
+                  </p>
+                )}
                 <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none capitalize">
                   {category?.Name || 'Catégorie'}
                 </h1>
