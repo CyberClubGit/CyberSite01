@@ -96,8 +96,6 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                     width="100%" 
                     controls 
                     muted
-                    autoPlay 
-                    loop 
                     playsInline
                     className="bg-black"
                   >

@@ -71,8 +71,6 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
                     width="100%" 
                     controls 
                     muted
-                    autoPlay 
-                    loop 
                     playsInline
                     className="bg-black"
                   >
