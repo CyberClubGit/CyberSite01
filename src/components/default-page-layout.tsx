@@ -12,8 +12,8 @@ import { VideoBackground } from './video-background';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Skeleton } from './ui/skeleton';
 
-// Dynamically import ProjectDetails only on the client side
-const ProjectDetails = dynamic(() => import('./ProjectDetails').then(mod => mod.ProjectDetails), {
+// Dynamically import ProjectExplorer only on the client side
+const ProjectExplorer = dynamic(() => import('./ProjectExplorer').then(mod => mod.ProjectExplorer), {
   ssr: false,
   loading: () => <div className="w-full h-full bg-background p-8"><Skeleton className="w-full h-full" /></div>
 });
@@ -117,7 +117,7 @@ export default function DefaultPageLayout({ category, brand, initialData }: Defa
         </div>
         <Dialog open={!!selectedProject} onOpenChange={(isOpen) => !isOpen && setSelectedProject(null)}>
             <DialogContent className="max-w-5xl w-full h-[80vh] p-0 border-0 bg-background/90 backdrop-blur-sm">
-                {selectedProject && <ProjectDetails project={selectedProject} />}
+                {selectedProject && <ProjectExplorer projects={finalData} initialProject={selectedProject} />}
             </DialogContent>
         </Dialog>
       </>
