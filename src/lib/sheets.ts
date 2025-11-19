@@ -91,7 +91,8 @@ export const getCategories = unstable_cache(
       Description: row['Description'] || '',
       'Url Logo Png': row['Url Logo Png'] ? convertGoogleDriveLinkToDirect(row['Url Logo Png']) : '',
       Url: row['Url'] || '',
-      Background: row['Background'] ? convertGoogleDriveLinkToDirectVideo(row['Background']) : '',
+      // No more conversion logic for background video, we use the URL as is.
+      Background: row['Background'] || '',
       'Url Sheet': row['Url Sheet'] || '',
       'Url app': row['Url app'] || '',
     }));
@@ -103,7 +104,7 @@ export const getCategories = unstable_cache(
     
     console.log(`[Sheets] Valid categories: ${validCategories.length}`);
     validCategories.forEach(cat => {
-      console.log(`  - ${cat.Name} (${cat.Url}): ${cat['Url Sheet']}`);
+      console.log(`  - ${cat.Name} (${cat.Url}): Sheet: ${cat['Url Sheet']}, Background: ${cat.Background ? 'Yes' : 'No'}`);
     });
     
     return validCategories;

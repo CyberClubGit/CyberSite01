@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
+import { VideoBackground } from './video-background';
 
 interface CatalogPageClientProps {
   initialData: any[];
@@ -68,6 +69,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   return (
     <>
       <div className={cn("relative bg-background")}>
+        {category.Background && <VideoBackground src={category.Background} />}
         <section className="w-full py-8 md:py-12 relative z-10">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center mb-12">

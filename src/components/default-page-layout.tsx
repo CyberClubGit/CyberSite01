@@ -4,7 +4,7 @@ import { filterItemsByBrandActivity, getActivityForBrand } from '@/lib/activity-
 import Image from 'next/image';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-
+import { VideoBackground } from './video-background';
 
 interface DefaultPageLayoutProps {
   category: Category;
@@ -48,6 +48,7 @@ export default async function DefaultPageLayout({ category, brand }: DefaultPage
 
   return (
       <div className={cn("relative bg-background")}>
+        {category.Background && <VideoBackground src={category.Background} />}
         <section className="w-full py-8 md:py-12 relative z-10">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center mb-12">
