@@ -32,7 +32,8 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
   const members = project.Members?.split(',').map(m => m.trim()).filter(Boolean) || [];
   const activities = project.Activity?.split(',').map(t => t.trim()).filter(Boolean) || [];
 
-  const pdfs = [project.pdfUrl, ...(project.galleryUrls || [])].filter(Boolean) as string[];
+  // Pour l'instant, on ne prend que le premier PDF trouvé.
+  const mainPdf = project.pdfUrl || (project.galleryUrls && project.galleryUrls[0]) || null;
 
   // Utiliser la bonne clé pour le lien de l'institution
   const institutionLink = project['Liens Institution'];
@@ -94,11 +95,11 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
 
                 <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
                 
-                {pdfs.length > 0 && (
+                {mainPdf && (
                     <>
                         <div className="space-y-4">
                            <h3 className="font-headline text-lg font-semibold flex items-center gap-2"><Paperclip /> Documents & Galerie</h3>
-                           <DocumentGallery files={pdfs} />
+                           <DocumentGallery pdfUrl={mainPdf} />
                         </div>
                         <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
                     </>
