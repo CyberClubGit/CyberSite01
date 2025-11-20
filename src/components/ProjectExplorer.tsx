@@ -8,6 +8,7 @@ import { Skeleton } from './ui/skeleton';
 import { type processGalleryLinks } from '@/lib/sheets';
 import { cn } from '@/lib/utils';
 import { useActivityColors } from '@/lib/color-utils';
+import { ScrollArea } from './ui/scroll-area';
 
 // Dynamically import ProjectDetails only on the client side
 const ProjectDetails = dynamic(() => import('./ProjectDetails').then(mod => mod.ProjectDetails), {
@@ -32,7 +33,7 @@ export function ProjectExplorer({ projects, initialProject, getActivityBadgeStyl
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
-      <TabsList className="bg-transparent p-0 m-0 border-b border-border justify-start rounded-none">
+      <TabsList className="bg-transparent p-0 m-0 border-b border-border justify-start rounded-none flex-shrink-0">
         {projects.map(project => (
           <TabsTrigger 
             key={project.title} 
@@ -47,8 +48,15 @@ export function ProjectExplorer({ projects, initialProject, getActivityBadgeStyl
           </TabsTrigger>
         ))}
       </TabsList>
-      <TabsContent value={activeTab} className="flex-1 overflow-auto mt-0 bg-background/80 backdrop-blur-sm border-x border-b border-border">
-        {activeProject && <ProjectDetails project={activeProject} getActivityBadgeStyle={getActivityBadgeStyle} />}
+      <TabsContent 
+        value={activeTab} 
+        className="flex-1 mt-0 bg-background/80 backdrop-blur-sm border-x border-b border-border rounded-b-lg overflow-hidden"
+      >
+        {activeProject && (
+            <ScrollArea className="h-full">
+              <ProjectDetails project={activeProject} getActivityBadgeStyle={getActivityBadgeStyle} />
+            </ScrollArea>
+        )}
       </TabsContent>
     </Tabs>
   );
