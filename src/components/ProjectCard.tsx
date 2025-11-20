@@ -46,7 +46,7 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
             />
           </div>
         )}
-        <CardHeader>
+        <CardHeader className="bg-card/70 backdrop-blur-sm">
           <CardTitle className="font-headline text-lg leading-tight">{item.title}</CardTitle>
         </CardHeader>
       </Card>
