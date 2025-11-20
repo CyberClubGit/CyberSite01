@@ -16,6 +16,7 @@ import { Badge } from './ui/badge';
 import React from 'react';
 import { ScrambleTitle } from './ScrambleTitle';
 import { useActivityColors } from '@/lib/color-utils';
+import { ScrollArea } from './ui/scroll-area';
 
 type ProcessedItem = ReturnType<typeof import('@/lib/sheets').processGalleryLinks>;
 type GetActivityBadgeStyleFn = ReturnType<typeof useActivityColors>['getActivityBadgeStyle'];
@@ -35,11 +36,12 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
   const institutionLink = project['Liens Institution'];
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6 md:p-8 bg-transparent text-foreground h-full overflow-y-auto">
+    <div className="w-full max-w-7xl mx-auto p-6 md:p-8 bg-transparent text-foreground h-full overflow-hidden">
         <div className="flex flex-col lg:flex-row gap-8 h-full">
 
-            {/* Colonne de Gauche */}
-            <div className="lg:w-2/3 flex flex-col space-y-6">
+            {/* Colonne de Gauche (Scrollable) */}
+            <ScrollArea className="lg:w-2/3 h-full">
+              <div className="pr-6 space-y-6">
                 <ScrambleTitle 
                   text={project.title}
                   as="h1"
@@ -56,16 +58,17 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
                 
                 {mainPdf && (
                     <>
-                        <h3 className="font-headline text-lg font-semibold flex items-center gap-2 mb-4"><Paperclip /> Documents & Galerie</h3>
+                        <h3 className="font-headline text-lg font-semibold flex items-center gap-2"><Paperclip /> Documents & Galerie</h3>
                         <div className="border rounded-lg p-4">
                            <DocumentGallery pdfUrl={mainPdf} />
                         </div>
                     </>
                 )}
-            </div>
+              </div>
+            </ScrollArea>
 
-            {/* Colonne de Droite */}
-            <div className="lg:w-1/3 flex flex-col space-y-8">
+            {/* Colonne de Droite (Fixe) */}
+            <div className="lg:w-1/3 flex flex-col space-y-8 h-full overflow-y-auto">
                 <div className="space-y-6">
                     <div className="flex items-center flex-wrap gap-4 text-muted-foreground">
                         {project.Institution && <span className='font-semibold'>{project.Institution}</span>}
