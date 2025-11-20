@@ -97,8 +97,8 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
                 
                 {mainPdf && (
                     <>
-                        <div className="space-y-4">
-                           <h3 className="font-headline text-lg font-semibold flex items-center gap-2"><Paperclip /> Documents & Galerie</h3>
+                        <div className="border rounded-lg p-4">
+                           <h3 className="font-headline text-lg font-semibold flex items-center gap-2 mb-4"><Paperclip /> Documents & Galerie</h3>
                            <DocumentGallery pdfUrl={mainPdf} />
                         </div>
                         <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
