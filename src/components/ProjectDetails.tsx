@@ -2,7 +2,7 @@
 'use client';
 
 import { 
-    Tag, 
+    Shapes, 
     Users, 
     Link as LinkIcon,
     Paperclip,
@@ -15,19 +15,22 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import React from 'react';
 import { ScrambleTitle } from './ScrambleTitle';
+import { useActivityColors } from '@/lib/color-utils';
 
 type ProcessedItem = ReturnType<typeof import('@/lib/sheets').processGalleryLinks>;
+type GetActivityBadgeStyleFn = ReturnType<typeof useActivityColors>['getActivityBadgeStyle'];
 
 interface ProjectDetailsProps {
   project: ProcessedItem;
+  getActivityBadgeStyle: GetActivityBadgeStyleFn;
 }
 
-export function ProjectDetails({ project }: ProjectDetailsProps) {
+export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetailsProps) {
   const videoUrl = getEmbeddableVideoUrl(project.reelUrl);
   
-  // Utiliser les champs 'Members' et 'Activity' pour les tags/métadonnées
+  // Utiliser les champs 'Members' et 'Activity' pour les métadonnées
   const members = project.Members?.split(',').map(m => m.trim()).filter(Boolean) || [];
-  const tags = project.Activity?.split(',').map(t => t.trim()).filter(Boolean) || [];
+  const activities = project.Activity?.split(',').map(t => t.trim()).filter(Boolean) || [];
 
   const pdfs = [project.pdfUrl, ...(project.galleryUrls || [])].filter(Boolean) as string[];
 
@@ -67,10 +70,18 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
                 </div>
 
                 <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-muted-foreground">
-                    {tags.length > 0 && (
+                    {activities.length > 0 && (
                          <div className="flex items-center gap-2 flex-wrap">
-                           <Tag className="h-4 w-4" />
-                           {tags.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
+                           <Shapes className="h-4 w-4" />
+                           {activities.map(activity => (
+                             <Badge 
+                                key={activity} 
+                                variant="outline"
+                                style={getActivityBadgeStyle(activity)}
+                              >
+                                {activity}
+                              </Badge>
+                           ))}
                         </div>
                     )}
                    {members.length > 0 && (

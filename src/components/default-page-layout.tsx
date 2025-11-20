@@ -31,7 +31,7 @@ interface DefaultPageLayoutProps {
 
 export default function DefaultPageLayout({ category, brand, initialData, brands }: DefaultPageLayoutProps) {
   const [selectedProject, setSelectedProject] = useState<ProcessedItem | null>(null);
-  const { getCardStyle } = useActivityColors(brands);
+  const { getCardStyle, getActivityBadgeStyle } = useActivityColors(brands);
 
   if (!category.Url) {
     return (
@@ -112,7 +112,7 @@ export default function DefaultPageLayout({ category, brand, initialData, brands
                         Explore project details and switch between projects using the tabs.
                     </DialogDescription>
                 </DialogHeader>
-                {selectedProject && <ProjectExplorer projects={finalData} initialProject={selectedProject} />}
+                {selectedProject && <ProjectExplorer projects={finalData} initialProject={selectedProject} getActivityBadgeStyle={getActivityBadgeStyle} />}
             </DialogContent>
         </Dialog>
       </>

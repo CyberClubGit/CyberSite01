@@ -5,6 +5,25 @@ import { useTheme } from 'next-themes';
 import type { Brand } from './sheets';
 import { useMemo } from 'react';
 
+// Helper to convert hex to RGB
+const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null;
+};
+
+// Helper to determine if a color is light or dark
+const isColorLight = (r: number, g: number, b: number): boolean => {
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5;
+};
+
+
 /**
  * Creates a map from Activity name to its color based on the current theme.
  */
@@ -77,5 +96,21 @@ export const useActivityColors = (brands: Brand[]) => {
     };
   }
 
-  return { getCardStyle };
+  const getActivityBadgeStyle = (activity: string) => {
+    const color = activityColorMap[activity];
+    if (!color) return {};
+    
+    const rgb = hexToRgb(color);
+    if (!rgb) return {};
+    
+    const textColor = isColorLight(rgb.r, rgb.g, rgb.b) ? '#000' : '#fff';
+
+    return {
+      backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`,
+      color: color,
+      borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.5)`,
+    };
+  };
+
+  return { getCardStyle, getActivityBadgeStyle };
 }

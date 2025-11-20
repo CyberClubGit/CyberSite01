@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from './ui/skeleton';
 import { type processGalleryLinks } from '@/lib/sheets';
 import { cn } from '@/lib/utils';
+import { useActivityColors } from '@/lib/color-utils';
 
 // Dynamically import ProjectDetails only on the client side
 const ProjectDetails = dynamic(() => import('./ProjectDetails').then(mod => mod.ProjectDetails), {
@@ -15,13 +16,15 @@ const ProjectDetails = dynamic(() => import('./ProjectDetails').then(mod => mod.
 });
 
 type ProcessedItem = ReturnType<typeof processGalleryLinks>;
+type GetActivityBadgeStyleFn = ReturnType<typeof useActivityColors>['getActivityBadgeStyle'];
 
 interface ProjectExplorerProps {
   projects: ProcessedItem[];
   initialProject: ProcessedItem;
+  getActivityBadgeStyle: GetActivityBadgeStyleFn;
 }
 
-export function ProjectExplorer({ projects, initialProject }: ProjectExplorerProps) {
+export function ProjectExplorer({ projects, initialProject, getActivityBadgeStyle }: ProjectExplorerProps) {
   const [activeTab, setActiveTab] = useState(initialProject.title);
 
   // Find the project object that corresponds to the active tab
@@ -45,7 +48,7 @@ export function ProjectExplorer({ projects, initialProject }: ProjectExplorerPro
         ))}
       </TabsList>
       <TabsContent value={activeTab} className="flex-1 overflow-auto mt-0 bg-background/80 backdrop-blur-sm border-x border-b border-border">
-        {activeProject && <ProjectDetails project={activeProject} />}
+        {activeProject && <ProjectDetails project={activeProject} getActivityBadgeStyle={getActivityBadgeStyle} />}
       </TabsContent>
     </Tabs>
   );
