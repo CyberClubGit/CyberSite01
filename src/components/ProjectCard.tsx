@@ -1,7 +1,6 @@
 
 'use client';
 
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
@@ -49,7 +48,7 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
               />
             </div>
           )}
-          <div className="p-4 bg-card/50 backdrop-blur-md">
+          <div className="p-6 bg-card/50 backdrop-blur-md">
             <h3 className="font-headline text-lg leading-tight">{item.title}</h3>
           </div>
         </div>
