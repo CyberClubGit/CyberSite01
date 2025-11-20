@@ -5,11 +5,12 @@ import React, { useState, useEffect, useCallback, ReactNode } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
-import { Expand, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Expand, Loader2, ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 import { getProxiedPdfUrl } from '@/lib/linkConverter';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
+import { cn } from '@/lib/utils';
 
 // Configure PDF.js worker using a stable CDN
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -21,7 +22,7 @@ interface PageThumbnailProps {
 
 const PageThumbnail: React.FC<PageThumbnailProps> = ({ children, onClick }) => {
   return (
-    <div className="relative group rounded-lg overflow-hidden border border-border h-[450px] bg-muted/20">
+    <div className="relative group rounded-lg overflow-hidden border border-border h-full bg-muted/20">
       {children}
       <div
         onClick={onClick}
@@ -52,20 +53,38 @@ const FullscreenViewer: React.FC<{ pdfUrl: string; initialPage: number; numPages
 
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[95vw] w-full h-[95vh] flex items-center justify-center p-0 border-0 bg-transparent backdrop-blur-md">
-        <DialogHeader className="sr-only">
-          <DialogTitle>PDF Viewer</DialogTitle>
-          <DialogDescription>
-            Viewing page {currentPage} of {numPages}. Use arrow keys to navigate.
-          </DialogDescription>
-        </DialogHeader>
+       <DialogContent className="max-w-[95vw] w-full h-[95vh] flex items-center justify-center p-0 border-0 bg-transparent backdrop-blur-md" showCloseButton={false}>
+         <DialogHeader className="sr-only">
+           <DialogTitle>PDF Viewer</DialogTitle>
+           <DialogDescription>
+             Viewing page {currentPage} of {numPages}. Use arrow keys to navigate.
+           </DialogDescription>
+         </DialogHeader>
         <div className="relative w-full h-full flex items-center justify-center">
           <Document file={pdfUrl}>
-            <Page pageNumber={currentPage} height={window.innerHeight * 0.9} />
+            <Page pageNumber={currentPage} height={window.innerHeight * 0.85} />
           </Document>
-          {currentPage > 1 && <Button variant="ghost" size="icon" onClick={goToPrevPage} className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80 backdrop-blur-sm text-foreground"><ArrowLeft /></Button>}
-          {currentPage < numPages && <Button variant="ghost" size="icon" onClick={goToNextPage} className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80 backdrop-blur-sm text-foreground"><ArrowRight /></Button>}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/50 backdrop-blur-sm text-foreground px-3 py-1 rounded-full text-sm">{currentPage} / {numPages}</div>
+          
+          {/* Conteneur pour les contrôles en bas */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/50 backdrop-blur-sm text-foreground px-2 py-1 rounded-full flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={goToPrevPage} disabled={currentPage <= 1} className="h-8 w-8 rounded-full">
+              <ArrowLeft className="h-5 w-5"/>
+            </Button>
+            
+            <div className="text-sm font-mono tabular-nums">
+              {currentPage} / {numPages}
+            </div>
+
+            <Button variant="ghost" size="icon" onClick={goToNextPage} disabled={currentPage >= numPages} className="h-8 w-8 rounded-full">
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+
+            <div className="border-l border-border/50 h-6 mx-1"></div>
+
+            <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 rounded-full">
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -117,6 +136,7 @@ export const DocumentGallery: React.FC<{ pdfUrl: string }> = ({ pdfUrl }) => {
               <div
                 className="flex-shrink-0" 
                 key={pageNumber}
+                style={{ height: '450px' }}
               >
                  <PageThumbnail onClick={() => setFullscreenPage(pageNumber)}>
                     <Page
