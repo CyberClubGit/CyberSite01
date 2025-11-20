@@ -35,16 +35,16 @@ export function ProjectExplorer({ projects, initialProject }: ProjectExplorerPro
             key={project.title} 
             value={project.title}
             className={cn(
-              "rounded-none border-b-2 border-transparent -mb-px pt-2 pb-1.5 mx-1",
-              "data-[state=active]:border-brand-color data-[state=active]:text-foreground",
-              "data-[state=inactive]:text-muted-foreground hover:text-foreground/80 transition-all duration-200"
+              "relative -mb-px rounded-t-lg border-x border-t p-2 mx-1 transition-colors duration-200",
+              "data-[state=inactive]:border-border/50 data-[state=inactive]:bg-muted/30 data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:bg-muted/60",
+              "data-[state=active]:border-border data-[state=active]:border-b-transparent data-[state=active]:bg-background/80 data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             )}
           >
             {project.title}
           </TabsTrigger>
         ))}
       </TabsList>
-      <TabsContent value={activeTab} className="flex-1 overflow-auto mt-0 bg-background/80 backdrop-blur-sm">
+      <TabsContent value={activeTab} className="flex-1 overflow-auto mt-0 bg-background/80 backdrop-blur-sm border-t border-border">
         {activeProject && <ProjectDetails project={activeProject} />}
       </TabsContent>
     </Tabs>
