@@ -83,7 +83,7 @@ export const DocumentGallery: React.FC<{ pdfUrl: string }> = ({ pdfUrl }) => {
 
     const getTransforms = (scrollProgress: number): number[] => {
         return engine.scrollSnaps.map((scrollSnap, index) => {
-            if (engine.slidesInView(true).indexOf(index) === -1) return 0;
+            if (emblaApi.slidesInView(true).indexOf(index) === -1) return 0;
             const diffToTarget = scrollSnap - scrollProgress;
             return diffToTarget * (-1 / 0.05) * (1 - Math.abs(diffToTarget));
         });
