@@ -1,3 +1,4 @@
+
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 import { getBrands, getCategories } from '@/lib/sheets';
@@ -39,7 +40,7 @@ export default async function RootLayout({
           <div className="flex min-h-screen flex-col text-foreground bg-transparent">
             <Header categories={categories} brands={brands} />
             <main className="flex-1">{children}</main>
-            <footer className="relative z-20 flex w-full shrink-0 items-center gap-2 border-t px-4 py-4 md:px-6">
+            <footer className="sticky bottom-0 z-50 w-full border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex shrink-0 items-center gap-2 px-4 py-4 md:px-6">
               <p className="text-xs text-muted-foreground">
                 &copy; 2024 CYBER CLUB. All rights reserved.
               </p>
