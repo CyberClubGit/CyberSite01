@@ -49,9 +49,9 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
                 />
 
                 {project.description && (
-                    <div className="text-sm leading-relaxed text-muted-foreground">
-                       {project.description.split('\n').map((paragraph, i) => <p key={i} className="mb-4">{paragraph}</p>)}
-                    </div>
+                  <div className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                    {project.description}
+                  </div>
                 )}
                 
                 <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
@@ -71,6 +71,7 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
             <div className="lg:w-1/3 flex flex-col h-full min-h-0">
                 <ScrollArea className="h-full">
                     <div className="space-y-8 pr-2">
+                        
                         <div className="space-y-6">
                             <div className="flex items-center flex-wrap gap-4 text-muted-foreground">
                                 {project.Institution && <span className='font-semibold'>{project.Institution}</span>}
