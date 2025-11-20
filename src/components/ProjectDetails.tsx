@@ -14,6 +14,7 @@ import { HorizontalPdfViewer } from './HorizontalPdfViewer';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import React from 'react';
+import { ScrambleTitle } from './ScrambleTitle';
 
 type ProcessedItem = ReturnType<typeof import('@/lib/sheets').processGalleryLinks>;
 
@@ -39,9 +40,11 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
 
             {/* Colonne de Gauche */}
             <div className="lg:w-2/3 flex flex-col space-y-6">
-                <h1 className="text-4xl md:text-5xl font-headline font-bold text-primary" style={{ textShadow: '0 0 5px currentColor, 0 0 10px currentColor' }}>
-                    {project.title}
-                </h1>
+                <ScrambleTitle 
+                  text={project.title}
+                  as="h1"
+                  className="text-4xl md:text-5xl font-headline font-bold text-primary" 
+                />
                 
                 <div className="flex items-center flex-wrap gap-4 text-muted-foreground">
                     {project.Institution && <span className='font-semibold'>{project.Institution}</span>}
