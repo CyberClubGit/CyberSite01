@@ -28,14 +28,10 @@ interface ProjectDetailsProps {
 export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetailsProps) {
   const videoUrl = getEmbeddableVideoUrl(project.reelUrl);
   
-  // Utiliser les champs 'Members' et 'Activity' pour les métadonnées
   const members = project.Members?.split(',').map(m => m.trim()).filter(Boolean) || [];
   const activities = project.Activity?.split(',').map(t => t.trim()).filter(Boolean) || [];
 
-  // Pour l'instant, on ne prend que le premier PDF trouvé.
   const mainPdf = project.pdfUrl || (project.galleryUrls && project.galleryUrls[0]) || null;
-
-  // Utiliser la bonne clé pour le lien de l'institution
   const institutionLink = project['Liens Institution'];
 
   return (
@@ -49,72 +45,73 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
                   as="h1"
                   className="text-4xl md:text-5xl font-headline font-bold text-primary" 
                 />
+
+                {project.description && (
+                    <div className="text-sm leading-relaxed text-muted-foreground">
+                       {project.description.split('\n').map((paragraph, i) => <p key={i} className="mb-4">{paragraph}</p>)}
+                    </div>
+                )}
                 
-                <div className="flex items-center flex-wrap gap-4 text-muted-foreground">
-                    {project.Institution && <span className='font-semibold'>{project.Institution}</span>}
-                    {institutionLink && (
-                        <Button asChild variant="outline" size="sm">
-                           <a href={institutionLink} target="_blank" rel="noopener noreferrer">
-                                <LinkIcon className="mr-2 h-4 w-4" />
-                                Visiter le site
-                           </a>
-                        </Button>
-                    )}
-                    {project.stlUrl && (
-                        <Button asChild variant="outline" size="sm">
-                           <a href={project.stlUrl} target="_blank" rel="noopener noreferrer" download>
-                                <Download className="mr-2 h-4 w-4" />
-                                Télécharger STL
-                           </a>
-                        </Button>
-                    )}
-                </div>
-
-                <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-muted-foreground">
-                    {activities.length > 0 && (
-                         <div className="flex items-center gap-2 flex-wrap">
-                           <Shapes className="h-4 w-4" />
-                           {activities.map(activity => (
-                             <Badge 
-                                key={activity} 
-                                variant="outline"
-                                style={getActivityBadgeStyle(activity)}
-                              >
-                                {activity}
-                              </Badge>
-                           ))}
-                        </div>
-                    )}
-                   {members.length > 0 && (
-                        <div className="flex items-center gap-2">
-                           <Users className="h-4 w-4" />
-                           <span>{members.join(', ')}</span>
-                        </div>
-                    )}
-                </div>
-
                 <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
                 
                 {mainPdf && (
                     <>
-                        <h3 className="font-headline text-lg font-semibold flex items-center gap-2"><Paperclip /> Documents & Galerie</h3>
+                        <h3 className="font-headline text-lg font-semibold flex items-center gap-2 mb-4"><Paperclip /> Documents & Galerie</h3>
                         <div className="border rounded-lg p-4">
                            <DocumentGallery pdfUrl={mainPdf} />
                         </div>
-                        <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
                     </>
-                )}
-
-                {project.description && (
-                    <div className="text-xs leading-relaxed text-muted-foreground">
-                       {project.description.split('\n').map((paragraph, i) => <p key={i} className="mb-4">{paragraph}</p>)}
-                    </div>
                 )}
             </div>
 
             {/* Colonne de Droite */}
-            {videoUrl && (
-                <div className="lg:w-1/3 flex flex-col justify-end">
+            <div className="lg:w-1/3 flex flex-col space-y-8">
+                <div className="space-y-6">
+                    <div className="flex items-center flex-wrap gap-4 text-muted-foreground">
+                        {project.Institution && <span className='font-semibold'>{project.Institution}</span>}
+                        {institutionLink && (
+                            <Button asChild variant="outline" size="sm">
+                               <a href={institutionLink} target="_blank" rel="noopener noreferrer">
+                                    <LinkIcon className="mr-2 h-4 w-4" />
+                                    Visiter le site
+                               </a>
+                            </Button>
+                        )}
+                        {project.stlUrl && (
+                            <Button asChild variant="outline" size="sm">
+                               <a href={project.stlUrl} target="_blank" rel="noopener noreferrer" download>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Télécharger STL
+                               </a>
+                            </Button>
+                        )}
+                    </div>
+
+                    <div className="flex flex-col gap-4 text-sm text-muted-foreground">
+                        {activities.length > 0 && (
+                             <div className="flex items-center gap-2 flex-wrap">
+                               <Shapes className="h-4 w-4 mr-2" />
+                               {activities.map(activity => (
+                                 <Badge 
+                                    key={activity} 
+                                    variant="outline"
+                                    style={getActivityBadgeStyle(activity)}
+                                  >
+                                    {activity}
+                                  </Badge>
+                               ))}
+                            </div>
+                        )}
+                       {members.length > 0 && (
+                            <div className="flex items-center gap-2">
+                               <Users className="h-4 w-4 mr-2" />
+                               <span>{members.join(', ')}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {videoUrl && (
                     <div className="w-full">
                         <div className="space-y-4">
                             <h3 className="font-headline text-lg font-semibold flex items-center gap-2"><Film /> Reel</h3>
@@ -131,8 +128,8 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     </div>
   );
