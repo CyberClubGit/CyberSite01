@@ -98,11 +98,11 @@ const PageThumbnail: React.FC<PageThumbnailProps> = ({ pageNumber, onClick }) =>
         <div className="relative group rounded-lg overflow-hidden border border-border">
             <Page
                 pageNumber={pageNumber}
-                width={200}
+                width={400}
                 renderTextLayer={false}
                 renderAnnotationLayer={false}
                 className="w-full h-full [&>canvas]:w-full [&>canvas]:h-full [&>canvas]:object-contain"
-                loading={<Skeleton className="w-[150px] h-[212px]" />}
+                loading={<Skeleton className="w-[300px] h-[424px]" />}
             />
             <div
                 onClick={onClick}
@@ -179,9 +179,9 @@ export const DocumentGallery: React.FC<DocumentGalleryProps> = ({ pdfUrl }) => {
         onLoadError={onDocumentLoadError}
         loading={
           <div className="flex -ml-4">
-            {Array.from({ length: 5 }).map((_, index) => (
-                <div key={index} className="flex-shrink-0 w-auto pl-4">
-                    <Skeleton className="w-[150px] h-[212px] rounded-lg" />
+            {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="flex-shrink-0 w-1/2 md:w-1/3 pl-4">
+                    <Skeleton className="w-full aspect-[2/3] rounded-lg" />
                 </div>
             ))}
           </div>
@@ -199,7 +199,7 @@ export const DocumentGallery: React.FC<DocumentGalleryProps> = ({ pdfUrl }) => {
         <div className="overflow-hidden" ref={emblaRef}>
           <div className="flex -ml-4">
             {numPages && Array.from({ length: numPages }, (_, i) => i + 1).map(pageNumber => (
-              <div key={pageNumber} className="flex-shrink-0 w-auto pl-4">
+              <div key={pageNumber} className="flex-shrink-0 w-1/2 md:w-1/3 pl-4">
                 <PageThumbnail
                   pageNumber={pageNumber}
                   onClick={() => setFullscreenPage(pageNumber)}
