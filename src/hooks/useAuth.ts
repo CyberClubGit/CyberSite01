@@ -7,7 +7,7 @@ import {
   User as FirebaseUser 
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
 
 export interface UserData {
   uid: string;
@@ -21,6 +21,8 @@ export interface UserData {
 }
 
 export function useAuth() {
+  const auth = useFirebaseAuth();
+  const db = useFirestore();
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -48,7 +50,7 @@ export function useAuth() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [auth, db]);
 
   const signOut = async () => {
     try {

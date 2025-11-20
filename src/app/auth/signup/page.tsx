@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup } from 'firebase/auth';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
-import { auth, db, googleProvider } from '@/lib/firebase';
+import { useAuth, useFirestore, googleProvider } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,8 @@ import Link from 'next/link';
 
 export default function SignUpPage() {
   const router = useRouter();
+  const auth = useAuth();
+  const db = useFirestore();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
