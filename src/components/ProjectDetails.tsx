@@ -80,20 +80,20 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
 
                 <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
                 
-                {project.description && (
-                    <div className="text-[0.625rem] md:text-xs leading-relaxed text-muted-foreground">
-                       {project.description.split('\n').map((paragraph, i) => <p key={i} className="mb-4">{paragraph}</p>)}
-                    </div>
-                )}
-                
                 {pdfs.length > 0 && (
                     <>
-                        <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
                         <div className="space-y-4">
                            <h3 className="font-headline text-lg font-semibold flex items-center gap-2"><Paperclip /> Documents & Galerie</h3>
                            <HorizontalPdfViewer files={pdfs} />
                         </div>
+                        <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
                     </>
+                )}
+
+                {project.description && (
+                    <div className="text-[0.625rem] md:text-xs leading-relaxed text-muted-foreground">
+                       {project.description.split('\n').map((paragraph, i) => <p key={i} className="mb-4">{paragraph}</p>)}
+                    </div>
                 )}
             </div>
 
