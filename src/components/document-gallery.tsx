@@ -95,14 +95,14 @@ interface PageThumbnailProps {
 
 const PageThumbnail: React.FC<PageThumbnailProps> = ({ pageNumber, onClick }) => {
     return (
-        <div className="relative group rounded-lg overflow-hidden border border-border">
+        <div className="relative group rounded-lg overflow-hidden border border-border h-[450px]">
             <Page
                 pageNumber={pageNumber}
-                height={450} // 1.5x increase from an estimated 300px default height
+                height={450}
                 renderTextLayer={false}
                 renderAnnotationLayer={false}
                 className="w-full h-full [&>canvas]:w-full [&>canvas]:h-full [&>canvas]:object-contain"
-                loading={<Skeleton className="w-full h-[450px]" />}
+                loading={<Skeleton className="w-full h-full" />}
             />
             <div
                 onClick={onClick}
@@ -180,8 +180,8 @@ export const DocumentGallery: React.FC<DocumentGalleryProps> = ({ pdfUrl }) => {
         loading={
           <div className="flex -ml-4">
             {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="flex-shrink-0 w-2/3 sm:w-1/2 md:w-2/5 lg:w-1/3 pl-4">
-                    <Skeleton className="w-full h-[450px] rounded-lg" />
+                <div key={index} className="flex-shrink-0 pl-4" style={{ flexBasis: 'auto' }}>
+                    <Skeleton className="w-[320px] h-[450px] rounded-lg" />
                 </div>
             ))}
           </div>
@@ -199,7 +199,7 @@ export const DocumentGallery: React.FC<DocumentGalleryProps> = ({ pdfUrl }) => {
         <div className="overflow-hidden" ref={emblaRef}>
           <div className="flex -ml-4">
             {numPages && Array.from({ length: numPages }, (_, i) => i + 1).map(pageNumber => (
-              <div key={pageNumber} className="flex-shrink-0 w-2/3 sm:w-1/2 md:w-2/5 lg:w-1/3 pl-4">
+              <div key={pageNumber} className="flex-shrink-0 pl-4" style={{ flexBasis: 'auto' }}>
                 <PageThumbnail
                   pageNumber={pageNumber}
                   onClick={() => setFullscreenPage(pageNumber)}
