@@ -28,11 +28,12 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
       style={{ background: style.background, boxShadow: style.boxShadow }}
       onClick={onClick}
     >
-      <div className="flex flex-col h-full overflow-hidden rounded-md backdrop-blur-md bg-transparent">
+      {/* Ce conteneur intérieur est maintenant transparent mais floute l'arrière-plan */}
+      <div className="bg-transparent backdrop-blur-md rounded-md flex flex-col h-full overflow-hidden">
         <div className="p-4 bg-card/50 backdrop-blur-md">
           <h3 className="font-headline text-xl font-bold leading-tight">{item.title}</h3>
         </div>
-         {item.displayImageUrl && (
+        {item.displayImageUrl && (
           <div className="relative w-full aspect-square">
             <Image
               src={item.displayImageUrl}
