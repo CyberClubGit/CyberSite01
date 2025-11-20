@@ -3,14 +3,15 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { getCategoryData, processGalleryLinks, type Brand, type Category } from '@/lib/sheets';
+import { type Brand, type Category, getBrands } from '@/lib/sheets';
 import { filterItemsByBrandActivity, getActivityForBrand } from '@/lib/activity-filter';
-import Image from 'next/image';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { processGalleryLinks } from '@/lib/sheets';
 import { cn } from '@/lib/utils';
 import { VideoBackground } from './video-background';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from './ui/skeleton';
+import { ProjectCard } from './ProjectCard';
+import { useActivityColors } from '@/lib/color-utils';
 
 // Dynamically import ProjectExplorer only on the client side
 const ProjectExplorer = dynamic(() => import('./ProjectExplorer').then(mod => mod.ProjectExplorer), {
@@ -25,10 +26,12 @@ interface DefaultPageLayoutProps {
   category: Category;
   brand?: Brand;
   initialData: ProcessedItem[];
+  brands: Brand[];
 }
 
-export default function DefaultPageLayout({ category, brand, initialData }: DefaultPageLayoutProps) {
+export default function DefaultPageLayout({ category, brand, initialData, brands }: DefaultPageLayoutProps) {
   const [selectedProject, setSelectedProject] = useState<ProcessedItem | null>(null);
+  const { getGradientStyle } = useActivityColors(brands);
 
   if (!category.Url) {
     return (
@@ -85,26 +88,12 @@ export default function DefaultPageLayout({ category, brand, initialData }: Defa
               {finalData && finalData.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {finalData.map((item, index) => (
-                      <Card 
-                        key={index} 
-                        className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-background/80 backdrop-blur-sm cursor-pointer"
+                      <ProjectCard
+                        key={index}
+                        item={item}
                         onClick={() => isProjectsPage && setSelectedProject(item)}
-                      >
-                        {item.displayImageUrl && (
-                          <div className="relative w-full bg-muted">
-                            <Image
-                              src={item.displayImageUrl}
-                              alt={item.title}
-                              width={500}
-                              height={500}
-                              className="object-contain w-full h-auto"
-                            />
-                          </div>
-                        )}
-                        <CardHeader>
-                          <CardTitle className="font-headline text-lg leading-tight">{item.title}</CardTitle>
-                        </CardHeader>
-                      </Card>
+                        style={getGradientStyle(item.Activity)}
+                      />
                   ))}
                 </div>
               ) : (
@@ -117,11 +106,11 @@ export default function DefaultPageLayout({ category, brand, initialData }: Defa
         </div>
         <Dialog open={!!selectedProject} onOpenChange={(isOpen) => !isOpen && setSelectedProject(null)}>
             <DialogContent className="max-w-7xl w-full h-[90vh] p-0 border-0 bg-background/90 backdrop-blur-sm">
-                <DialogHeader className="sr-only">
-                  <DialogTitle>Project Explorer</DialogTitle>
-                  <DialogDescription>
-                    Explore project details and switch between projects using the tabs.
-                  </DialogDescription>
+                 <DialogHeader className="sr-only">
+                    <DialogTitle>Project Explorer</DialogTitle>
+                    <DialogDescription>
+                        Explore project details and switch between projects using the tabs.
+                    </DialogDescription>
                 </DialogHeader>
                 {selectedProject && <ProjectExplorer projects={finalData} initialProject={selectedProject} />}
             </DialogContent>

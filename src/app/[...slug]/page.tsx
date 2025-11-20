@@ -46,5 +46,5 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
   }
   
   // Pour toutes les autres pages (y compris Projects)
-  return <DefaultPageLayout category={category} brand={brand} initialData={processedData} />;
+  return <DefaultPageLayout category={category} brand={brand} initialData={processedData} brands={brands} />;
 }
