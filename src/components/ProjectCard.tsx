@@ -28,7 +28,7 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
       style={{ background: style.background, boxShadow: style.boxShadow }}
       onClick={onClick}
     >
-      <div className="flex flex-col h-full overflow-hidden rounded-md bg-card/20 backdrop-blur-md">
+      <div className="flex flex-col h-full overflow-hidden rounded-md bg-card/90 backdrop-blur-md">
         <div className="p-6">
           <h3 className="font-headline text-xl font-bold leading-tight">{item.title}</h3>
         </div>
