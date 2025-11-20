@@ -44,7 +44,7 @@ export function ProjectExplorer({ projects, initialProject }: ProjectExplorerPro
           </TabsTrigger>
         ))}
       </TabsList>
-      <TabsContent value={activeTab} className="flex-1 overflow-auto mt-0 bg-background/80 backdrop-blur-sm border-t border-border">
+      <TabsContent value={activeTab} className="flex-1 overflow-auto mt-0 bg-background/80 backdrop-blur-sm border-x border-b border-border">
         {activeProject && <ProjectDetails project={activeProject} />}
       </TabsContent>
     </Tabs>
