@@ -19,10 +19,9 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ item, onClick, style, className }: ProjectCardProps) {
-  // Structure finale et robuste pour une bordure dégradée qui respecte le border-radius.
-  // Le conteneur externe gère l'ombre, le survol et le dégradé de la bordure.
-  // Le conteneur interne contient le contenu réel (image + titre) et a un fond transparent,
-  // ce qui résoud les problèmes de superposition et crée un vrai effet de transparence.
+  // La structure est un conteneur externe (le cadre) et un conteneur interne (le contenu).
+  // Le conteneur externe a un padding et le dégradé en fond.
+  // Le conteneur interne a un fond transparent, laissant voir le dégradé du parent (créant la bordure).
   return (
     <div
       className={cn(
