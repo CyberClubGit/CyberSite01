@@ -1,19 +1,37 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, ReactNode } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
-import { Expand, Loader2 } from 'lucide-react';
+import { Expand, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 import { getProxiedPdfUrl } from '@/lib/linkConverter';
 import { Dialog, DialogContent } from './ui/dialog';
 import { Button } from './ui/button';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 // Configure PDF.js worker using a stable CDN
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
+interface PageThumbnailProps {
+  children: ReactNode;
+  onClick: () => void;
+}
+
+const PageThumbnail: React.FC<PageThumbnailProps> = ({ children, onClick }) => {
+  return (
+    <div className="relative group rounded-lg overflow-hidden border border-border h-[450px] bg-muted/20">
+      {children}
+      <div
+        onClick={onClick}
+        className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+      >
+        <Expand className="w-8 h-8 text-white" />
+      </div>
+    </div>
+  );
+};
 
 
 const FullscreenViewer: React.FC<{ pdfUrl: string; initialPage: number; numPages: number; onClose: () => void }> = ({ pdfUrl, initialPage, numPages, onClose }) => {
@@ -86,35 +104,33 @@ export const DocumentGallery: React.FC<{ pdfUrl: string }> = ({ pdfUrl }) => {
         />
       )}
       
-      {numPages && (
-         <div className="overflow-x-auto py-4">
-            <div className="flex space-x-4">
-              {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNumber) => (
-                <div 
-                  className="flex-shrink-0" 
-                  key={pageNumber}
-                >
-                  <div className="relative group rounded-lg overflow-hidden border border-border aspect-[2/3] w-[200px] bg-muted/20">
+       <div className="w-full overflow-x-auto py-4">
+        <div className="flex space-x-4">
+          {numPages ? (
+            Array.from({ length: numPages }, (_, i) => i + 1).map((pageNumber) => (
+              <div
+                className="flex-shrink-0" 
+                key={pageNumber}
+              >
+                 <PageThumbnail onClick={() => setFullscreenPage(pageNumber)}>
                     <Page
-                      pageNumber={pageNumber}
-                      width={200}
-                      renderTextLayer={false}
-                      renderAnnotationLayer={false}
-                      className="w-full h-full [&>canvas]:w-full [&>canvas]:h-full [&>canvas]:object-contain bg-white/5"
-                      loading={<Skeleton className="w-full h-full" />}
+                        pageNumber={pageNumber}
+                        height={450}
+                        renderTextLayer={false}
+                        renderAnnotationLayer={false}
+                        className="w-full h-full [&>canvas]:w-full [&>canvas]:h-full [&>canvas]:object-contain"
+                        loading={<Skeleton className="w-full h-full" />}
                     />
-                    <div
-                      onClick={() => setFullscreenPage(pageNumber)}
-                      className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
-                    >
-                      <Expand className="w-8 h-8 text-white" />
-                    </div>
-                  </div>
-                </div>
-              ))}
+                </PageThumbnail>
+              </div>
+            ))
+          ) : (
+            <div className="w-full text-center text-muted-foreground">
+              Chargement des pages...
             </div>
-         </div>
-      )}
+          )}
+        </div>
+      </div>
     </Document>
   );
 };
