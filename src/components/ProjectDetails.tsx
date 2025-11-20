@@ -34,7 +34,7 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
   const institutionLink = project['Liens Institution'];
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6 md:p-8 bg-background text-foreground h-full overflow-y-auto">
+    <div className="w-full max-w-7xl mx-auto p-6 md:p-8 bg-transparent text-foreground h-full overflow-y-auto">
         <div className="flex flex-col lg:flex-row gap-8 h-full">
 
             {/* Colonne de Gauche */}
