@@ -1,5 +1,6 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileTree, Folder, File, ExternalLink } from 'lucide-react';
+import { Network, Folder, File, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
@@ -49,7 +50,7 @@ export default function SitemapPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <FileTree className="w-8 h-8 text-primary" />
+            <Network className="w-8 h-8 text-primary" />
             <h1 className="text-4xl font-bold font-headline">Arborescence du Site</h1>
           </div>
           <p className="text-muted-foreground">

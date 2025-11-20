@@ -1,7 +1,8 @@
+
 'use client';
 
 import Link from 'next/link';
-import { FileTree } from 'lucide-react';
+import { Network } from 'lucide-react';
 import { RefreshButton } from './refresh-button';
 import { ThemeToggleButton } from './theme-toggle-button';
 
@@ -49,7 +50,7 @@ export function Footer() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-md bg-muted hover:bg-muted/80 transition-colors"
             >
-              <FileTree className="w-4 h-4" />
+              <Network className="w-4 h-4" />
               Arborescence du site
             </Link>
           </div>
