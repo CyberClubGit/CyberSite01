@@ -106,7 +106,10 @@ export default function DefaultPageLayout({ category, brand, initialData, brands
           </section>
         </div>
         <Dialog open={!!selectedProject} onOpenChange={(isOpen) => !isOpen && setSelectedProject(null)}>
-            <DialogContent className="max-w-7xl w-full h-[90vh] p-0 border-0 bg-background/90 backdrop-blur-sm">
+            <DialogContent 
+                className="max-w-7xl w-full h-[90vh] p-0 border-0 bg-background/90 backdrop-blur-sm"
+                onPointerDownOutside={(e) => e.preventDefault()}
+            >
                  <DialogHeader className="sr-only">
                     <DialogTitle>Project Explorer</DialogTitle>
                     <DialogDescription>
