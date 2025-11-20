@@ -33,7 +33,7 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
       onClick={onClick}
     >
       <Card
-        className="flex flex-col overflow-hidden h-full m-[2px] rounded-[calc(var(--radius)-2px)] bg-card"
+        className="flex flex-col overflow-hidden h-full m-[2px] rounded-[calc(var(--radius)-2px)] bg-card/50 backdrop-blur-sm"
       >
         {item.displayImageUrl && (
           <div className="relative w-full bg-muted aspect-square">
