@@ -28,7 +28,7 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
     <div
       ref={cardRef}
       className={cn(
-        "relative transition-all duration-300 ease-out cursor-pointer group card-3d-wrapper",
+        "relative transition-all duration-300 ease-out cursor-pointer group card-3d-wrapper hover:scale-105",
         className
       )}
       onClick={onClick}
@@ -52,7 +52,7 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
               alt={item.title}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              className="object-cover transition-transform duration-500"
             />
           </div>
         )}
