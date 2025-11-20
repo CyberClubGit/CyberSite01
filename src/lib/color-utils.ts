@@ -7,9 +7,6 @@ import { useMemo } from 'react';
 
 /**
  * Creates a map from Activity name to its color based on the current theme.
- * @param brands - The list of all brand objects.
- * @param theme - The current theme ('light' or 'dark').
- * @returns A record mapping activity names to their hex color codes.
  */
 export const createActivityColorMap = (
   brands: Brand[],
@@ -31,36 +28,34 @@ export const createActivityColorMap = (
 
 /**
  * Builds a CSS linear-gradient string from a list of activities.
- * @param activities - A string containing comma-separated activities (e.g., "Design, Architecture").
- * @param colorMap - The map of activities to their colors.
- * @returns A CSS linear-gradient string or a single color.
  */
 export const buildActivityGradient = (
   activities: string | undefined,
   colorMap: Record<string, string>
-): string => {
+): { background?: string; borderColor?: string } => {
+  const defaultColor = 'hsl(var(--border))';
+
   if (!activities) {
-    return 'hsl(var(--border))'; // Default border color
+    return { borderColor: defaultColor };
   }
 
   const activityList = activities.split(',').map((a) => a.trim());
   const colors = activityList
     .map((activity) => colorMap[activity])
-    .filter(Boolean); // Filter out undefined colors
+    .filter(Boolean);
 
   if (colors.length === 0) {
-    return 'hsl(var(--border))';
+    return { borderColor: defaultColor };
   }
   if (colors.length === 1) {
-    return colors[0];
+    return { borderColor: colors[0] };
   }
 
-  return `linear-gradient(120deg, ${colors.join(', ')})`;
+  return { background: `linear-gradient(120deg, ${colors.join(', ')})` };
 };
 
-
 /**
- * A hook to get the activity color map and build gradients.
+ * A hook to get the activity color map and generate style objects.
  */
 export const useActivityColors = (brands: Brand[]) => {
   const { resolvedTheme } = useTheme();
@@ -69,22 +64,18 @@ export const useActivityColors = (brands: Brand[]) => {
     return createActivityColorMap(brands, resolvedTheme === 'dark' ? 'dark' : 'light');
   }, [brands, resolvedTheme]);
 
-  const getGradientStyle = (activities: string | undefined) => {
-    const gradient = buildActivityGradient(activities, activityColorMap);
-    if (gradient.startsWith('linear-gradient')) {
-      return {
-        borderImage: gradient,
-        borderImageSlice: 1,
-        borderWidth: '2px',
-        boxShadow: `0 0 16px -4px ${activityColorMap[activities?.split(',')[0] ?? ''] || 'transparent'}`
-      };
-    }
-    return { 
-        borderColor: gradient,
-        borderWidth: '2px',
-        boxShadow: `0 0 16px -4px ${gradient}`
+  const getCardStyle = (activities: string | undefined) => {
+    const styleProps = buildActivityGradient(activities, activityColorMap);
+    
+    // Extrait la première couleur pour l'ombre
+    const firstColor = activities?.split(',')[0].trim();
+    const shadowColor = firstColor ? activityColorMap[firstColor] : 'transparent';
+
+    return {
+      ...styleProps,
+      boxShadow: `0 0 16px -4px ${shadowColor || 'transparent'}`,
     };
   }
 
-  return { activityColorMap, getGradientStyle };
+  return { getCardStyle };
 }

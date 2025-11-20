@@ -31,7 +31,7 @@ interface DefaultPageLayoutProps {
 
 export default function DefaultPageLayout({ category, brand, initialData, brands }: DefaultPageLayoutProps) {
   const [selectedProject, setSelectedProject] = useState<ProcessedItem | null>(null);
-  const { getGradientStyle } = useActivityColors(brands);
+  const { getCardStyle } = useActivityColors(brands);
 
   if (!category.Url) {
     return (
@@ -92,7 +92,7 @@ export default function DefaultPageLayout({ category, brand, initialData, brands
                         key={index}
                         item={item}
                         onClick={() => isProjectsPage && setSelectedProject(item)}
-                        style={getGradientStyle(item.Activity)}
+                        style={getCardStyle(item.Activity)}
                       />
                   ))}
                 </div>
