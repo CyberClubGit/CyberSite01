@@ -5,22 +5,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
-import useEmblaCarousel, { EmblaCarouselType, EmblaOptionsType } from 'embla-carousel-react';
-import { ArrowLeft, ArrowRight, Expand, Loader2 } from 'lucide-react';
-import { Button } from './ui/button';
+import { Expand, Loader2 } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 import { getProxiedPdfUrl } from '@/lib/linkConverter';
-import { cn } from '@/lib/utils';
 import { Dialog, DialogContent } from './ui/dialog';
+import { Button } from './ui/button';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
-// Configure PDF.js worker
+// Configure PDF.js worker using a stable CDN
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
-const OPTIONS: EmblaOptionsType = {
-  loop: true,
-  align: 'center',
-  containScroll: 'trimSnaps',
-};
 
 const FullscreenViewer: React.FC<{ pdfUrl: string; initialPage: number; numPages: number; onClose: () => void }> = ({ pdfUrl, initialPage, numPages, onClose }) => {
   const [currentPage, setCurrentPage] = useState(initialPage);
@@ -58,8 +52,6 @@ const FullscreenViewer: React.FC<{ pdfUrl: string; initialPage: number; numPages
 export const DocumentGallery: React.FC<{ pdfUrl: string }> = ({ pdfUrl }) => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [emblaRef, emblaApi] = useEmblaCarousel(OPTIONS);
-  const [transforms, setTransforms] = useState<number[]>([]);
   const [fullscreenPage, setFullscreenPage] = useState<number | null>(null);
 
   const proxiedUrl = getProxiedPdfUrl(pdfUrl);
@@ -73,32 +65,6 @@ export const DocumentGallery: React.FC<{ pdfUrl: string }> = ({ pdfUrl }) => {
     console.error('Error loading PDF document:', error);
     setError('Failed to load PDF.');
   }, []);
-  
-  const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]);
-  const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi]);
-
-  const onSelect = useCallback((emblaApi: EmblaCarouselType) => {
-    const engine = emblaApi.internalEngine();
-    const scrollProgress = emblaApi.scrollProgress();
-
-    const getTransforms = (scrollProgress: number): number[] => {
-        return engine.scrollSnaps.map((scrollSnap, index) => {
-            if (emblaApi.slidesInView(true).indexOf(index) === -1) return 0;
-            const diffToTarget = scrollSnap - scrollProgress;
-            return diffToTarget * (-1 / 0.05) * (1 - Math.abs(diffToTarget));
-        });
-    }
-    setTransforms(getTransforms(scrollProgress));
-  }, []);
-
-
-  useEffect(() => {
-    if (!emblaApi) return;
-    onSelect(emblaApi);
-    emblaApi.on('reInit', onSelect);
-    emblaApi.on('scroll', onSelect);
-  }, [emblaApi, onSelect]);
-
 
   if (error) {
     return <div className="text-destructive text-center p-4">Error: {error}</div>;
@@ -109,7 +75,7 @@ export const DocumentGallery: React.FC<{ pdfUrl: string }> = ({ pdfUrl }) => {
       file={proxiedUrl}
       onLoadSuccess={onDocumentLoadSuccess}
       onLoadError={onDocumentLoadError}
-      loading={<div className="flex justify-center items-center h-[450px]"><Loader2 className="w-8 h-8 animate-spin" /></div>}
+      loading={<div className="flex justify-center items-center h-[300px]"><Loader2 className="w-8 h-8 animate-spin" /></div>}
     >
       {fullscreenPage !== null && numPages && (
         <FullscreenViewer
@@ -121,41 +87,32 @@ export const DocumentGallery: React.FC<{ pdfUrl: string }> = ({ pdfUrl }) => {
       )}
       
       {numPages && (
-         <div className="embla-3d relative">
-            <div className="embla__viewport" ref={emblaRef}>
-              <div className="embla__container">
-                {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNumber) => (
-                  <div 
-                    className="embla__slide" 
-                    key={pageNumber}
-                    style={{
-                        ...(transforms[pageNumber-1] !== undefined && {
-                            transform: `translateX(${transforms[pageNumber-1]}%)`,
-                        })
-                    }}
-                  >
-                    <div className="relative group rounded-lg overflow-hidden border border-border aspect-[2/3] bg-muted/20">
-                      <Page
-                        pageNumber={pageNumber}
-                        width={300}
-                        renderTextLayer={false}
-                        renderAnnotationLayer={false}
-                        className="w-full h-full [&>canvas]:w-full [&>canvas]:h-full [&>canvas]:object-contain bg-white/5"
-                        loading={<Skeleton className="w-full h-full" />}
-                      />
-                      <div
-                        onClick={() => setFullscreenPage(pageNumber)}
-                        className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
-                      >
-                        <Expand className="w-8 h-8 text-white" />
-                      </div>
+         <div className="overflow-x-auto py-4">
+            <div className="flex space-x-4">
+              {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNumber) => (
+                <div 
+                  className="flex-shrink-0" 
+                  key={pageNumber}
+                >
+                  <div className="relative group rounded-lg overflow-hidden border border-border aspect-[2/3] w-[200px] bg-muted/20">
+                    <Page
+                      pageNumber={pageNumber}
+                      width={200}
+                      renderTextLayer={false}
+                      renderAnnotationLayer={false}
+                      className="w-full h-full [&>canvas]:w-full [&>canvas]:h-full [&>canvas]:object-contain bg-white/5"
+                      loading={<Skeleton className="w-full h-full" />}
+                    />
+                    <div
+                      onClick={() => setFullscreenPage(pageNumber)}
+                      className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                    >
+                      <Expand className="w-8 h-8 text-white" />
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
-            <Button variant="ghost" size="icon" onClick={scrollPrev} className="absolute left-0 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80 backdrop-blur-sm"><ArrowLeft /></Button>
-            <Button variant="ghost" size="icon" onClick={scrollNext} className="absolute right-0 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80 backdrop-blur-sm"><ArrowRight /></Button>
          </div>
       )}
     </Document>
