@@ -51,7 +51,8 @@ export const buildActivityStyle = (
     return { background: colors[0] };
   }
 
-  return { background: `radial-gradient(circle, ${colors.join(', ')})` };
+  // Use a linear gradient to create a "blurry noise" effect.
+  return { background: `linear-gradient(45deg, ${colors.join(', ')})` };
 };
 
 /**
