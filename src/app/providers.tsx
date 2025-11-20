@@ -26,11 +26,12 @@ export function Providers({ children, categories, brands }: ProvidersProps) {
         <div className="flex min-h-screen flex-col text-foreground bg-transparent">
           <Header categories={categories} brands={brands} />
           <main className="flex-1">{children}</main>
-          <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
+          {/* Footer reconstruit pour être simple et au premier plan */}
+          <footer className="relative z-20 flex w-full shrink-0 items-center gap-2 border-t px-4 py-4 md:px-6">
             <p className="text-xs text-muted-foreground">
               &copy; 2024 CYBER CLUB. All rights reserved.
             </p>
-            <div className="sm:ml-auto flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-2">
               <RefreshButton />
               <ThemeToggleButton />
             </div>
