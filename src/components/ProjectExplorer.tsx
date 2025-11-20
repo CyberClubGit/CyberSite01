@@ -50,13 +50,13 @@ export function ProjectExplorer({ projects, initialProject, getActivityBadgeStyl
       </TabsList>
       <TabsContent 
         value={activeTab} 
-        className="flex-1 mt-0 bg-background/80 backdrop-blur-sm border-x border-b border-border rounded-b-lg overflow-hidden"
+        className="mt-0 bg-background/80 backdrop-blur-sm border-x border-b border-border rounded-b-lg flex-1 min-h-0"
       >
-        {activeProject && (
-            <ScrollArea className="h-full">
+        <ScrollArea className="h-full w-full">
+            {activeProject && (
               <ProjectDetails project={activeProject} getActivityBadgeStyle={getActivityBadgeStyle} />
-            </ScrollArea>
-        )}
+            )}
+        </ScrollArea>
       </TabsContent>
     </Tabs>
   );

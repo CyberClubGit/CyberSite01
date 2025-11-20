@@ -107,8 +107,11 @@ export default function DefaultPageLayout({ category, brand, initialData, brands
         </div>
         <Dialog open={!!selectedProject} onOpenChange={(isOpen) => !isOpen && setSelectedProject(null)}>
             <DialogContent 
-                className="max-w-7xl w-full h-[90vh] p-0 border-0 bg-background/90 backdrop-blur-sm"
-                onPointerDownOutside={(e) => e.preventDefault()}
+                className="max-w-7xl w-full h-[90vh] p-0 border-0 bg-background/90 backdrop-blur-sm flex flex-col overflow-hidden"
+                onPointerDownOutside={(e) => {
+                    // Permet le scroll de la page principale même avec la modale ouverte
+                    e.preventDefault();
+                 }}
             >
                  <DialogHeader className="sr-only">
                     <DialogTitle>Project Explorer</DialogTitle>
@@ -116,7 +119,9 @@ export default function DefaultPageLayout({ category, brand, initialData, brands
                         Explore project details and switch between projects using the tabs.
                     </DialogDescription>
                 </DialogHeader>
-                {selectedProject && <ProjectExplorer projects={finalData} initialProject={selectedProject} getActivityBadgeStyle={getActivityBadgeStyle} />}
+                <div className="flex-1 min-h-0">
+                    {selectedProject && <ProjectExplorer projects={finalData} initialProject={selectedProject} getActivityBadgeStyle={getActivityBadgeStyle} />}
+                </div>
             </DialogContent>
         </Dialog>
       </>
