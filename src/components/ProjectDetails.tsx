@@ -64,16 +64,16 @@ export function ProjectDetails({ project }: ProjectDetailsProps) {
                 </div>
 
                 <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-muted-foreground">
-                   {members.length > 0 && (
-                        <div className="flex items-center gap-2">
-                           <Users className="h-4 w-4" />
-                           <span>{members.join(', ')}</span>
-                        </div>
-                    )}
                     {tags.length > 0 && (
                          <div className="flex items-center gap-2 flex-wrap">
                            <Tag className="h-4 w-4" />
                            {tags.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
+                        </div>
+                    )}
+                   {members.length > 0 && (
+                        <div className="flex items-center gap-2">
+                           <Users className="h-4 w-4" />
+                           <span>{members.join(', ')}</span>
                         </div>
                     )}
                 </div>
