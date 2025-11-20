@@ -126,7 +126,7 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
                         {videoUrl && (
                             <div className="w-[70%] mx-auto">
                                 <div className="space-y-4">
-                                    <h3 className="font-headline text-lg font-semibold flex items-center gap-2"><Film /> Reel</h3>
+                                    <h3 className="fontheadline text-lg font-semibold flex items-center gap-2"><Film /> Reel</h3>
                                     <div className="aspect-[9/16] w-full rounded-2xl overflow-hidden shadow-2xl border border-border">
                                         <iframe
                                             key={videoUrl}
