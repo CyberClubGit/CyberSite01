@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState, useCallback } from 'react';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -22,8 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { type Brand, type Category } from '@/lib/sheets';
+import type { Brand, Category } from '@/lib/sheets';
 import { usePathname, useRouter } from 'next/navigation';
+import { ThemeToggleButton } from './theme-toggle-button';
 
 interface HeaderProps {
   categories: Category[];
@@ -31,7 +32,7 @@ interface HeaderProps {
 }
 
 export function Header({ categories, brands }: HeaderProps) {
-  const { setTheme, theme, resolvedTheme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const [selectedBrand, setSelectedBrand] = useState<string>('Cyber Club');
   const [isMounted, setIsMounted] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -128,13 +129,8 @@ export function Header({ categories, brands }: HeaderProps) {
       const currentBrand = brands.find(b => b.Brand === selectedBrand);
       applyBrandColor(currentBrand, resolvedTheme);
     }
-  }, [theme, isMounted, resolvedTheme, applyBrandColor, brands, selectedBrand]);
+  }, [resolvedTheme, isMounted, applyBrandColor, brands, selectedBrand]);
   
-
-  const toggleTheme = () => {
-    const newTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
-    setTheme(newTheme);
-  };
 
   const getLinkHref = (categoryUrl: string) => {
     const brand = brands.find(b => b.Brand === selectedBrand);
@@ -237,12 +233,6 @@ export function Header({ categories, brands }: HeaderProps) {
         </div>
 
         <div className="ml-auto flex items-center justify-end space-x-2">
-            <Button variant="ghost" size="icon" onClick={toggleTheme}>
-                <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                <span className="sr-only">Toggle theme</span>
-            </Button>
-            
             <div className="md:hidden">
               <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                 <SheetTrigger asChild>
