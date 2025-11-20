@@ -105,7 +105,7 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
                 )}
 
                 {project.description && (
-                    <div className="text-[0.625rem] md:text-xs leading-relaxed text-muted-foreground">
+                    <div className="text-base md:text-sm leading-relaxed text-muted-foreground">
                        {project.description.split('\n').map((paragraph, i) => <p key={i} className="mb-4">{paragraph}</p>)}
                     </div>
                 )}

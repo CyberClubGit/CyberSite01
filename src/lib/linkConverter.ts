@@ -38,8 +38,8 @@ export function getEmbeddableVideoUrl(url: string | null | undefined): string | 
  * Creates a proxied URL for a PDF to bypass CORS issues, especially for Google Drive.
  * This allows client-side libraries like pdf.js to render thumbnails.
  */
-export function getProxiedPdfUrl(url: string | null | undefined): string | null {
-  if (!url) return null;
+export function getProxiedPdfUrl(url: string | null | undefined): string {
+  if (!url) return '';
 
   const googleDriveId = extractGoogleDriveId(url);
   if (googleDriveId) {
