@@ -6,9 +6,10 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import useEmblaCarousel, { EmblaCarouselType } from 'embla-carousel-react';
+import AutoScroll from 'embla-carousel-auto-scroll';
 import { Skeleton } from './ui/skeleton';
 import { Button } from './ui/button';
-import { ExternalLink, Expand, Loader2 } from 'lucide-react';
+import { ExternalLink, Expand, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { getProxiedPdfUrl } from '@/lib/linkConverter';
 import {
   Dialog,
@@ -17,6 +18,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog"
+import { ScrollArea, ScrollBar } from './ui/scroll-area';
 
 // Configure pdfjs worker
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -53,45 +55,47 @@ const FullscreenViewer: React.FC<FullscreenViewerProps> = ({ pdfUrl, initialPage
 
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-[95vw] w-full h-[95vh] flex items-center justify-center p-0 border-0 bg-transparent backdrop-blur-md">
-             <DialogHeader className="sr-only">
-                <DialogTitle>PDF Viewer</DialogTitle>
-                <DialogDescription>
-                    Viewing a PDF document in fullscreen. Use arrow keys to navigate pages.
-                </DialogDescription>
-            </DialogHeader>
-             <div className="relative w-full h-full flex items-center justify-center">
-                {isPageLoading && <Loader2 className="absolute animate-spin w-12 h-12 text-white"/>}
-                <Document file={pdfUrl}>
-                  <Page
-                      pageNumber={currentPage}
-                      height={window.innerHeight * 0.9}
-                      renderTextLayer={false}
-                      onLoadSuccess={() => setIsPageLoading(false)}
-                      onRenderError={() => setIsPageLoading(false)}
-                      className="[&>canvas]:max-w-full [&>canvas]:h-auto [&>canvas]:max-h-[90vh] [&>canvas]:rounded-lg"
-                  />
-                </Document>
-                
-                {currentPage > 1 && (
-                    <Button variant="ghost" size="icon" onClick={goToPrevPage} className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80 backdrop-blur-sm text-foreground">
-                        <ArrowLeft />
-                    </Button>
-                )}
-                {currentPage < numPages && (
-                    <Button variant="ghost" size="icon" onClick={goToNextPage} className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80 backdrop-blur-sm text-foreground">
-                        <ArrowRight />
-                    </Button>
-                )}
-                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/50 backdrop-blur-sm text-foreground px-3 py-1 rounded-full text-sm">
-                    {currentPage} / {numPages}
-                </div>
-            </div>
-        </DialogContent>
+      <DialogContent className="max-w-[95vw] w-full h-[95vh] flex items-center justify-center p-0 border-0 bg-transparent backdrop-blur-md">
+        <DialogHeader className="sr-only">
+          <DialogTitle>PDF Viewer</DialogTitle>
+          <DialogDescription>
+            Viewing a PDF document in fullscreen. Use arrow keys to navigate pages.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="relative w-full h-full flex items-center justify-center">
+          {isPageLoading && <Loader2 className="absolute animate-spin w-12 h-12 text-white" />}
+          <ScrollArea className="h-full w-full">
+            <Document file={pdfUrl} className="flex justify-center items-center">
+              <Page
+                pageNumber={currentPage}
+                height={window.innerHeight * 0.9}
+                renderTextLayer={false}
+                onLoadSuccess={() => setIsPageLoading(false)}
+                onRenderError={() => setIsPageLoading(false)}
+                className="[&>canvas]:max-w-full [&>canvas]:h-auto [&>canvas]:max-h-[90vh] [&>canvas]:rounded-lg"
+              />
+            </Document>
+            <ScrollBar orientation="vertical" />
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+          {currentPage > 1 && (
+            <Button variant="ghost" size="icon" onClick={goToPrevPage} className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80 backdrop-blur-sm text-foreground">
+              <ArrowLeft />
+            </Button>
+          )}
+          {currentPage < numPages && (
+            <Button variant="ghost" size="icon" onClick={goToNextPage} className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80 backdrop-blur-sm text-foreground">
+              <ArrowRight />
+            </Button>
+          )}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/50 backdrop-blur-sm text-foreground px-3 py-1 rounded-full text-sm">
+            {currentPage} / {numPages}
+          </div>
+        </div>
+      </DialogContent>
     </Dialog>
   );
 };
-
 
 // =================================
 // Page Thumbnail Component
@@ -123,6 +127,7 @@ const PageThumbnail: React.FC<PageThumbnailProps> = ({ pageNumber, onClick }) =>
 };
 
 
+
 // =================================
 // Interactive Gallery Component
 // =================================
@@ -131,73 +136,63 @@ interface InteractiveGalleryProps {
 }
 
 const InteractiveGallery: React.FC<InteractiveGalleryProps> = ({ children }) => {
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    align: 'start',
-    containScroll: 'trimSnaps',
-    dragFree: true,
-  });
+  const autoScroll = useRef(
+    AutoScroll({
+      speed: 1,
+      stopOnInteraction: true,
+      stopOnMouseEnter: true,
+      playOnInit: false,
+    })
+  );
 
-  const scrollZoneRef = useRef<HTMLDivElement>(null);
-  const animationFrameRef = useRef<number | null>(null);
-  const scrollSpeedRef = useRef(0);
-
-  const calculateScrollSpeed = (mouseX: number, containerWidth: number) => {
-    const deadZone = 0.3; // 30% in the middle
-    const edgeZone = (1 - deadZone) / 2; // 35% on each side
-    const position = mouseX / containerWidth;
-
-    if (position < edgeZone) {
-      // Left zone
-      return (position / edgeZone - 1) * 2; // Speed from -2 to 0
-    }
-    if (position > 1 - edgeZone) {
-      // Right zone
-      return ((position - (1 - edgeZone)) / edgeZone) * 2; // Speed from 0 to 2
-    }
-    // Center zone
-    return 0;
-  };
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    { align: 'start', loop: true, dragFree: true }, 
+    [autoScroll.current]
+  );
   
-  const scroll = useCallback(() => {
-    if (!emblaApi) return;
-    if (scrollSpeedRef.current !== 0) {
-      emblaApi.scrollBy(scrollSpeedRef.current);
-    }
-    animationFrameRef.current = requestAnimationFrame(scroll);
-  }, [emblaApi]);
-
+  const scrollZoneRef = useRef<HTMLDivElement>(null);
+  const autoScrollApi = autoScroll.current.options.api;
 
   const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (!scrollZoneRef.current) return;
+    if (!scrollZoneRef.current || !emblaApi || !autoScrollApi) return;
+    
     const { left, width } = scrollZoneRef.current.getBoundingClientRect();
     const mouseX = event.clientX - left;
-    scrollSpeedRef.current = calculateScrollSpeed(mouseX, width);
+    const position = mouseX / width;
+
+    const deadZone = 0.4;
+    const edgeZone = (1 - deadZone) / 2;
+
+    if (position < edgeZone) {
+      if (!autoScrollApi.isPlaying() || autoScrollApi.direction() !== -1) {
+        autoScroll.current.options.set({ direction: 'backward' });
+        autoScroll.current.play();
+      }
+    } else if (position > 1 - edgeZone) {
+      if (!autoScrollApi.isPlaying() || autoScrollApi.direction() !== 1) {
+        autoScroll.current.options.set({ direction: 'forward' });
+        autoScroll.current.play();
+      }
+    } else {
+      if (autoScrollApi.isPlaying()) {
+        autoScroll.current.stop();
+      }
+    }
   };
 
   const handleMouseLeave = () => {
-    scrollSpeedRef.current = 0;
+    if (!autoScrollApi) return;
+    if (autoScrollApi.isPlaying()) {
+      autoScroll.current.stop();
+    }
   };
 
   useEffect(() => {
-    if (!emblaApi) return;
-    
-    emblaApi.on('pointerDown', () => {
-      if(animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      scrollSpeedRef.current = 0;
-    });
-
-    emblaApi.on('pointerUp', () => {
-      if(animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = requestAnimationFrame(scroll);
-    });
-
-    animationFrameRef.current = requestAnimationFrame(scroll);
-    
-    return () => {
-      if(animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    };
-
-  }, [emblaApi, scroll]);
+    if (emblaApi) {
+      // If user drags, stop autoscroll
+      emblaApi.on('pointerDown', () => autoScroll.current.stop());
+    }
+  }, [emblaApi]);
 
 
   return (
@@ -297,5 +292,3 @@ export const DocumentGallery: React.FC<DocumentGalleryProps> = ({ pdfUrl }) => {
     </Document>
   );
 };
-
-    
