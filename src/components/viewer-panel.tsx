@@ -118,12 +118,14 @@ const createViewerHtml = (modelUrl: string) => {
             const loader = new STLLoader();
             
             async function loadModelData(url) {
+                console.log('[Debug] Initial URL:', url);
                 const GOOGLE_DRIVE_REGEX = /https?:\\/\\/drive\\.google\\.com\\/(file\\/d\\/|open\\?id=)([\\w-]+)/;
                 const match = url.match(GOOGLE_DRIVE_REGEX);
                 let fetchUrl = url;
 
                 if (match && match[2]) {
                     fetchUrl = \`https://drive.google.com/uc?export=download&id=\${match[2]}\`;
+                    console.log('[Debug] Google Drive URL detected. Fetching from:', fetchUrl);
                 }
 
                 const corsProxies = [
@@ -133,25 +135,30 @@ const createViewerHtml = (modelUrl: string) => {
 
                 // Attempt 1: Direct fetch
                 try {
+                    console.log('[Debug] Attempt 1: Direct fetch from', fetchUrl);
                     const response = await fetch(fetchUrl);
-                    if (!response.ok) throw new Error('Direct fetch failed');
+                    if (!response.ok) throw new Error(\`Direct fetch failed with status \${response.status}\`);
+                    console.log('[Debug] Direct fetch successful!');
                     return await response.arrayBuffer();
                 } catch (e) {
-                    console.warn('Direct fetch failed:', e.message);
+                    console.warn('[Debug] Direct fetch failed:', e.message);
                 }
                 
                 // Attempt 2 & 3: Proxies
-                for (const proxy of corsProxies) {
+                for (let i = 0; i < corsProxies.length; i++) {
+                    const proxy = corsProxies[i];
                     try {
                         const proxiedUrl = proxy + encodeURIComponent(fetchUrl);
+                        console.log(\`[Debug] Attempt \${i + 2}: Fetch via proxy\`, proxiedUrl);
                         const response = await fetch(proxiedUrl);
-                        if (!response.ok) throw new Error('Proxy fetch failed for ' + proxy);
+                        if (!response.ok) throw new Error(\`Proxy fetch failed for \${proxy} with status \${response.status}\`);
+                        console.log(\`[Debug] Proxy fetch successful with \${proxy}\`);
                         return await response.arrayBuffer();
                     } catch(e) {
-                        console.warn('Proxy fetch failed:', e.message);
+                        console.warn(\`[Debug] Proxy fetch \${i + 2} failed:\`, e.message);
                     }
                 }
-                throw new Error('All fetch attempts failed.');
+                throw new Error('All fetch attempts failed for URL: ' + fetchUrl);
             }
 
             loadModelData("${modelUrl}").then(data => {
@@ -194,7 +201,7 @@ const createViewerHtml = (modelUrl: string) => {
                 loaderElement.style.display = 'none';
 
             }).catch(error => {
-                console.error('Error loading model:', error);
+                console.error('[Debug] FINAL ERROR:', error);
                 loaderElement.textContent = 'Error: Could not load model.';
             });
             
