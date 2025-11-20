@@ -18,11 +18,9 @@ import {
 } from "@/components/ui/dialog"
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
 
-// Configure pdfjs worker
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString();
+// Configure pdfjs worker using a stable CDN link
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
 
 // =================================
 // Fullscreen Viewer Component
