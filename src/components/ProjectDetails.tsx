@@ -52,7 +52,7 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
             <div className="lg:w-2/3 w-full flex flex-col gap-8 min-w-0">
                 {/* Section Description */}
                 {project.description && (
-                  <div className="max-w-prose">
+                  <div>
                     <div className="border border-border/50 rounded-lg p-4 bg-muted/20">
                         <div className="text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap">
                           {project.description}
