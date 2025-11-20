@@ -125,3 +125,30 @@
     transform: translateZ(20px);
   }
 }
+
+/* 3D Carousel Styles */
+.embla-3d {
+  --slide-height: 19rem;
+  --slide-spacing: 1rem;
+  --slide-size: 35%;
+}
+.embla__viewport {
+  overflow: hidden;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+.embla__container {
+  backface-visibility: hidden;
+  display: flex;
+  touch-action: pan-y;
+  height: var(--slide-height);
+  transform-style: preserve-3d;
+}
+.embla__slide {
+  flex: 0 0 var(--slide-size);
+  min-width: 0;
+  padding-left: var(--slide-spacing);
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.5s;
+}
