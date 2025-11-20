@@ -40,8 +40,8 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
         <div className="flex flex-col lg:flex-row gap-8 h-full">
 
             {/* Colonne de Gauche (Scrollable) */}
-            <ScrollArea className="h-full lg:w-2/3">
-              <div className="pr-6 space-y-8">
+            <ScrollArea className="h-full lg:w-2/3 pr-6">
+              <div className="flex flex-col gap-8">
                 
                 {/* Section Titre et Description */}
                 <div className="space-y-6">
@@ -62,9 +62,9 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
 
                 <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
                 
-                {/* Section Galerie */}
+                {/* Section Galerie - Isolé et contraint */}
                 {mainPdf && (
-                    <div className="space-y-4">
+                    <div className="flex flex-col space-y-4 min-w-0">
                         <h3 className="font-headline text-lg font-semibold flex items-center gap-2"><Paperclip /> Documents & Galerie</h3>
                         <div className="border rounded-lg p-4">
                            <DocumentGallery pdfUrl={mainPdf} />
