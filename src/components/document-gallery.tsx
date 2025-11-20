@@ -46,7 +46,7 @@ const FullscreenViewer: React.FC<FullscreenViewerProps> = ({ pdfUrl, initialPage
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [onClose]);
 
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
@@ -98,11 +98,11 @@ const PageThumbnail: React.FC<PageThumbnailProps> = ({ pageNumber, onClick }) =>
         <div className="relative group rounded-lg overflow-hidden border border-border">
             <Page
                 pageNumber={pageNumber}
-                width={400}
+                height={450} // 1.5x increase from an estimated 300px default height
                 renderTextLayer={false}
                 renderAnnotationLayer={false}
                 className="w-full h-full [&>canvas]:w-full [&>canvas]:h-full [&>canvas]:object-contain"
-                loading={<Skeleton className="w-[300px] h-[424px]" />}
+                loading={<Skeleton className="w-full h-[450px]" />}
             />
             <div
                 onClick={onClick}
@@ -180,8 +180,8 @@ export const DocumentGallery: React.FC<DocumentGalleryProps> = ({ pdfUrl }) => {
         loading={
           <div className="flex -ml-4">
             {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="flex-shrink-0 w-1/2 md:w-1/3 pl-4">
-                    <Skeleton className="w-full aspect-[2/3] rounded-lg" />
+                <div key={index} className="flex-shrink-0 w-2/3 sm:w-1/2 md:w-2/5 lg:w-1/3 pl-4">
+                    <Skeleton className="w-full h-[450px] rounded-lg" />
                 </div>
             ))}
           </div>
@@ -199,7 +199,7 @@ export const DocumentGallery: React.FC<DocumentGalleryProps> = ({ pdfUrl }) => {
         <div className="overflow-hidden" ref={emblaRef}>
           <div className="flex -ml-4">
             {numPages && Array.from({ length: numPages }, (_, i) => i + 1).map(pageNumber => (
-              <div key={pageNumber} className="flex-shrink-0 w-1/2 md:w-1/3 pl-4">
+              <div key={pageNumber} className="flex-shrink-0 w-2/3 sm:w-1/2 md:w-2/5 lg:w-1/3 pl-4">
                 <PageThumbnail
                   pageNumber={pageNumber}
                   onClick={() => setFullscreenPage(pageNumber)}
