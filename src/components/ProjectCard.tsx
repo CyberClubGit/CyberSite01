@@ -21,7 +21,7 @@ interface ProjectCardProps {
 export function ProjectCard({ item, onClick, style, className }: ProjectCardProps) {
   // Structure finale et robuste pour une bordure dégradée qui respecte le border-radius.
   // Le conteneur externe gère l'ombre, le survol et le dégradé de la bordure.
-  // Le conteneur interne contient le contenu réel (image + titre) et n'a plus de fond propre,
+  // Le conteneur interne contient le contenu réel (image + titre) et a un fond transparent,
   // ce qui résoud les problèmes de superposition et crée un vrai effet de transparence.
   return (
     <div
@@ -32,7 +32,10 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
       style={{ background: style.background, boxShadow: style.boxShadow }}
       onClick={onClick}
     >
-      <div className="flex flex-col h-full overflow-hidden rounded-md">
+      <div className="flex flex-col h-full overflow-hidden rounded-md bg-transparent">
+        <div className="p-6 bg-card/50 backdrop-blur-md">
+          <h3 className="font-headline text-lg leading-tight">{item.title}</h3>
+        </div>
          {item.displayImageUrl && (
           <div className="relative w-full bg-muted aspect-square">
             <Image
@@ -44,9 +47,6 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
             />
           </div>
         )}
-        <div className="p-6 bg-card/50 backdrop-blur-md">
-          <h3 className="font-headline text-lg leading-tight">{item.title}</h3>
-        </div>
       </div>
     </div>
   );
