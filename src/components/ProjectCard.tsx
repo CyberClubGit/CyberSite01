@@ -38,7 +38,7 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
     >
       {/* Element for the gradient glow */}
       <div 
-        className="absolute -inset-1 rounded-xl blur-lg transition-all duration-300 opacity-50 group-hover:opacity-75"
+        className="absolute -inset-1 rounded-xl blur-lg transition-all duration-300 opacity-50 group-hover:opacity-85"
         style={{ ...style, ...glowStyle }}
       ></div>
       
