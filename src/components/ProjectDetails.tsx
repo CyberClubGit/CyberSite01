@@ -36,45 +36,47 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
   const institutionLink = project['Liens Institution'];
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6 md:p-8 bg-transparent text-foreground h-full">
-      <ScrollArea className="h-full w-full">
-        <div className="flex flex-col lg:flex-row gap-8 h-full pr-4">
+    <div className="w-full max-w-7xl mx-auto p-6 md:p-8 bg-transparent text-foreground h-full flex flex-col">
+      {/* Main title outside the scroll areas for it to be always visible */}
+      <ScrambleTitle 
+        text={project.title}
+        as="h1"
+        className="text-4xl md:text-5xl font-headline font-bold text-primary mb-6 flex-shrink-0" 
+      />
 
-            {/* Colonne de Gauche */}
-            <div className="lg:w-2/3 flex flex-col gap-8">
-                
-                {/* Section Titre et Description */}
-                <div className="space-y-6">
-                    <ScrambleTitle 
-                      text={project.title}
-                      as="h1"
-                      className="text-4xl md:text-5xl font-headline font-bold text-primary" 
-                    />
+      <div className="flex-1 flex flex-col lg:flex-row gap-8 overflow-hidden">
 
-                    {project.description && (
-                      <div className="border border-border/50 rounded-lg p-4 bg-muted/20 max-w-prose">
-                        <div className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                          {project.description}
-                        </div>
+          {/* Colonne de Gauche - avec son propre scroll */}
+          <ScrollArea className="lg:w-2/3 w-full h-full pr-4">
+              <div className="flex flex-col gap-8">
+                  {/* Section Description - contrainte en largeur */}
+                  {project.description && (
+                    <div className="max-w-prose">
+                      <div className="border border-border/50 rounded-lg p-4 bg-muted/20">
+                          <div className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                            {project.description}
+                          </div>
                       </div>
-                    )}
-                </div>
-
-                <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-                
-                {/* Section Galerie */}
-                {mainPdf && (
-                    <div className="flex flex-col space-y-4">
-                        <h3 className="font-headline text-lg font-semibold flex items-center gap-2"><Paperclip /> Documents & Galerie</h3>
-                        <div className="border rounded-lg p-4 min-w-0">
-                           <DocumentGallery pdfUrl={mainPdf} />
-                        </div>
                     </div>
-                )}
-            </div>
+                  )}
 
-            {/* Colonne de Droite */}
-            <div className="lg:w-1/3 space-y-8">
+                  <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+
+                  {/* Section Galerie - contrainte en largeur et scrollable horizontalement */}
+                  {mainPdf && (
+                      <div className="flex flex-col space-y-4 min-w-0">
+                          <h3 className="font-headline text-lg font-semibold flex items-center gap-2 flex-shrink-0"><Paperclip /> Documents & Galerie</h3>
+                          <div className="border rounded-lg p-4 min-w-0">
+                             <DocumentGallery pdfUrl={mainPdf} />
+                          </div>
+                      </div>
+                  )}
+              </div>
+          </ScrollArea>
+
+          {/* Colonne de Droite - avec son propre scroll */}
+          <ScrollArea className="lg:w-1/3 w-full h-full">
+            <div className="space-y-8 pr-4">
                 <div className="space-y-6">
                     <div className="flex items-center flex-wrap gap-4 text-muted-foreground">
                         {project.Institution && <span className='font-semibold'>{project.Institution}</span>}
@@ -139,8 +141,8 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
                     </div>
                 )}
             </div>
-        </div>
-      </ScrollArea>
+          </ScrollArea>
+      </div>
     </div>
   );
 }
