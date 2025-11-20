@@ -10,7 +10,7 @@ import {
     Download,
 } from 'lucide-react';
 import { getEmbeddableVideoUrl } from '@/lib/linkConverter';
-import { HorizontalPdfViewer } from './HorizontalPdfViewer';
+import { DocumentGallery } from './document-gallery';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import React from 'react';
@@ -98,7 +98,7 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
                     <>
                         <div className="space-y-4">
                            <h3 className="font-headline text-lg font-semibold flex items-center gap-2"><Paperclip /> Documents & Galerie</h3>
-                           <HorizontalPdfViewer files={pdfs} />
+                           <DocumentGallery files={pdfs} />
                         </div>
                         <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
                     </>

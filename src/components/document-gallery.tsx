@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
@@ -18,11 +18,11 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 
-interface PdfThumbnailProps {
+interface GalleryItemProps {
   file: string;
 }
 
-const PdfThumbnail: React.FC<PdfThumbnailProps> = ({ file }) => {
+const GalleryItem: React.FC<GalleryItemProps> = ({ file }) => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const proxiedUrl = getProxiedPdfUrl(file);
@@ -79,11 +79,11 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({ file }) => {
 };
 
 
-interface HorizontalPdfViewerProps {
+interface DocumentGalleryProps {
   files: string[];
 }
 
-export const HorizontalPdfViewer: React.FC<HorizontalPdfViewerProps> = ({ files }) => {
+export const DocumentGallery: React.FC<DocumentGalleryProps> = ({ files }) => {
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: 'start',
     containScroll: 'trimSnaps',
@@ -118,7 +118,7 @@ export const HorizontalPdfViewer: React.FC<HorizontalPdfViewerProps> = ({ files 
           {files.map((file, index) => (
             <div key={index} className="flex-shrink-0 w-1/4 min-w-[150px] md:w-1/5 lg:w-1/6 pl-4">
                <div className="aspect-[2/3] rounded-lg overflow-hidden border border-border">
-                 <PdfThumbnail file={file} />
+                 <GalleryItem file={file} />
                </div>
             </div>
           ))}
