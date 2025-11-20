@@ -101,21 +101,14 @@ const FullscreenViewer: React.FC<FullscreenViewerProps> = ({ pdfUrl, initialPage
 // Page Thumbnail Component
 // =================================
 interface PageThumbnailProps {
-  pageNumber: number;
   onClick: () => void;
+  children: React.ReactNode;
 }
 
-const PageThumbnail: React.FC<PageThumbnailProps> = ({ pageNumber, onClick }) => {
+const PageThumbnail: React.FC<PageThumbnailProps> = ({ onClick, children }) => {
     return (
         <div className="relative group rounded-lg overflow-hidden border border-border h-[450px]">
-            <Page
-                pageNumber={pageNumber}
-                height={450}
-                renderTextLayer={false}
-                renderAnnotationLayer={false}
-                className="w-full h-full [&>canvas]:w-full [&>canvas]:h-full [&>canvas]:object-contain bg-white"
-                loading={<Skeleton className="w-full h-full" />}
-            />
+            {children}
             <div
                 onClick={onClick}
                 className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
@@ -151,10 +144,13 @@ const InteractiveGallery: React.FC<InteractiveGalleryProps> = ({ children }) => 
   );
   
   const scrollZoneRef = useRef<HTMLDivElement>(null);
-  const autoScrollApi = autoScroll.current.options.api;
 
   const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (!scrollZoneRef.current || !emblaApi || !autoScrollApi) return;
+    if (!scrollZoneRef.current || !emblaApi) return;
+    
+    // safe-guard before embla is initialized
+    const autoScrollApi = autoScroll.current.options.api;
+    if (!autoScrollApi) return;
     
     const { left, width } = scrollZoneRef.current.getBoundingClientRect();
     const mouseX = event.clientX - left;
@@ -181,6 +177,7 @@ const InteractiveGallery: React.FC<InteractiveGalleryProps> = ({ children }) => 
   };
 
   const handleMouseLeave = () => {
+    const autoScrollApi = autoScroll.current.options.api;
     if (!autoScrollApi) return;
     if (autoScrollApi.isPlaying()) {
       autoScroll.current.stop();
@@ -282,9 +279,17 @@ export const DocumentGallery: React.FC<DocumentGalleryProps> = ({ pdfUrl }) => {
           {Array.from({ length: numPages }, (_, i) => i + 1).map(pageNumber => (
             <div key={pageNumber} className="flex-shrink-0 pl-4" style={{ flexBasis: 'auto' }}>
               <PageThumbnail
-                pageNumber={pageNumber}
                 onClick={() => setFullscreenPage(pageNumber)}
-              />
+              >
+                <Page
+                    pageNumber={pageNumber}
+                    height={450}
+                    renderTextLayer={false}
+                    renderAnnotationLayer={false}
+                    className="w-full h-full [&>canvas]:w-full [&>canvas]:h-full [&>canvas]:object-contain bg-white"
+                    loading={<Skeleton className="w-[320px] h-[450px]" />}
+                />
+              </PageThumbnail>
             </div>
           ))}
         </InteractiveGallery>
