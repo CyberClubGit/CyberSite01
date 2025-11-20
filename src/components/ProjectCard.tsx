@@ -20,9 +20,10 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ item, onClick, style, className }: ProjectCardProps) {
-  // Structure unifiée pour toutes les cartes.
-  // Le conteneur externe gère la "bordure" via son arrière-plan.
-  // La carte interne a une marge pour laisser apparaître cette bordure.
+  // Structure finale et robuste :
+  // 1. Le conteneur externe gère le style de la bordure (background/gradient) et l'ombre.
+  // 2. Un conteneur enfant (avec marge) contient tout le contenu visible (image, titre).
+  //    Sa marge laisse apparaître l'arrière-plan du parent, créant la bordure.
   return (
     <div
       className={cn(
@@ -32,9 +33,7 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
       style={style} // Applique le background (gradient ou couleur) et l'ombre
       onClick={onClick}
     >
-      <Card
-        className="flex flex-col overflow-hidden h-full m-[2px] rounded-[calc(var(--radius)-2px)] bg-card/50 backdrop-blur-sm"
-      >
+      <div className="flex flex-col h-full m-[2px] rounded-[calc(var(--radius)-2px)] bg-card overflow-hidden">
         {item.displayImageUrl && (
           <div className="relative w-full bg-muted aspect-square">
             <Image
@@ -46,10 +45,10 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
             />
           </div>
         )}
-        <CardHeader className="bg-card/50 backdrop-blur-md">
-          <CardTitle className="font-headline text-lg leading-tight">{item.title}</CardTitle>
-        </CardHeader>
-      </Card>
+        <div className="p-4 bg-card/50 backdrop-blur-md">
+          <h3 className="font-headline text-lg leading-tight">{item.title}</h3>
+        </div>
+      </div>
     </div>
   );
 }
