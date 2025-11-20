@@ -36,7 +36,7 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
         className="h-full rounded-lg p-[2px]"
         style={{ background: style.background }}
       >
-        <div className="flex flex-col h-full bg-card overflow-hidden">
+        <div className="flex flex-col h-full bg-card overflow-hidden rounded-md">
            {item.displayImageUrl && (
             <div className="relative w-full bg-muted aspect-square">
               <Image
