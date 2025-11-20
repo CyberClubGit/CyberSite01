@@ -93,6 +93,7 @@ export default function DefaultPageLayout({ category, brand, initialData, brands
                         item={item}
                         onClick={() => isProjectsPage && setSelectedProject(item)}
                         style={getCardStyle(item.Activity)}
+                        className={isProjectsPage ? 'cursor-pointer' : ''}
                       />
                   ))}
                 </div>

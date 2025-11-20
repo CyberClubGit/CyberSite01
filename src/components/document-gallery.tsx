@@ -13,6 +13,9 @@ import { getProxiedPdfUrl } from '@/lib/linkConverter';
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog"
 
 // Configure pdfjs worker
@@ -48,6 +51,12 @@ const FullscreenViewer: React.FC<FullscreenViewerProps> = ({ pdfUrl, initialPage
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="max-w-[95vw] w-full h-[95vh] flex items-center justify-center p-0 border-0 bg-transparent">
+            <DialogHeader className="sr-only">
+                <DialogTitle>PDF Viewer</DialogTitle>
+                <DialogDescription>
+                    Viewing a PDF document in fullscreen. Use arrow keys to navigate pages.
+                </DialogDescription>
+            </DialogHeader>
              <div className="relative w-full h-full flex items-center justify-center">
                 {isPageLoading && <Loader2 className="absolute animate-spin w-12 h-12 text-white"/>}
                 <Page

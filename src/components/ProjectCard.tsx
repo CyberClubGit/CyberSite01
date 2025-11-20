@@ -16,7 +16,7 @@ type ProcessedItem = {
 interface ProjectCardProps {
   item: ProcessedItem;
   onClick: () => void;
-  style: React.CSSProperties; // We'll keep this for the glow color from useActivityColors
+  style: React.CSSProperties; 
   className?: string;
 }
 
@@ -28,7 +28,7 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
     <div
       ref={cardRef}
       className={cn(
-        "relative transition-transform duration-300 ease-out cursor-pointer group card-3d-wrapper",
+        "relative transition-transform duration-300 ease-out group card-3d-wrapper",
         className
       )}
       onClick={onClick}
