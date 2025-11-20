@@ -55,7 +55,7 @@ export default function SignInPage() {
         <CardHeader>
           <CardTitle className="text-2xl font-bold">Se connecter</CardTitle>
           <CardDescription>
-            Connectez-vous à votre compte CASA MANANA
+            Connectez-vous à votre compte CYBER CLUB
           </CardDescription>
         </CardHeader>
 

@@ -118,7 +118,7 @@ export default function SignUpPage() {
         <CardHeader>
           <CardTitle className="text-2xl font-bold">S'inscrire</CardTitle>
           <CardDescription>
-            Créez votre compte CASA MANANA
+            Créez votre compte CYBER CLUB
           </CardDescription>
         </CardHeader>
 
