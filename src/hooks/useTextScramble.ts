@@ -4,10 +4,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 const GLITCH_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/\\?%*()[]{}<>#&@';
-const GLITCH_INTERVAL = 40;
-const GLITCH_DURATION = 120;
-const MIN_LETTER_DELAY = 70;
-const MAX_LETTER_DELAY = 120;
+const GLITCH_INTERVAL = 20;
+const GLITCH_DURATION = 60;
+const MIN_LETTER_DELAY = 35;
+const MAX_LETTER_DELAY = 60;
 
 export function useTextScramble(targetText: string, startImmediately = true) {
   const [displayText, setDisplayText] = useState('');
