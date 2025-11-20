@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { useState, useEffect, useCallback, ReactNode, useRef } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
@@ -65,7 +65,6 @@ const FullscreenViewer: React.FC<{ pdfUrl: string; initialPage: number; numPages
             <Page pageNumber={currentPage} height={window.innerHeight * 0.85} />
           </Document>
           
-          {/* Conteneur pour les contrôles en bas */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/50 backdrop-blur-sm text-foreground px-2 py-1 rounded-full flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={goToPrevPage} disabled={currentPage <= 1} className="h-8 w-8 rounded-full">
               <ArrowLeft className="h-5 w-5"/>
@@ -96,6 +95,9 @@ export const DocumentGallery: React.FC<{ pdfUrl: string }> = ({ pdfUrl }) => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fullscreenPage, setFullscreenPage] = useState<number | null>(null);
+  
+  const galleryRef = useRef<HTMLDivElement>(null);
+  const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const proxiedUrl = getProxiedPdfUrl(pdfUrl);
 
@@ -108,6 +110,55 @@ export const DocumentGallery: React.FC<{ pdfUrl: string }> = ({ pdfUrl }) => {
     console.error('Error loading PDF document:', error);
     setError('Failed to load PDF.');
   }, []);
+
+  const stopScrolling = () => {
+    if (scrollIntervalRef.current) {
+      clearInterval(scrollIntervalRef.current);
+      scrollIntervalRef.current = null;
+    }
+  };
+
+  const startScrolling = (direction: 'left' | 'right') => {
+    stopScrolling();
+    scrollIntervalRef.current = setInterval(() => {
+      if (galleryRef.current) {
+        galleryRef.current.scrollBy({
+          left: direction === 'left' ? -20 : 20,
+          behavior: 'smooth',
+        });
+      }
+    }, 25);
+  };
+  
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!galleryRef.current) return;
+
+    const { left, width } = galleryRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - left;
+    const scrollZone = width * 0.1; // 10% of the width on each side
+
+    if (mouseX < scrollZone) {
+      if (!scrollIntervalRef.current || scrollIntervalRef.current.toString() !== 'left') {
+        startScrolling('left');
+      }
+    } else if (mouseX > width - scrollZone) {
+      if (!scrollIntervalRef.current || scrollIntervalRef.current.toString() !== 'right') {
+        startScrolling('right');
+      }
+    } else {
+      stopScrolling();
+    }
+  };
+
+  const handleMouseLeave = () => {
+    stopScrolling();
+  };
+
+  useEffect(() => {
+    // Cleanup on unmount
+    return () => stopScrolling();
+  }, []);
+
 
   if (error) {
     return <div className="text-destructive text-center p-4">Error: {error}</div>;
@@ -129,7 +180,14 @@ export const DocumentGallery: React.FC<{ pdfUrl: string }> = ({ pdfUrl }) => {
         />
       )}
       
-       <div className="w-full overflow-x-auto py-4">
+       <div
+        ref={galleryRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        className="w-full overflow-x-auto py-4"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        <style>{`.gallery-container::-webkit-scrollbar { display: none; }`}</style>
         <div className="flex space-x-4">
           {numPages ? (
             Array.from({ length: numPages }, (_, i) => i + 1).map((pageNumber) => (
