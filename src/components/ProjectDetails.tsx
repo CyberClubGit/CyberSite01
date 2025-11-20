@@ -41,30 +41,34 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
 
             {/* Colonne de Gauche (Scrollable) */}
             <ScrollArea className="lg:w-2/3 h-full">
-              <div className="pr-6 space-y-6">
-                <ScrambleTitle 
-                  text={project.title}
-                  as="h1"
-                  className="text-4xl md:text-5xl font-headline font-bold text-primary" 
-                />
+              <div className="pr-6 space-y-8">
+                {/* Section Titre et Description */}
+                <div className="space-y-6">
+                    <ScrambleTitle 
+                      text={project.title}
+                      as="h1"
+                      className="text-4xl md:text-5xl font-headline font-bold text-primary" 
+                    />
 
-                {project.description && (
-                  <div className="border border-border/50 rounded-lg p-4 bg-muted/20">
-                    <div className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                      {project.description}
-                    </div>
-                  </div>
-                )}
-                
+                    {project.description && (
+                      <div className="border border-border/50 rounded-lg p-4 bg-muted/20">
+                        <div className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                          {project.description}
+                        </div>
+                      </div>
+                    )}
+                </div>
+
                 <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
                 
+                {/* Section Galerie */}
                 {mainPdf && (
-                    <>
-                        <h3 className="font-headline text-lg font-semibold flex items-center gap-2 mb-4"><Paperclip /> Documents & Galerie</h3>
+                    <div className="space-y-4">
+                        <h3 className="font-headline text-lg font-semibold flex items-center gap-2"><Paperclip /> Documents & Galerie</h3>
                         <div className="border rounded-lg p-4">
                            <DocumentGallery pdfUrl={mainPdf} />
                         </div>
-                    </>
+                    </div>
                 )}
               </div>
             </ScrollArea>
