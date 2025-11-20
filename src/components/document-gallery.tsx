@@ -5,8 +5,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
-import useEmblaCarousel, { EmblaCarouselType } from 'embla-carousel-react';
-import AutoScroll from 'embla-carousel-auto-scroll';
 import { Skeleton } from './ui/skeleton';
 import { Button } from './ui/button';
 import { ExternalLink, Expand, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -119,97 +117,6 @@ const PageThumbnail: React.FC<PageThumbnailProps> = ({ onClick, children }) => {
     );
 };
 
-
-
-// =================================
-// Interactive Gallery Component
-// =================================
-interface InteractiveGalleryProps {
-  children: React.ReactNode;
-}
-
-const InteractiveGallery: React.FC<InteractiveGalleryProps> = ({ children }) => {
-  const autoScroll = useRef(
-    AutoScroll({
-      speed: 1,
-      stopOnInteraction: true,
-      stopOnMouseEnter: true,
-      playOnInit: false,
-    })
-  );
-
-  const [emblaRef, emblaApi] = useEmblaCarousel(
-    { align: 'start', loop: true, dragFree: true }, 
-    [autoScroll.current]
-  );
-  
-  const scrollZoneRef = useRef<HTMLDivElement>(null);
-
-  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (!scrollZoneRef.current || !emblaApi) return;
-    
-    // safe-guard before embla is initialized
-    const autoScrollApi = autoScroll.current.options.api;
-    if (!autoScrollApi) return;
-    
-    const { left, width } = scrollZoneRef.current.getBoundingClientRect();
-    const mouseX = event.clientX - left;
-    const position = mouseX / width;
-
-    const deadZone = 0.4;
-    const edgeZone = (1 - deadZone) / 2;
-
-    if (position < edgeZone) {
-      if (!autoScrollApi.isPlaying() || autoScrollApi.direction() !== -1) {
-        autoScroll.current.options.set({ direction: 'backward' });
-        autoScroll.current.play();
-      }
-    } else if (position > 1 - edgeZone) {
-      if (!autoScrollApi.isPlaying() || autoScrollApi.direction() !== 1) {
-        autoScroll.current.options.set({ direction: 'forward' });
-        autoScroll.current.play();
-      }
-    } else {
-      if (autoScrollApi.isPlaying()) {
-        autoScroll.current.stop();
-      }
-    }
-  };
-
-  const handleMouseLeave = () => {
-    const autoScrollApi = autoScroll.current.options.api;
-    if (!autoScrollApi) return;
-    if (autoScrollApi.isPlaying()) {
-      autoScroll.current.stop();
-    }
-  };
-
-  useEffect(() => {
-    if (emblaApi) {
-      // If user drags, stop autoscroll
-      emblaApi.on('pointerDown', () => autoScroll.current.stop());
-    }
-  }, [emblaApi]);
-
-
-  return (
-    <div 
-      className="relative cursor-grab active:cursor-grabbing"
-      ref={scrollZoneRef} 
-      onMouseMove={handleMouseMove} 
-      onMouseLeave={handleMouseLeave}
-    >
-        <div className="overflow-hidden" ref={emblaRef}>
-            <div className="flex -ml-4">
-                {children}
-            </div>
-        </div>
-    </div>
-  );
-};
-
-
-
 // =================================
 // Main Document Gallery Component
 // =================================
@@ -256,9 +163,9 @@ export const DocumentGallery: React.FC<DocumentGalleryProps> = ({ pdfUrl }) => {
       onLoadSuccess={onDocumentLoadSuccess}
       onLoadError={onDocumentLoadError}
       loading={
-        <div className="flex -ml-4">
+        <div className="flex space-x-4">
           {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="flex-shrink-0 pl-4" style={{ flexBasis: 'auto' }}>
+              <div key={index}>
                   <Skeleton className="w-[320px] h-[450px] rounded-lg" />
               </div>
           ))}
@@ -275,24 +182,27 @@ export const DocumentGallery: React.FC<DocumentGalleryProps> = ({ pdfUrl }) => {
       )}
       
       {numPages && (
-        <InteractiveGallery>
-          {Array.from({ length: numPages }, (_, i) => i + 1).map(pageNumber => (
-            <div key={pageNumber} className="flex-shrink-0 pl-4" style={{ flexBasis: 'auto' }}>
-              <PageThumbnail
-                onClick={() => setFullscreenPage(pageNumber)}
-              >
-                <Page
-                    pageNumber={pageNumber}
-                    height={450}
-                    renderTextLayer={false}
-                    renderAnnotationLayer={false}
-                    className="w-full h-full [&>canvas]:w-full [&>canvas]:h-full [&>canvas]:object-contain bg-white"
-                    loading={<Skeleton className="w-[320px] h-[450px]" />}
-                />
-              </PageThumbnail>
-            </div>
-          ))}
-        </InteractiveGallery>
+        <ScrollArea className="w-full whitespace-nowrap">
+          <div className="flex space-x-4 p-4">
+            {Array.from({ length: numPages }, (_, i) => i + 1).map(pageNumber => (
+              <div key={pageNumber} className="flex-shrink-0 w-[320px]">
+                <PageThumbnail
+                  onClick={() => setFullscreenPage(pageNumber)}
+                >
+                  <Page
+                      pageNumber={pageNumber}
+                      height={450}
+                      renderTextLayer={false}
+                      renderAnnotationLayer={false}
+                      className="w-full h-full [&>canvas]:w-full [&>canvas]:h-full [&>canvas]:object-contain bg-white"
+                      loading={<Skeleton className="w-[320px] h-[450px]" />}
+                  />
+                </PageThumbnail>
+              </div>
+            ))}
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
       )}
     </Document>
   );
