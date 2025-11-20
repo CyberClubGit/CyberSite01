@@ -51,7 +51,7 @@ const FullscreenViewer: React.FC<FullscreenViewerProps> = ({ pdfUrl, initialPage
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="max-w-[95vw] w-full h-[95vh] flex items-center justify-center p-0 border-0 bg-transparent">
-            <DialogHeader className="sr-only">
+             <DialogHeader className="sr-only">
                 <DialogTitle>PDF Viewer</DialogTitle>
                 <DialogDescription>
                     Viewing a PDF document in fullscreen. Use arrow keys to navigate pages.
@@ -95,14 +95,14 @@ interface PageThumbnailProps {
 
 const PageThumbnail: React.FC<PageThumbnailProps> = ({ pageNumber, onClick }) => {
     return (
-        <div className="relative group aspect-[4/9] w-full h-full rounded-lg overflow-hidden border border-border">
+        <div className="relative group rounded-lg overflow-hidden border border-border">
             <Page
                 pageNumber={pageNumber}
                 width={200}
                 renderTextLayer={false}
                 renderAnnotationLayer={false}
-                className="w-full h-full [&>canvas]:w-full [&>canvas]:h-full [&>canvas]:object-cover"
-                loading={<Skeleton className="w-full h-full" />}
+                className="w-full h-full [&>canvas]:w-full [&>canvas]:h-full [&>canvas]:object-contain"
+                loading={<Skeleton className="w-[150px] h-[212px]" />}
             />
             <div
                 onClick={onClick}
@@ -180,10 +180,8 @@ export const DocumentGallery: React.FC<DocumentGalleryProps> = ({ pdfUrl }) => {
         loading={
           <div className="flex -ml-4">
             {Array.from({ length: 5 }).map((_, index) => (
-                <div key={index} className="flex-shrink-0 w-1/4 min-w-[150px] md:w-1/5 lg:w-1/6 pl-4">
-                    <div className="aspect-[4/9] rounded-lg overflow-hidden border border-border">
-                        <Skeleton className="w-full h-full" />
-                    </div>
+                <div key={index} className="flex-shrink-0 w-auto pl-4">
+                    <Skeleton className="w-[150px] h-[212px] rounded-lg" />
                 </div>
             ))}
           </div>
@@ -201,7 +199,7 @@ export const DocumentGallery: React.FC<DocumentGalleryProps> = ({ pdfUrl }) => {
         <div className="overflow-hidden" ref={emblaRef}>
           <div className="flex -ml-4">
             {numPages && Array.from({ length: numPages }, (_, i) => i + 1).map(pageNumber => (
-              <div key={pageNumber} className="flex-shrink-0 w-1/4 min-w-[150px] md:w-1/5 lg:w-1/6 pl-4">
+              <div key={pageNumber} className="flex-shrink-0 w-auto pl-4">
                 <PageThumbnail
                   pageNumber={pageNumber}
                   onClick={() => setFullscreenPage(pageNumber)}
