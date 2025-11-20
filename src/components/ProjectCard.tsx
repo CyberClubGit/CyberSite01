@@ -3,6 +3,8 @@
 
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { useParallax } from '@/hooks/useParallax';
+import { useRef } from 'react';
 
 type ProcessedItem = {
   displayImageUrl?: string | null;
@@ -19,23 +21,28 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ item, onClick, style, className }: ProjectCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const { cardStyle, glowStyle } = useParallax(cardRef);
+
   return (
     <div
+      ref={cardRef}
       className={cn(
-        "relative transition-all duration-500 hover:-translate-y-1 cursor-pointer group",
+        "relative transition-all duration-300 ease-out cursor-pointer group card-3d-wrapper",
         className
       )}
       onClick={onClick}
+      style={{ ...cardStyle }}
     >
       {/* Element for the gradient glow */}
       <div 
-        className="absolute -inset-1 rounded-xl blur-lg transition-all duration-500 opacity-50 group-hover:opacity-75"
-        style={{ background: style.background }}
+        className="absolute -inset-1 rounded-xl blur-lg transition-all duration-300 opacity-50 group-hover:opacity-75"
+        style={{ ...style, ...glowStyle }}
       ></div>
       
       {/* The actual card content with frosted glass effect */}
-      <div className="relative bg-card/90 backdrop-blur-md rounded-lg flex flex-col h-full overflow-hidden border">
-        <div className="p-4">
+      <div className="relative bg-transparent rounded-lg flex flex-col h-full overflow-hidden border border-border/20 card-3d-content">
+        <div className="p-4 bg-card/50 backdrop-blur-md">
           <h3 className="font-headline text-xl font-bold leading-tight">{item.title}</h3>
         </div>
         {item.displayImageUrl && (

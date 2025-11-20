@@ -115,3 +115,13 @@
     opacity: 0.1;
     z-index: 0;
 }
+
+@layer components {
+  .card-3d-wrapper {
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+  .card-3d-content {
+    transform: translateZ(20px);
+  }
+}
