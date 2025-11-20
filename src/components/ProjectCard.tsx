@@ -29,12 +29,12 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
     >
       {/* Element for the gradient glow */}
       <div 
-        className="absolute -inset-1 rounded-xl blur-lg transition-all duration-500 opacity-75 group-hover:opacity-100"
+        className="absolute -inset-1 rounded-xl blur-lg transition-all duration-500 opacity-50 group-hover:opacity-75"
         style={{ background: style.background }}
       ></div>
       
       {/* The actual card content with frosted glass effect */}
-      <div className="relative bg-card/20 backdrop-blur-md rounded-lg flex flex-col h-full overflow-hidden border">
+      <div className="relative bg-card/90 backdrop-blur-md rounded-lg flex flex-col h-full overflow-hidden border">
         <div className="p-4">
           <h3 className="font-headline text-xl font-bold leading-tight">{item.title}</h3>
         </div>
