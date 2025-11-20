@@ -27,9 +27,9 @@ export const createActivityColorMap = (
 };
 
 /**
- * Builds a CSS gradient string from a list of activities.
+ * Builds a CSS style object from a list of activities.
  */
-export const buildActivityGradient = (
+export const buildActivityStyle = (
   activities: string | undefined,
   colorMap: Record<string, string>
 ): { background?: string; borderColor?: string } => {
@@ -48,7 +48,7 @@ export const buildActivityGradient = (
     return { borderColor: defaultColor };
   }
   if (colors.length === 1) {
-    return { borderColor: colors[0] };
+    return { background: colors[0] };
   }
 
   return { background: `radial-gradient(circle, ${colors.join(', ')})` };
@@ -65,9 +65,8 @@ export const useActivityColors = (brands: Brand[]) => {
   }, [brands, resolvedTheme]);
 
   const getCardStyle = (activities: string | undefined) => {
-    const styleProps = buildActivityGradient(activities, activityColorMap);
+    const styleProps = buildActivityStyle(activities, activityColorMap);
     
-    // Extrait la première couleur pour l'ombre
     const firstColor = activities?.split(',')[0].trim();
     const shadowColor = firstColor ? activityColorMap[firstColor] : 'transparent';
 

@@ -29,7 +29,7 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
         "relative rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer group",
         className
       )}
-      style={{ ...style, background: style.background || style.borderColor }} // Utilise le background (gradient) ou la couleur de bordure
+      style={style} // Applique le background (gradient ou couleur) et l'ombre
       onClick={onClick}
     >
       <Card
