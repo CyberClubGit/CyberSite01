@@ -236,18 +236,10 @@ export function Header({ categories, brands }: HeaderProps) {
     }
 
     return (
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" asChild>
-          <Link href="/auth/signin">
-            Se connecter
-          </Link>
-        </Button>
-        <Button asChild>
-          <Link href="/auth/signup">
-            S'inscrire
-          </Link>
-        </Button>
-      </div>
+      <Link href="/auth/signin" className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
+        <User className="h-6 w-6" />
+        <span className="text-xs font-medium">Connect</span>
+      </Link>
     );
   };
 

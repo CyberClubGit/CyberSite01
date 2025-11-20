@@ -36,9 +36,9 @@ export default async function RootLayout({
       </head>
       <body className="font-body antialiased">
         <Providers>
-          <div className="flex min-h-screen flex-col text-foreground bg-transparent">
+          <div className="flex flex-col min-h-screen text-foreground bg-transparent">
             <Header categories={categories} brands={brands} />
-            <main className="flex-1">{children}</main>
+            <main className="flex-grow">{children}</main>
             <Footer />
           </div>
         </Providers>
