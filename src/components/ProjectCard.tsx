@@ -20,9 +20,9 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ item, onClick, style, className }: ProjectCardProps) {
-  // Structure unifiée pour toutes les cartes (gradient ou couleur simple)
+  // Structure unifiée pour toutes les cartes.
   // Le conteneur externe gère la "bordure" via son arrière-plan.
-  // La carte interne a une marge pour laisser apparaître la bordure.
+  // La carte interne a une marge pour laisser apparaître cette bordure.
   return (
     <div
       className={cn(
