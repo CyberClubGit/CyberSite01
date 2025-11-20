@@ -1,11 +1,10 @@
-
 'use client';
 
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState, useCallback } from 'react';
 import { useTheme } from 'next-themes';
-import { Menu } from 'lucide-react';
+import { Menu, User, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -22,9 +21,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Brand, Category } from '@/lib/sheets';
 import { usePathname, useRouter } from 'next/navigation';
-import { ThemeToggleButton } from './theme-toggle-button';
+import { useAuth } from '@/hooks/useAuth';
+
 
 interface HeaderProps {
   categories: Category[];
@@ -32,6 +40,7 @@ interface HeaderProps {
 }
 
 export function Header({ categories, brands }: HeaderProps) {
+  const { user, signOut, loading } = useAuth();
   const { resolvedTheme } = useTheme();
   const [selectedBrand, setSelectedBrand] = useState<string>('Cyber Club');
   const [isMounted, setIsMounted] = useState(false);
@@ -173,6 +182,74 @@ export function Header({ categories, brands }: HeaderProps) {
       })
   );
 
+  const renderAuthSection = () => {
+    if (loading) {
+      return <div className="w-10 h-10 rounded-full bg-muted animate-pulse" />;
+    }
+
+    if (user) {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <Avatar className="h-10 w-10 border-2 border-primary">
+                <AvatarImage src={user.photoURL || ''} />
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {user.displayName?.[0] || user.email?.[0]?.toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="hidden md:block text-left">
+                <p className="text-sm font-medium">
+                  {user.nickname || user.displayName || 'User'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {user.email}
+                </p>
+              </div>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem asChild>
+              <Link href="/profile">
+                <User className="mr-2 h-4 w-4" />
+                Mon profil
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/profile/settings">
+                <Settings className="mr-2 h-4 w-4" />
+                Paramètres
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={signOut}
+              className="text-red-600 focus:text-red-600"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Déconnexion
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    }
+
+    return (
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" asChild>
+          <Link href="/auth/signin">
+            Se connecter
+          </Link>
+        </Button>
+        <Button asChild>
+          <Link href="/auth/signup">
+            S'inscrire
+          </Link>
+        </Button>
+      </div>
+    );
+  };
+
 
   if (!isMounted) {
     return (
@@ -195,7 +272,6 @@ export function Header({ categories, brands }: HeaderProps) {
       <div className="container flex h-16 items-center">
         <div className="mr-auto flex items-center gap-2">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            
           </Link>
         
           <div className="hidden md:flex">
@@ -225,7 +301,6 @@ export function Header({ categories, brands }: HeaderProps) {
           </div>
         </div>
 
-
         <div className="hidden md:flex flex-1 items-center justify-center">
           <nav className="flex gap-6">
             {renderNavLinks()}
@@ -233,6 +308,9 @@ export function Header({ categories, brands }: HeaderProps) {
         </div>
 
         <div className="ml-auto flex items-center justify-end space-x-2">
+            <div className="hidden md:flex">
+              {renderAuthSection()}
+            </div>
             <div className="md:hidden">
               <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                 <SheetTrigger asChild>
@@ -276,6 +354,9 @@ export function Header({ categories, brands }: HeaderProps) {
                       <nav className="flex flex-col gap-2 mt-4 border-t pt-4">
                         {renderNavLinks(true)}
                       </nav>
+                       <div className="mt-auto border-t pt-4">
+                        {renderAuthSection()}
+                      </div>
                     </div>
                 </SheetContent>
               </Sheet>
