@@ -22,16 +22,18 @@ interface ProjectCardProps {
 
 export function ProjectCard({ item, onClick, style, className }: ProjectCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const { cardStyle, glowStyle } = useParallax(cardRef);
+  const { cardStyle, glowStyle, handleMouseEnter, handleMouseLeave } = useParallax(cardRef);
 
   return (
     <div
       ref={cardRef}
       className={cn(
-        "relative transition-all duration-300 ease-out cursor-pointer group card-3d-wrapper hover:scale-105",
+        "relative transition-transform duration-300 ease-out cursor-pointer group card-3d-wrapper",
         className
       )}
       onClick={onClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       style={{ ...cardStyle }}
     >
       {/* Element for the gradient glow */}

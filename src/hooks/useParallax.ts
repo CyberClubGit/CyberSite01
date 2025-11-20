@@ -10,6 +10,7 @@ export function useParallax(elementRef: RefObject<HTMLElement>) {
     cardStyle: {},
     glowStyle: {},
   });
+  const [isHovering, setIsHovering] = useState(false);
 
   useEffect(() => {
     let frameId: number;
@@ -23,20 +24,19 @@ export function useParallax(elementRef: RefObject<HTMLElement>) {
         const { clientX, clientY } = e;
         const { innerWidth, innerHeight } = window;
         
-        // Calculate mouse position relative to the viewport center (-1 to 1)
         const mouseX = (clientX - innerWidth / 2) / (innerWidth / 2);
         const mouseY = (clientY - innerHeight / 2) / (innerHeight / 2);
         
         const rotateY = mouseX * MAX_ROTATION;
         const rotateX = -mouseY * MAX_ROTATION;
+        const scale = isHovering ? 'scale(1.05)' : 'scale(1)';
 
-        // For the gradient to "follow" the mouse, we update its position
-        const glowX = 50 + mouseX * 25; // 25% to 75%
-        const glowY = 50 + mouseY * 25; // 25% to 75%
+        const glowX = 50 + mouseX * 25;
+        const glowY = 50 + mouseY * 25;
 
         setStyles({
           cardStyle: {
-            transform: `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
+            transform: `${scale} rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
           },
           glowStyle: {
             backgroundPosition: `${glowX}% ${glowY}%`,
@@ -53,7 +53,14 @@ export function useParallax(elementRef: RefObject<HTMLElement>) {
         cancelAnimationFrame(frameId);
       }
     };
-  }, []); // Empty dependency array, effect runs once and cleans up on unmount
+  }, [isHovering]);
 
-  return styles;
+  const handleMouseEnter = () => setIsHovering(true);
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+    // Reset to a neutral state without hover scale but keeping parallax
+    // The mousemove listener will handle the final transform value
+  };
+
+  return { ...styles, handleMouseEnter, handleMouseLeave };
 }
