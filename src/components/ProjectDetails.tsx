@@ -49,8 +49,10 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
                 />
 
                 {project.description && (
-                  <div className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                    {project.description}
+                  <div className="border border-border/50 rounded-lg p-4 bg-muted/20">
+                    <div className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                      {project.description}
+                    </div>
                   </div>
                 )}
                 
