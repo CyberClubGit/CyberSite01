@@ -20,33 +20,38 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ item, onClick, style, className }: ProjectCardProps) {
-  // Structure finale et robuste :
-  // 1. Le conteneur externe gère le style de la bordure (background/gradient) et l'ombre.
-  // 2. Un conteneur enfant (avec marge) contient tout le contenu visible (image, titre).
-  //    Sa marge laisse apparaître l'arrière-plan du parent, créant la bordure.
+  // Structure finale et robuste pour une bordure dégradée qui respecte le border-radius.
+  // Le conteneur externe gère l'ombre et le survol.
+  // Le conteneur interne utilise le dégradé comme arrière-plan et un 'background-clip'
+  // pour le restreindre à la zone de la bordure (padding). Le contenu a son propre fond.
   return (
     <div
       className={cn(
         "relative rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer group",
         className
       )}
-      style={style} // Applique le background (gradient ou couleur) et l'ombre
+      style={{ boxShadow: style.boxShadow }} // Applique l'ombre ici
       onClick={onClick}
     >
-      <div className="flex flex-col h-full m-[2px] rounded-[calc(var(--radius)-2px)] bg-card overflow-hidden">
-        {item.displayImageUrl && (
-          <div className="relative w-full bg-muted aspect-square">
-            <Image
-              src={item.displayImageUrl}
-              alt={item.title}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-            />
+      <div 
+        className="h-full rounded-lg p-[2px]"
+        style={{ background: style.background }} // Le dégradé est appliqué ici en tant que fond
+      >
+        <div className="flex flex-col h-full bg-card rounded-[calc(var(--radius)-2px)] overflow-hidden">
+           {item.displayImageUrl && (
+            <div className="relative w-full bg-muted aspect-square">
+              <Image
+                src={item.displayImageUrl}
+                alt={item.title}
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
+          )}
+          <div className="p-4 bg-card/50 backdrop-blur-md">
+            <h3 className="font-headline text-lg leading-tight">{item.title}</h3>
           </div>
-        )}
-        <div className="p-4 bg-card/50 backdrop-blur-md">
-          <h3 className="font-headline text-lg leading-tight">{item.title}</h3>
         </div>
       </div>
     </div>
