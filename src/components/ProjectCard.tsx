@@ -14,7 +14,7 @@ type ProcessedItem = {
 interface ProjectCardProps {
   item: ProcessedItem;
   onClick: () => void;
-  style: React.CSSProperties; // We'll keep this for the glow color
+  style: React.CSSProperties; // We'll keep this for the glow color from useActivityColors
   className?: string;
 }
 
@@ -29,12 +29,12 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
     >
       {/* Element for the gradient glow */}
       <div 
-        className="absolute -inset-1 rounded-xl blur-md transition-all duration-500 group-hover:blur-lg"
+        className="absolute -inset-1 rounded-xl blur-lg transition-all duration-500 opacity-75 group-hover:opacity-100"
         style={{ background: style.background }}
       ></div>
       
       {/* The actual card content with frosted glass effect */}
-      <div className="relative bg-card/20 backdrop-blur-md rounded-lg flex flex-col h-full overflow-hidden border border-white/10">
+      <div className="relative bg-card/20 backdrop-blur-md rounded-lg flex flex-col h-full overflow-hidden border">
         <div className="p-4">
           <h3 className="font-headline text-xl font-bold leading-tight">{item.title}</h3>
         </div>
