@@ -46,11 +46,11 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
           className="text-4xl md:text-5xl font-headline font-bold text-primary mb-6 flex-shrink-0" 
         />
 
-        <div className="flex-1 flex flex-col lg:flex-row gap-8 overflow-hidden">
+        <div className="flex-1 flex flex-col lg:flex-row gap-8 min-h-0">
 
             {/* Colonne de Gauche - avec son propre scroll */}
             <div className="lg:w-2/3 w-full flex flex-col gap-8 min-w-0">
-                {/* Section Description - contrainte en largeur */}
+                {/* Section Description */}
                 {project.description && (
                   <div className="max-w-prose">
                     <div className="border border-border/50 rounded-lg p-4 bg-muted/20">
@@ -61,19 +61,19 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
                   </div>
                 )}
 
-                {/* Section Galerie - contrainte en largeur et scrollable horizontalement */}
+                {/* Section Galerie */}
                 {mainPdf && (
                     <div className="flex flex-col space-y-4 min-w-0">
                         <h3 className="font-headline text-lg font-semibold flex items-center gap-2 flex-shrink-0"><Paperclip /> Documents & Galerie</h3>
-                        <div className="min-w-0">
+                        <div className="scale-80">
                            <DocumentGallery pdfUrl={mainPdf} />
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Colonne de Droite - avec son propre scroll */}
-            <ScrollArea className="lg:w-1/3 w-full h-full">
+            {/* Colonne de Droite */}
+            <div className="lg:w-1/3 w-full">
               <div className="space-y-8 pr-4">
                   <div className="space-y-6">
                       <div className="flex items-center flex-wrap gap-4 text-muted-foreground">
@@ -139,7 +139,7 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
                       </div>
                   )}
               </div>
-            </ScrollArea>
+            </div>
         </div>
       </div>
     </ScrollArea>
