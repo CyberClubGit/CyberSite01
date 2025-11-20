@@ -52,7 +52,7 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
                     />
 
                     {project.description && (
-                      <div className="border border-border/50 rounded-lg p-4 bg-muted/20">
+                      <div className="border border-border/50 rounded-lg p-4 bg-muted/20 max-w-prose">
                         <div className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
                           {project.description}
                         </div>
@@ -64,7 +64,7 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
                 
                 {/* Section Galerie - Isolé et contraint */}
                 {mainPdf && (
-                    <div className="flex flex-col space-y-4 min-w-0">
+                    <div className="flex flex-col space-y-4">
                         <h3 className="font-headline text-lg font-semibold flex items-center gap-2"><Paperclip /> Documents & Galerie</h3>
                         <div className="border rounded-lg p-4">
                            <DocumentGallery pdfUrl={mainPdf} />
