@@ -28,14 +28,14 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
     return (
       <div
         className={cn(
-          "relative rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer group p-[2px]",
+          "relative rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer group p-0", // No more padding
           className
         )}
         style={{ ...style, background: style.borderImage, borderImage: 'unset' }}
         onClick={onClick}
       >
         <Card 
-            className="flex flex-col overflow-hidden h-full rounded-[calc(var(--radius)-2px)]"
+            className="flex flex-col overflow-hidden h-full m-[2px] rounded-[calc(var(--radius)-2px)]" // Margin to simulate border
         >
             {item.displayImageUrl && (
             <div className="relative w-full bg-muted aspect-square">
