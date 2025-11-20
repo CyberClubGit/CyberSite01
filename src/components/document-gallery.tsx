@@ -95,7 +95,7 @@ interface PageThumbnailProps {
 
 const PageThumbnail: React.FC<PageThumbnailProps> = ({ pageNumber, onClick }) => {
     return (
-        <div className="relative group aspect-[2/3] w-full h-full rounded-lg overflow-hidden border border-border">
+        <div className="relative group aspect-[4/9] w-full h-full rounded-lg overflow-hidden border border-border">
             <Page
                 pageNumber={pageNumber}
                 width={200}
@@ -181,7 +181,7 @@ export const DocumentGallery: React.FC<DocumentGalleryProps> = ({ pdfUrl }) => {
           <div className="flex -ml-4">
             {Array.from({ length: 5 }).map((_, index) => (
                 <div key={index} className="flex-shrink-0 w-1/4 min-w-[150px] md:w-1/5 lg:w-1/6 pl-4">
-                    <div className="aspect-[2/3] rounded-lg overflow-hidden border border-border">
+                    <div className="aspect-[4/9] rounded-lg overflow-hidden border border-border">
                         <Skeleton className="w-full h-full" />
                     </div>
                 </div>
