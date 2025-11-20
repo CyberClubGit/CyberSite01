@@ -19,21 +19,18 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ item, onClick, style, className }: ProjectCardProps) {
-  // La structure est un conteneur externe (le cadre) et un conteneur interne (le contenu).
-  // Le conteneur externe a un padding et le dégradé en fond.
-  // Le conteneur interne a un fond transparent, laissant voir le dégradé du parent (créant la bordure).
   return (
     <div
       className={cn(
-        "relative rounded-lg p-[2px] transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer group",
+        "relative rounded-lg p-[2px] transition-all duration-500 hover:shadow-lg hover:-translate-y-1 cursor-pointer group",
         className
       )}
       style={{ background: style.background, boxShadow: style.boxShadow }}
       onClick={onClick}
     >
-      <div className="flex flex-col h-full overflow-hidden rounded-md bg-transparent">
-        <div className="p-6 bg-card/50 backdrop-blur-md">
-          <h3 className="font-headline text-lg leading-tight">{item.title}</h3>
+      <div className="flex flex-col h-full overflow-hidden rounded-md bg-card/50 backdrop-blur-md">
+        <div className="p-6">
+          <h3 className="font-headline text-xl font-bold leading-tight">{item.title}</h3>
         </div>
          {item.displayImageUrl && (
           <div className="relative w-full bg-muted aspect-square">
