@@ -29,14 +29,14 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
         "relative rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer group",
         className
       )}
-      style={{ boxShadow: style.boxShadow }} // Applique l'ombre ici
+      style={{ boxShadow: style.boxShadow }}
       onClick={onClick}
     >
       <div 
         className="h-full rounded-lg p-[2px]"
-        style={{ background: style.background }} // Le dégradé est appliqué ici en tant que fond
+        style={{ background: style.background }}
       >
-        <div className="flex flex-col h-full bg-card rounded-[calc(var(--radius)-2px)] overflow-hidden">
+        <div className="flex flex-col h-full bg-card overflow-hidden">
            {item.displayImageUrl && (
             <div className="relative w-full bg-muted aspect-square">
               <Image
