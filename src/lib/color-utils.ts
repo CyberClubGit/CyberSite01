@@ -27,7 +27,7 @@ export const createActivityColorMap = (
 };
 
 /**
- * Builds a CSS linear-gradient string from a list of activities.
+ * Builds a CSS gradient string from a list of activities.
  */
 export const buildActivityGradient = (
   activities: string | undefined,
@@ -51,7 +51,7 @@ export const buildActivityGradient = (
     return { borderColor: colors[0] };
   }
 
-  return { background: `linear-gradient(120deg, ${colors.join(', ')})` };
+  return { background: `radial-gradient(circle, ${colors.join(', ')})` };
 };
 
 /**
