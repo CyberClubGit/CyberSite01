@@ -21,6 +21,42 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ item, onClick, style, className }: ProjectCardProps) {
+  const isGradient = style.borderImage !== undefined;
+
+  // Si c'est un gradient, on a besoin d'une structure différente pour le border-radius
+  if (isGradient) {
+    return (
+      <div
+        className={cn(
+          "relative rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer group p-[2px]",
+          className
+        )}
+        style={{ ...style, background: style.borderImage, borderImage: 'unset' }}
+        onClick={onClick}
+      >
+        <Card 
+            className="flex flex-col overflow-hidden h-full rounded-[calc(var(--radius)-2px)]"
+        >
+            {item.displayImageUrl && (
+            <div className="relative w-full bg-muted aspect-square">
+                <Image
+                    src={item.displayImageUrl}
+                    alt={item.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+            </div>
+            )}
+            <CardHeader>
+              <CardTitle className="font-headline text-lg leading-tight">{item.title}</CardTitle>
+            </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  // Structure originale pour les bordures simples
   return (
     <div
       className={cn(
@@ -45,7 +81,7 @@ export function ProjectCard({ item, onClick, style, className }: ProjectCardProp
             </div>
             )}
             <CardHeader>
-            <CardTitle className="font-headline text-lg leading-tight">{item.title}</CardTitle>
+              <CardTitle className="font-headline text-lg leading-tight">{item.title}</CardTitle>
             </CardHeader>
         </Card>
     </div>
