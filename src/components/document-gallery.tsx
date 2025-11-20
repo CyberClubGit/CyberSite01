@@ -8,7 +8,7 @@ import 'react-pdf/dist/esm/Page/TextLayer.css';
 import { Expand, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 import { getProxiedPdfUrl } from '@/lib/linkConverter';
-import { Dialog, DialogContent } from './ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 
 // Configure PDF.js worker using a stable CDN
@@ -53,6 +53,12 @@ const FullscreenViewer: React.FC<{ pdfUrl: string; initialPage: number; numPages
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-[95vw] w-full h-[95vh] flex items-center justify-center p-0 border-0 bg-transparent backdrop-blur-md">
+        <DialogHeader className="sr-only">
+          <DialogTitle>PDF Viewer</DialogTitle>
+          <DialogDescription>
+            Viewing page {currentPage} of {numPages}. Use arrow keys to navigate.
+          </DialogDescription>
+        </DialogHeader>
         <div className="relative w-full h-full flex items-center justify-center">
           <Document file={pdfUrl}>
             <Page pageNumber={currentPage} height={window.innerHeight * 0.9} />

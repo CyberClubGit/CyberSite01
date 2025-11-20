@@ -114,7 +114,7 @@ export default function DefaultPageLayout({ category, brand, initialData, brands
                  }}
             >
                  <DialogHeader className="sr-only">
-                    <DialogTitle>Project Explorer</DialogTitle>
+                    <DialogTitle>{selectedProject?.title || 'Project Details'}</DialogTitle>
                     <DialogDescription>
                         Explore project details and switch between projects using the tabs.
                     </DialogDescription>
