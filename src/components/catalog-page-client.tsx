@@ -13,9 +13,13 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import { VideoBackground } from './video-background';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { CatalogItemDetails } from './catalog-item-details';
+
+type ProcessedItem = ReturnType<typeof processGalleryLinks>;
 
 interface CatalogPageClientProps {
-  initialData: any[];
+  initialData: ProcessedItem[];
   category: Category;
   brand?: Brand;
   types: string[];
@@ -25,6 +29,7 @@ interface CatalogPageClientProps {
 export function CatalogPageClient({ initialData, category, brand, types, materials }: CatalogPageClientProps) {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
+  const [selectedItem, setSelectedItem] = useState<ProcessedItem | null>(null);
 
   const handleFilterChange = (filterType: 'type' | 'material', value: string) => {
     const setter = filterType === 'type' ? setSelectedTypes : setSelectedMaterials;
@@ -135,7 +140,11 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                 {finalData && finalData.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {finalData.map((item, index) => (
-                      <Card key={index} className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-background/80 backdrop-blur-sm">
+                      <Card 
+                        key={index} 
+                        className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-background/80 backdrop-blur-sm cursor-pointer"
+                        onClick={() => setSelectedItem(item)}
+                      >
                         {item.displayImageUrl && (
                           <div className="relative w-full aspect-[3/4] bg-muted">
                             <Image
@@ -162,6 +171,20 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
           </div>
         </section>
       </div>
+
+      <Dialog open={!!selectedItem} onOpenChange={(isOpen) => !isOpen && setSelectedItem(null)}>
+        <DialogContent className="max-w-6xl w-full h-[90vh] p-4 border-0 bg-background/90 backdrop-blur-sm flex flex-col overflow-hidden">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{selectedItem?.title || 'Item Details'}</DialogTitle>
+            <DialogDescription>
+              Detailed view of the selected catalog item.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 min-h-0">
+            {selectedItem && <CatalogItemDetails item={selectedItem} />}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
