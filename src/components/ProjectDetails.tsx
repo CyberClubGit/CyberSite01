@@ -58,7 +58,7 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
                 
                 {mainPdf && (
                     <>
-                        <h3 className="font-headline text-lg font-semibold flex items-center gap-2"><Paperclip /> Documents & Galerie</h3>
+                        <h3 className="font-headline text-lg font-semibold flex items-center gap-2 mb-4"><Paperclip /> Documents & Galerie</h3>
                         <div className="border rounded-lg p-4">
                            <DocumentGallery pdfUrl={mainPdf} />
                         </div>
@@ -68,7 +68,7 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
             </ScrollArea>
 
             {/* Colonne de Droite (Fixe) */}
-            <div className="lg:w-1/3 flex flex-col space-y-8 h-full overflow-y-auto">
+            <div className="lg:w-1/3 flex flex-col space-y-8 h-full overflow-y-auto pr-2">
                 <div className="space-y-6">
                     <div className="flex items-center flex-wrap gap-4 text-muted-foreground">
                         {project.Institution && <span className='font-semibold'>{project.Institution}</span>}
