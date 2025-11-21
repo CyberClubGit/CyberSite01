@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Badge } from './ui/badge';
 import { ViewerPanel } from './viewer-panel';
 import { ScrollArea } from './ui/scroll-area';
 import Image from 'next/image';
-import { Images, X, ArrowLeft, ArrowRight, FileText, Wrench } from 'lucide-react';
+import { Images, X, ArrowLeft, ArrowRight, FileText, Wrench, Cuboid, Package } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,9 +19,73 @@ interface CatalogItemDetailsProps {
   item: ProcessedItem;
 }
 
+interface ImageViewerState {
+  isOpen: boolean;
+  images: string[];
+  selectedIndex: number;
+}
+
+const ImageGallery: React.FC<{ images: string[], onImageClick: (index: number) => void }> = ({ images, onImageClick }) => {
+    const [mainImageIndex, setMainImageIndex] = useState(0);
+
+    if (!images || images.length === 0) {
+        return <div className="text-center text-muted-foreground p-8">Aucun visuel disponible.</div>;
+    }
+
+    const mainImageUrl = images[mainImageIndex];
+
+    return (
+        <div className="flex gap-4">
+            {/* Main Image */}
+            <div 
+                className="relative flex-1 aspect-square rounded-lg overflow-hidden group border cursor-pointer bg-muted"
+                onClick={() => onImageClick(mainImageIndex)}
+            >
+                {mainImageUrl && (
+                    <Image
+                        src={mainImageUrl}
+                        alt={`Main gallery image`}
+                        fill
+                        sizes="(max-width: 1024px) 70vw, 50vw"
+                        className="object-cover"
+                    />
+                )}
+            </div>
+            
+            {/* Thumbnails */}
+            {images.length > 1 && (
+                <div className="w-24 flex-shrink-0">
+                    <ScrollArea className="h-full max-h-[500px]">
+                    <div className="flex flex-col gap-2 pr-2">
+                        {images.map((url, index) => (
+                            <div 
+                            key={index}
+                            onClick={() => setMainImageIndex(index)}
+                            className={cn(
+                                "relative w-full aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all",
+                                mainImageIndex === index ? 'border-primary' : 'border-transparent hover:border-muted-foreground'
+                            )}
+                            >
+                            <Image
+                                src={url}
+                                alt={`Gallery thumbnail ${index + 1}`}
+                                fill
+                                sizes="100px"
+                                className="object-cover"
+                            />
+                            </div>
+                        ))}
+                    </div>
+                    </ScrollArea>
+                </div>
+            )}
+        </div>
+    );
+};
+
+
 export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
-  const [mainImageIndex, setMainImageIndex] = useState(0);
+  const [imageViewer, setImageViewer] = useState<ImageViewerState>({ isOpen: false, images: [], selectedIndex: 0 });
 
   const tags = {
     Type: item.Type?.split(',').map(t => t.trim()).filter(Boolean) || [],
@@ -29,19 +93,28 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     Activity: item.Activity?.split(',').map(t => t.trim()).filter(Boolean) || [],
   };
 
-  const closeImageViewer = () => setSelectedImageIndex(null);
+  const openImageViewer = (images: string[], index: number) => {
+    setImageViewer({ isOpen: true, images, selectedIndex: index });
+  };
+  const closeImageViewer = () => setImageViewer(prev => ({ ...prev, isOpen: false }));
+
   const nextImage = () => {
-    if (selectedImageIndex !== null && item.galleryUrls) {
-      setSelectedImageIndex((selectedImageIndex + 1) % item.galleryUrls.length);
-    }
+    setImageViewer(prev => ({ ...prev, selectedIndex: (prev.selectedIndex + 1) % prev.images.length }));
   };
   const prevImage = () => {
-    if (selectedImageIndex !== null && item.galleryUrls) {
-      setSelectedImageIndex((selectedImageIndex - 1 + item.galleryUrls.length) % item.galleryUrls.length);
-    }
+    setImageViewer(prev => ({ ...prev, selectedIndex: (prev.selectedIndex - 1 + prev.images.length) % prev.images.length }));
   };
+  
+  const hasGallery = item.galleryUrls && item.galleryUrls.length > 0;
+  const has3DRenders = item.threeDRenderUrls && item.threeDRenderUrls.length > 0;
+  const hasPackaging = item.packagingUrls && item.packagingUrls.length > 0;
+  
+  const galleryTabs = [
+    { name: 'Galerie', icon: Images, content: hasGallery ? <ImageGallery images={item.galleryUrls} onImageClick={(index) => openImageViewer(item.galleryUrls, index)} /> : null, available: hasGallery },
+    { name: 'Rendus 3D', icon: Cuboid, content: has3DRenders ? <ImageGallery images={item.threeDRenderUrls} onImageClick={(index) => openImageViewer(item.threeDRenderUrls, index)} /> : null, available: has3DRenders },
+    { name: 'Packaging', icon: Package, content: hasPackaging ? <ImageGallery images={item.packagingUrls} onImageClick={(index) => openImageViewer(item.packagingUrls, index)} /> : null, available: hasPackaging },
+  ].filter(tab => tab.available);
 
-  const mainImageUrl = item.galleryUrls && item.galleryUrls.length > 0 ? item.galleryUrls[mainImageIndex] : null;
 
   return (
     <>
@@ -60,62 +133,27 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
             <ScrollArea className="h-full">
               <div className="space-y-8 pr-4">
 
-                {/* Gallery Section */}
-                {item.galleryUrls && item.galleryUrls.length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="font-headline text-lg font-semibold flex items-center gap-2">
-                      <Images />
-                      Galerie
-                    </h3>
-                    <div className="flex gap-4">
-                      {/* Main Image */}
-                      <div 
-                        className="relative flex-1 aspect-square rounded-lg overflow-hidden group border cursor-pointer bg-muted"
-                        onClick={() => setSelectedImageIndex(mainImageIndex)}
-                      >
-                        {mainImageUrl && (
-                           <Image
-                              src={mainImageUrl}
-                              alt={`Main gallery image`}
-                              fill
-                              sizes="(max-width: 1024px) 70vw, 50vw"
-                              className="object-cover"
-                            />
-                        )}
-                      </div>
-                      
-                      {/* Thumbnails */}
-                      {item.galleryUrls.length > 1 && (
-                        <div className="w-24 flex-shrink-0">
-                           <ScrollArea className="h-full max-h-[500px]">
-                            <div className="flex flex-col gap-2 pr-2">
-                                {item.galleryUrls.map((url, index) => (
-                                  <div 
-                                    key={index}
-                                    onClick={() => setMainImageIndex(index)}
-                                    className={cn(
-                                      "relative w-full aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all",
-                                      mainImageIndex === index ? 'border-primary' : 'border-transparent hover:border-muted-foreground'
-                                    )}
-                                  >
-                                    <Image
-                                      src={url}
-                                      alt={`Gallery thumbnail ${index + 1}`}
-                                      fill
-                                      sizes="100px"
-                                      className="object-cover"
-                                    />
-                                  </div>
-                                ))}
-                            </div>
-                           </ScrollArea>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                {/* Galleries Section */}
+                {galleryTabs.length > 0 && (
+                    <Tabs defaultValue={galleryTabs[0].name} className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                            {galleryTabs.map(tab => (
+                                <TabsTrigger key={tab.name} value={tab.name}>
+                                    <tab.icon className="mr-2 h-4 w-4" />
+                                    {tab.name}
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                         {galleryTabs.map(tab => (
+                            <TabsContent key={tab.name} value={tab.name} className="mt-4">
+                                {tab.content || <div className="text-center text-muted-foreground p-8">Aucun visuel disponible pour cette catégorie.</div>}
+                            </TabsContent>
+                        ))}
+                    </Tabs>
                 )}
+                
 
-                {/* Tabs Section */}
+                {/* Tabs Section for Description/Tech Details */}
                 <Tabs defaultValue="description" className="w-full">
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="description">
@@ -151,13 +189,13 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
       </div>
       
       {/* Image Viewer Dialog */}
-      <Dialog open={selectedImageIndex !== null} onOpenChange={(isOpen) => !isOpen && closeImageViewer()}>
+      <Dialog open={imageViewer.isOpen} onOpenChange={(isOpen) => !isOpen && closeImageViewer()}>
         <DialogContent className="max-w-[90vw] max-h-[90vh] w-auto h-auto p-2 bg-transparent border-0" showCloseButton={false}>
-            {selectedImageIndex !== null && item.galleryUrls && (
+            {imageViewer.isOpen && (
                 <div className="relative w-full h-full">
                     <Image
-                        src={item.galleryUrls[selectedImageIndex]}
-                        alt={`Image ${selectedImageIndex + 1}`}
+                        src={imageViewer.images[imageViewer.selectedIndex]}
+                        alt={`Image ${imageViewer.selectedIndex + 1}`}
                         fill
                         className="object-contain"
                     />
@@ -171,7 +209,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
             >
                 <X />
             </Button>
-            {item.galleryUrls && item.galleryUrls.length > 1 && (
+            {imageViewer.images.length > 1 && (
                 <>
                     <Button
                         variant="ghost"

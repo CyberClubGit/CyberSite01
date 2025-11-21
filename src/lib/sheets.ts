@@ -182,6 +182,8 @@ export const getCategoryData = unstable_cache(
  */
 export function processGalleryLinks<T extends Record<string, any>>(item: T): T & {
   galleryUrls: string[];
+  threeDRenderUrls: string[];
+  packagingUrls: string[];
   coverUrl: string | null;
   stlUrl: string | null;
   pdfUrl: string | null;
@@ -196,6 +198,12 @@ export function processGalleryLinks<T extends Record<string, any>>(item: T): T &
     // Extraire et convertir les liens Gallery (multiples)
     galleryUrls: item.Gallery 
       ? extractAndConvertGalleryLinks(item.Gallery)
+      : [],
+    threeDRenderUrls: item['3D Renders']
+      ? extractAndConvertGalleryLinks(item['3D Renders'])
+      : [],
+    packagingUrls: item.Packaging
+      ? extractAndConvertGalleryLinks(item.Packaging)
       : [],
     
     // Convertir les liens individuels
