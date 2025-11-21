@@ -273,7 +273,7 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
       success_url,
       cancel_url,
       // Add customer info if user is logged in
-      ...(context.auth && { customer_email: context.auth.token.email }),
+      ...(context.auth && context.auth.token.email && { customer_email: context.auth.token.email }),
     });
 
     if (!session.url) {
