@@ -5,8 +5,40 @@ import { CatalogPageClient } from '@/components/catalog-page-client';
 import DefaultPageLayout from '@/components/default-page-layout';
 import { HomePageClient } from '@/components/home-page-client';
 
+export async function generateStaticParams() {
+  const categories = await getCategories();
+  const brands = await getBrands();
+  
+  const paths: { slug: string[] }[] = [];
+
+  // Default paths without brand
+  categories.forEach(category => {
+    if (category.Url) {
+      paths.push({ slug: [category.Url.toLowerCase()] });
+    }
+  });
+
+  // Paths with brand
+  brands.forEach(brand => {
+    if (brand.Activity && brand.Brand !== 'Cyber Club') {
+      categories.forEach(category => {
+        if (category.Url) {
+          paths.push({ slug: [brand.Activity.toLowerCase(), category.Url.toLowerCase()] });
+        }
+      });
+    }
+  });
+
+  // Add homepage path
+  if (!paths.some(p => p.slug.length === 1 && p.slug[0] === 'home')) {
+    paths.push({ slug: ['home'] });
+  }
+
+  return paths;
+}
+
 export default async function CatchAllPage({ params }: { params: { slug: string[] } }) {
-  const slug = params.slug || [];
+  const slugArray = params.slug || [];
   
   const categories = await getCategories();
   const brands = await getBrands();
@@ -14,8 +46,8 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
   let brand: Brand | undefined;
   let category: Category | undefined;
   
-  const lastSlugPart = slug.length > 0 ? slug[slug.length - 1] : 'home';
-  const potentialBrandSlug = slug.length > 1 ? slug[0] : undefined;
+  const lastSlugPart = slugArray.length > 0 ? slugArray[slugArray.length - 1] : 'home';
+  const potentialBrandSlug = slugArray.length > 1 ? slugArray[0] : undefined;
   
   category = categories.find(c => c.Url && c.Url.toLowerCase() === lastSlugPart.toLowerCase());
 
