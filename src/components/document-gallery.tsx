@@ -55,9 +55,9 @@ const FullscreenViewer: React.FC<{ pdfUrl: string; initialPage: number; numPages
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
        <DialogContent className="max-w-[95vw] w-full h-[95vh] flex items-center justify-center p-0 border-0 bg-transparent backdrop-blur-md" showCloseButton={false}>
          <DialogHeader className="sr-only">
-           <DialogTitle>PDF Viewer</DialogTitle>
+           <DialogTitle>Visionneuse PDF</DialogTitle>
            <DialogDescription>
-             Viewing page {currentPage} of {numPages}. Use arrow keys to navigate.
+             Affichage de la page {currentPage} sur {numPages}. Utilisez les flèches pour naviguer.
            </DialogDescription>
          </DialogHeader>
         <div className="relative w-full h-full flex items-center justify-center">

@@ -7,7 +7,7 @@ import { ViewerPanel } from './viewer-panel';
 import { ScrollArea } from './ui/scroll-area';
 import Image from 'next/image';
 import { Images, X, ArrowLeft, ArrowRight, FileText, Wrench, Cuboid, Package } from 'lucide-react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
@@ -191,6 +191,12 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
       {/* Image Viewer Dialog */}
       <Dialog open={imageViewer.isOpen} onOpenChange={(isOpen) => !isOpen && closeImageViewer()}>
         <DialogContent className="max-w-[90vw] max-h-[90vh] w-auto h-auto p-2 bg-transparent border-0" showCloseButton={false}>
+            <DialogHeader className="sr-only">
+              <DialogTitle>Visionneuse d'image</DialogTitle>
+              <DialogDescription>
+                Agrandissement de l'image sélectionnée. Utilisez les flèches pour naviguer.
+              </DialogDescription>
+            </DialogHeader>
             {imageViewer.isOpen && (
                 <div className="relative w-full h-full">
                     <Image
