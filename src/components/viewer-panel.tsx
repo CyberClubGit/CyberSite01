@@ -3,7 +3,6 @@
 
 import React, { useMemo } from 'react';
 import { useTheme } from 'next-themes';
-import { Skeleton } from './ui/skeleton';
 
 interface ViewerPanelProps {
   modelUrl: string | null;
@@ -58,6 +57,7 @@ const createViewerHtml = (modelUrl: string, theme: 'dark' | 'light' = 'light') =
             import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
             const scene = new THREE.Scene();
+            // LA CORRECTION CLÉ: Ajout de { alpha: true } pour rendre le canvas transparent
             const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
