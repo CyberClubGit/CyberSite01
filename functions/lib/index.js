@@ -23,23 +23,13 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -55,10 +45,8 @@ const stripeSecretKey = (0, params_1.defineSecret)("STRIPE_SECRET_KEY");
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 const db = admin.firestore();
-// Initialize Stripe with secret key from Firebase Functions config
-const stripe = new stripe_1.default(stripeSecretKey.value(), {
-    apiVersion: "2024-06-20",
-});
+// Initialize Stripe with secret key
+let stripe;
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=928586250&single=true&output=csv";
 // #region Fonctions utilitaires
 /**
@@ -92,6 +80,11 @@ function getFirstImage(galleryStr) {
 exports.syncProductsFromSheet = functions.runWith({ secrets: [stripeSecretKey] }).region("us-central1").https.onRequest(async (req, res) => {
     var _a, _b;
     functions.logger.info("Starting product synchronization from Google Sheet.", { structuredData: true });
+    if (!stripe) {
+        stripe = new stripe_1.default(stripeSecretKey.value(), {
+            apiVersion: "2024-06-20",
+        });
+    }
     const summary = {
         success: [],
         skipped: [],
@@ -129,8 +122,7 @@ exports.syncProductsFromSheet = functions.runWith({ secrets: [stripeSecretKey] }
                 // 4. Créer ou mettre à jour les produits dans Stripe
                 functions.logger.log(`Processing Stripe product: ${productTitle} (ID: ${productId})`);
                 const firstImage = getFirstImage(product.Gallery);
-                const stripeProduct = await stripe.products.create({
-                    id: productId,
+                const stripeProductData = {
                     name: productTitle,
                     description: product.Description,
                     images: firstImage ? [firstImage] : [],
@@ -143,24 +135,15 @@ exports.syncProductsFromSheet = functions.runWith({ secrets: [stripeSecretKey] }
                         stl_url: product.Stl,
                         sheet_id: productId,
                     },
+                };
+                const stripeProduct = await stripe.products.create({
+                    id: productId,
+                    ...stripeProductData
                 }).catch(async (error) => {
                     // Si le produit existe déjà (code: 'resource_already_exists'), on le met à jour
                     if (error.code === "resource_already_exists") {
                         functions.logger.log(`Product ${productId} already exists in Stripe, updating...`);
-                        return await stripe.products.update(productId, {
-                            name: productTitle,
-                            description: product.Description,
-                            images: firstImage ? [firstImage] : [],
-                            active: true,
-                            metadata: {
-                                type: product.Type,
-                                style: product.Style,
-                                material: product.Material,
-                                activity: product.Activity,
-                                stl_url: product.Stl,
-                                sheet_id: productId,
-                            },
-                        });
+                        return await stripe.products.update(productId, stripeProductData);
                     }
                     throw error; // Renvoyer les autres erreurs
                 });
@@ -215,7 +198,7 @@ exports.syncProductsFromSheet = functions.runWith({ secrets: [stripeSecretKey] }
                     await pricesCollectionRef.doc(price.id).set({
                         active: price.active,
                         currency: price.currency,
-                        description: price.nickname, // Utilise nickname pour la description
+                        description: price.nickname,
                         type: price.type,
                         unit_amount: price.unit_amount,
                         metadata: price.metadata,
