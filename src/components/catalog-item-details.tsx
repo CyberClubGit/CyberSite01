@@ -6,10 +6,11 @@ import { Badge } from './ui/badge';
 import { ViewerPanel } from './viewer-panel';
 import { ScrollArea } from './ui/scroll-area';
 import Image from 'next/image';
-import { Images, ExternalLink, X, ArrowLeft, ArrowRight, FileText, Wrench } from 'lucide-react';
+import { Images, X, ArrowLeft, ArrowRight, FileText, Wrench } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from '@/lib/utils';
 
 
 type ProcessedItem = ReturnType<typeof import('@/lib/sheets').processGalleryLinks>;
@@ -20,6 +21,7 @@ interface CatalogItemDetailsProps {
 
 export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [mainImageIndex, setMainImageIndex] = useState(0);
 
   const tags = {
     Type: item.Type?.split(',').map(t => t.trim()).filter(Boolean) || [],
@@ -38,6 +40,8 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
       setSelectedImageIndex((selectedImageIndex - 1 + item.galleryUrls.length) % item.galleryUrls.length);
     }
   };
+
+  const mainImageUrl = item.galleryUrls && item.galleryUrls.length > 0 ? item.galleryUrls[mainImageIndex] : null;
 
   return (
     <>
@@ -63,25 +67,50 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
                       <Images />
                       Galerie
                     </h3>
-                    <div className="flex overflow-x-auto gap-4 pb-4">
-                      {item.galleryUrls.map((url, index) => (
-                        <div 
-                          key={index}
-                          onClick={() => setSelectedImageIndex(index)}
-                          className="relative flex-shrink-0 w-72 h-72 rounded-lg overflow-hidden group border cursor-pointer"
-                        >
-                          <Image
-                            src={url}
-                            alt={`Gallery image ${index + 1}`}
-                            fill
-                            sizes="300px"
-                            className="object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <ExternalLink className="w-8 h-8 text-white" />
-                          </div>
+                    <div className="flex gap-4">
+                      {/* Main Image */}
+                      <div 
+                        className="relative flex-1 aspect-square rounded-lg overflow-hidden group border cursor-pointer bg-muted"
+                        onClick={() => setSelectedImageIndex(mainImageIndex)}
+                      >
+                        {mainImageUrl && (
+                           <Image
+                              src={mainImageUrl}
+                              alt={`Main gallery image`}
+                              fill
+                              sizes="(max-width: 1024px) 70vw, 50vw"
+                              className="object-cover"
+                            />
+                        )}
+                      </div>
+                      
+                      {/* Thumbnails */}
+                      {item.galleryUrls.length > 1 && (
+                        <div className="w-24 flex-shrink-0">
+                           <ScrollArea className="h-full max-h-[500px]">
+                            <div className="flex flex-col gap-2 pr-2">
+                                {item.galleryUrls.map((url, index) => (
+                                  <div 
+                                    key={index}
+                                    onClick={() => setMainImageIndex(index)}
+                                    className={cn(
+                                      "relative w-full aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all",
+                                      mainImageIndex === index ? 'border-primary' : 'border-transparent hover:border-muted-foreground'
+                                    )}
+                                  >
+                                    <Image
+                                      src={url}
+                                      alt={`Gallery thumbnail ${index + 1}`}
+                                      fill
+                                      sizes="100px"
+                                      className="object-cover"
+                                    />
+                                  </div>
+                                ))}
+                            </div>
+                           </ScrollArea>
                         </div>
-                      ))}
+                      )}
                     </div>
                   </div>
                 )}
