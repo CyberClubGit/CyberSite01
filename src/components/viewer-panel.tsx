@@ -3,7 +3,6 @@
 
 import React, { useMemo } from 'react';
 import { Skeleton } from './ui/skeleton';
-import { extractGoogleDriveId } from '@/lib/google-drive-utils';
 
 interface ViewerPanelProps {
   modelUrl: string | null;
@@ -233,27 +232,6 @@ const createViewerHtml = (modelUrl: string) => {
   `;
 };
 
-const DebugBox: React.FC<{ modelUrl: string }> = ({ modelUrl }) => {
-    const googleDriveId = extractGoogleDriveId(modelUrl);
-    const directDownloadUrl = googleDriveId ? `https://drive.google.com/uc?export=download&id=${googleDriveId}` : modelUrl;
-    const proxyUrl1 = `https://corsproxy.io/?${encodeURIComponent(directDownloadUrl)}`;
-    const proxyUrl2 = `https://api.allorigins.win/raw?url=${encodeURIComponent(directDownloadUrl)}`;
-
-    return (
-        <div className="mt-4 p-3 border rounded-lg bg-muted/50 text-xs font-mono">
-            <h4 className="font-bold text-sm mb-2">Debug Info</h4>
-            <div className="space-y-2 break-all">
-                <p><strong>URL d'origine:</strong> {modelUrl}</p>
-                <p><strong>ID Google Drive:</strong> {googleDriveId || 'N/A'}</p>
-                <p><strong>Tentative #1 (Direct):</strong> <a href={directDownloadUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{directDownloadUrl}</a></p>
-                <p><strong>Tentative #2 (Proxy 1):</strong> <a href={proxyUrl1} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{proxyUrl1}</a></p>
-                <p><strong>Tentative #3 (Proxy 2):</strong> <a href={proxyUrl2} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{proxyUrl2}</a></p>
-            </div>
-        </div>
-    );
-};
-
-
 export const ViewerPanel: React.FC<ViewerPanelProps> = ({ modelUrl, className }) => {
   const viewerHtml = useMemo(() => {
     if (!modelUrl) return '';
@@ -268,8 +246,6 @@ export const ViewerPanel: React.FC<ViewerPanelProps> = ({ modelUrl, className })
     );
   }
 
-  const isProd = process.env.NODE_ENV === 'production';
-
   return (
     <div className={`w-full h-full flex flex-col ${className || ''}`}>
       <div className="flex-1 w-full h-full relative">
@@ -282,7 +258,6 @@ export const ViewerPanel: React.FC<ViewerPanelProps> = ({ modelUrl, className })
         />
         <Skeleton className="absolute inset-0 w-full h-full -z-10" />
       </div>
-      {!isProd && <DebugBox modelUrl={modelUrl} />}
     </div>
   );
 };
