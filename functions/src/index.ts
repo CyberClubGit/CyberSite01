@@ -7,7 +7,7 @@
  *
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
-
+import "dotenv/config";
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import Stripe from "stripe";
