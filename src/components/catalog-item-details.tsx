@@ -18,15 +18,13 @@ import {
     Scale,
     Cpu,
     SquareCode,
-    Layers,
-    Badge,
-    Users,
-    Shapes
+    Layers
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
+import { ScrambleTitle } from './ScrambleTitle';
 
 
 type ProcessedItem = ReturnType<typeof import('@/lib/sheets').processGalleryLinks>;
@@ -66,6 +64,9 @@ const ImageGallery: React.FC<{ images: string[], onImageClick: (index: number) =
                         className="object-cover"
                     />
                 )}
+                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Images className="w-8 h-8 text-white" />
+                </div>
             </div>
             
             {/* Thumbnails */}
@@ -103,9 +104,9 @@ const TechDetailItem: React.FC<{ icon: React.ElementType; label: string; value: 
     if (!value) return null;
     return (
       <div className="flex items-start gap-3">
-        <Icon className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
+        <Icon className="w-4 h-4 mt-1 text-primary flex-shrink-0" />
         <div>
-          <p className="font-semibold">{label}</p>
+          <p className="font-semibold text-sm">{label}</p>
           <p className="text-sm text-muted-foreground">{value}</p>
         </div>
       </div>
@@ -145,36 +146,42 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
   ].filter(detail => detail.value);
 
   const descriptionAndTechSection = (
-    <Tabs defaultValue="description" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="description">
-            <FileText className="mr-2 h-4 w-4" />
-            Description
-        </TabsTrigger>
-        <TabsTrigger value="tech">
-            <Wrench className="mr-2 h-4 w-4" />
-            Détails Techniques
-        </TabsTrigger>
-      </TabsList>
-      <TabsContent value="description" className="mt-4 p-4 border rounded-md">
-        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-          {item.description || "No description available."}
-        </p>
-      </TabsContent>
-       <TabsContent value="tech" className="mt-4 p-4 border rounded-md">
-        {techDetails.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {techDetails.map(detail => (
-              <TechDetailItem key={detail.label} {...detail} />
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            Aucun détail technique disponible.
-          </p>
-        )}
-      </TabsContent>
-    </Tabs>
+    <div className="border border-border/50 rounded-lg p-4 bg-muted/20">
+        <Tabs defaultValue="description" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-transparent p-0 border-b border-border/50 rounded-none mb-4">
+            <TabsTrigger value="description" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
+                <FileText className="mr-2 h-4 w-4" />
+                Description
+            </TabsTrigger>
+            <TabsTrigger value="tech" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
+                <Wrench className="mr-2 h-4 w-4" />
+                Détails Techniques
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="description" className="mt-4">
+             <ScrollArea className="h-48 pr-4">
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {item.description || "No description available."}
+                </p>
+             </ScrollArea>
+          </TabsContent>
+           <TabsContent value="tech" className="mt-4">
+            <ScrollArea className="h-48 pr-4">
+                {techDetails.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4">
+                    {techDetails.map(detail => (
+                      <TechDetailItem key={detail.label} {...detail} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Aucun détail technique disponible.
+                  </p>
+                )}
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
+    </div>
   );
 
   return (
@@ -182,37 +189,41 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
       <div className="flex flex-col lg:flex-row gap-6 h-full w-full">
         {/* Left Panel */}
         <div className="lg:w-1/2 w-full flex flex-col gap-4">
-          <h2 className="text-3xl font-headline font-bold text-primary flex-shrink-0">{item.title}</h2>
+          <ScrambleTitle 
+              text={item.title}
+              as="h2"
+              className="text-3xl font-headline font-bold text-primary flex-shrink-0"
+          />
           
-          <div className="flex-1 min-h-0 pt-4">
-            <ScrollArea className="h-full">
-              <div className="space-y-8 pr-4">
-                {/* Galleries Section */}
-                {galleryTabs.length > 0 && (
-                    <Tabs defaultValue={galleryTabs[0].name} className="w-full">
-                        <TabsList className={cn("grid w-full", `grid-cols-${galleryTabs.length > 0 ? galleryTabs.length : 1}`)}>
+          <div className="flex-1 min-h-0">
+            <div className="space-y-6 h-full">
+              {/* Galleries Section */}
+              {galleryTabs.length > 0 && (
+                  <div className="border border-border/50 rounded-lg p-4 bg-muted/20 h-full flex flex-col">
+                    <Tabs defaultValue={galleryTabs[0].name} className="w-full flex-1 flex flex-col">
+                        <TabsList className={cn("grid w-full bg-transparent p-0 border-b border-border/50 rounded-none mb-4", `grid-cols-${galleryTabs.length > 0 ? galleryTabs.length : 1}`)}>
                             {galleryTabs.map(tab => (
-                                <TabsTrigger key={tab.name} value={tab.name}>
+                                <TabsTrigger key={tab.name} value={tab.name} className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
                                     <tab.icon className="mr-2 h-4 w-4" />
                                     {tab.name}
                                 </TabsTrigger>
                             ))}
                         </TabsList>
                          {galleryTabs.map(tab => (
-                            <TabsContent key={tab.name} value={tab.name} className="mt-4">
+                            <TabsContent key={tab.name} value={tab.name} className="mt-4 flex-1">
                                 {tab.content || <div className="text-center text-muted-foreground p-8">Aucun visuel disponible pour cette catégorie.</div>}
                             </TabsContent>
                         ))}
                     </Tabs>
-                )}
-              </div>
-            </ScrollArea>
+                   </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Right Panel */}
         <div className="lg:w-1/2 w-full flex flex-col gap-6 lg:border-l lg:pl-6">
-          <div className="flex-1">
+          <div className="flex-1 min-h-0">
             <ViewerPanel modelUrl={item.stlUrl} />
           </div>
           <div className="flex-shrink-0">
