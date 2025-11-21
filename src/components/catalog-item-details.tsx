@@ -144,6 +144,39 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     { icon: SquareCode, label: 'Software', value: item.Software },
   ].filter(detail => detail.value);
 
+  const descriptionAndTechSection = (
+    <Tabs defaultValue="description" className="w-full">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="description">
+            <FileText className="mr-2 h-4 w-4" />
+            Description
+        </TabsTrigger>
+        <TabsTrigger value="tech">
+            <Wrench className="mr-2 h-4 w-4" />
+            Détails Techniques
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="description" className="mt-4 p-4 border rounded-md">
+        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+          {item.description || "No description available."}
+        </p>
+      </TabsContent>
+       <TabsContent value="tech" className="mt-4 p-4 border rounded-md">
+        {techDetails.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {techDetails.map(detail => (
+              <TechDetailItem key={detail.label} {...detail} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Aucun détail technique disponible.
+          </p>
+        )}
+      </TabsContent>
+    </Tabs>
+  );
+
   return (
     <>
       <div className="flex flex-col lg:flex-row gap-6 h-full w-full">
@@ -154,7 +187,6 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
           <div className="flex-1 min-h-0 pt-4">
             <ScrollArea className="h-full">
               <div className="space-y-8 pr-4">
-
                 {/* Galleries Section */}
                 {galleryTabs.length > 0 && (
                     <Tabs defaultValue={galleryTabs[0].name} className="w-full">
@@ -173,48 +205,19 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
                         ))}
                     </Tabs>
                 )}
-                
-
-                {/* Tabs Section for Description/Tech Details */}
-                <Tabs defaultValue="description" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="description">
-                        <FileText className="mr-2 h-4 w-4" />
-                        Description
-                    </TabsTrigger>
-                    <TabsTrigger value="tech">
-                        <Wrench className="mr-2 h-4 w-4" />
-                        Détails Techniques
-                    </TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="description" className="mt-4 p-4 border rounded-md">
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                      {item.description || "No description available."}
-                    </p>
-                  </TabsContent>
-                   <TabsContent value="tech" className="mt-4 p-4 border rounded-md">
-                    {techDetails.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {techDetails.map(detail => (
-                          <TechDetailItem key={detail.label} {...detail} />
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Aucun détail technique disponible.
-                      </p>
-                    )}
-                  </TabsContent>
-                </Tabs>
-
               </div>
             </ScrollArea>
           </div>
         </div>
 
         {/* Right Panel */}
-        <div className="lg:w-1/2 w-full lg:border-l lg:pl-6">
-          <ViewerPanel modelUrl={item.stlUrl} />
+        <div className="lg:w-1/2 w-full flex flex-col gap-6 lg:border-l lg:pl-6">
+          <div className="flex-1">
+            <ViewerPanel modelUrl={item.stlUrl} />
+          </div>
+          <div className="flex-shrink-0">
+            {descriptionAndTechSection}
+          </div>
         </div>
       </div>
       
