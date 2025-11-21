@@ -67,7 +67,7 @@ const ImageGallery: React.FC<{ images: string[], onImageClick: (index: number) =
             
             {/* Thumbnails */}
             {images.length > 1 && (
-                <div className="w-12 flex-shrink-0">
+                <div className="w-16 flex-shrink-0">
                     <ScrollArea className="h-full max-h-[500px]">
                     <div className="flex flex-col gap-2 pr-2">
                         {images.map((url, index) => (
@@ -146,7 +146,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     <>
       <div className="flex flex-col lg:flex-row gap-6 h-full w-full">
         {/* Left Panel */}
-        <div className="lg:w-2/3 w-full flex flex-col gap-4">
+        <div className="lg:w-1/2 w-full flex flex-col gap-4">
           <h2 className="text-2xl font-headline font-bold text-primary flex-shrink-0">{item.title}</h2>
           
           <div className="flex-1 min-h-0 pt-4">
@@ -211,7 +211,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
         </div>
 
         {/* Right Panel */}
-        <div className="lg:w-1/3 w-full lg:border-l lg:pl-6">
+        <div className="lg:w-1/2 w-full lg:border-l lg:pl-6">
           <ViewerPanel modelUrl={item.stlUrl} />
         </div>
       </div>
@@ -268,3 +268,5 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     </>
   );
 }
+
+    
