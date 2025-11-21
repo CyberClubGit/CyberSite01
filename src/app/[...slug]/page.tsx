@@ -40,8 +40,8 @@ export async function generateStaticParams() {
      paths.push({ slug: ['home'] });
   }
 
-  // Add root path for generation if needed, though redirect is often better.
-  // paths.push({ slug: [] }); // Represents the root path
+  // Add profile path
+  paths.push({ slug: ['profile'] });
 
   return paths;
 }

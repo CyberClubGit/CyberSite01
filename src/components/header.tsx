@@ -26,6 +26,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -53,7 +54,8 @@ export function Header({ categories, brands }: HeaderProps) {
   const getCurrentCategorySlug = useCallback(() => {
     const pathParts = pathname.split('/').filter(p => p);
     if (pathParts.length === 0) return 'home';
-    if (pathParts[0] === 'home' && pathParts.length === 1) return 'home';
+    if (pathParts.length === 1 && (pathParts[0] === 'home' || pathParts[0] === 'profile')) return pathParts[0];
+
 
     const catSlugs = categories.map(c => c.Url?.toLowerCase());
 
@@ -199,17 +201,18 @@ export function Header({ categories, brands }: HeaderProps) {
                   {user.displayName?.[0] || user.email?.[0]?.toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
-              <div className="hidden md:block text-left">
-                <p className="text-sm font-medium">
-                  {user.nickname || user.displayName || 'User'}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {user.email}
-                </p>
-              </div>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>
+              <p className="text-sm font-medium">
+                {user.nickname || user.displayName || 'User'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {user.email}
+              </p>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/profile">
                 <User className="mr-2 h-4 w-4" />
@@ -236,10 +239,11 @@ export function Header({ categories, brands }: HeaderProps) {
     }
 
     return (
-      <Link href="/auth/signin" className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-        <User className="h-6 w-6" />
-        <span className="text-xs font-medium">Connect</span>
-      </Link>
+       <Button asChild variant="ghost">
+          <Link href="/auth/signin">
+            <User className="mr-2 h-4 w-4" /> Se connecter
+          </Link>
+        </Button>
     );
   };
 
@@ -349,7 +353,7 @@ export function Header({ categories, brands }: HeaderProps) {
                       </nav>
                        <div className="mt-auto border-t pt-4">
                         {renderAuthSection()}
-                      </div>
+                       </div>
                     </div>
                 </SheetContent>
               </Sheet>

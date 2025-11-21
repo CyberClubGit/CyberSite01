@@ -1,9 +1,7 @@
-
 'use client';
 
 import Link from 'next/link';
 import { Network } from 'lucide-react';
-import { RefreshButton } from './refresh-button';
 import { ThemeToggleButton } from './theme-toggle-button';
 
 
@@ -60,7 +58,6 @@ export function Footer() {
         <div className="border-t mt-8 pt-8 flex justify-between items-center text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} CYBER CLUB. Tous droits réservés.</p>
            <div className="ml-auto flex items-center gap-2">
-                <RefreshButton />
                 <ThemeToggleButton />
             </div>
         </div>
