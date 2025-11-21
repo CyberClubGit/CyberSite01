@@ -27,7 +27,7 @@ export default function SignInPage() {
       try {
         const result = await getRedirectResult(auth);
         if (result) {
-          // User successfully signed in.
+          // User successfully signed in via redirect.
           router.push('/');
         } else {
           setIsCheckingRedirect(false);
@@ -58,8 +58,8 @@ export default function SignInPage() {
   const handleGoogleSignIn = async () => {
     setError('');
     setLoading(true);
-    // We don't need a try-catch here for the redirect itself,
-    // as errors are caught by getRedirectResult.
+    // signInWithRedirect will navigate away, so no need for complex state management here.
+    // Errors will be caught by getRedirectResult on page load.
     await signInWithRedirect(auth, googleProvider);
   };
 

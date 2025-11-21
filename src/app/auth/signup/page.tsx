@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, updateProfile, signInWithRedirect, getRedirectResult } from 'firebase/auth';
-import { doc, setDoc, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, Timestamp, getDoc, updateDoc } from 'firebase/firestore';
 import { useAuth, useFirestore, googleProvider } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,28 +37,36 @@ export default function SignUpPage() {
   };
   
   const createFirestoreUserDocument = async (user: any) => {
-    const isNewUser = !user.metadata.lastSignInTime; // A good heuristic for new user
-    
-    // For Google Sign-In, extract names
-    const firstName = user.displayName?.split(' ')[0] || '';
-    const lastName = user.displayName?.split(' ').slice(1).join(' ') || '';
-    
-    await setDoc(doc(db, 'users', user.uid), {
-      uid: user.uid,
-      email: user.email,
-      firstName: firstName,
-      lastName: lastName,
-      nickname: user.displayName || '',
-      displayName: user.displayName,
-      photoURL: user.photoURL,
-      createdAt: isNewUser ? Timestamp.now() : user.metadata.creationTime,
-      lastLogin: Timestamp.now(),
-      emailVerified: user.emailVerified,
-      membershipTier: 'bronze',
-      loyaltyPoints: 0,
-      totalPointsEarned: 0,
-      favorites: [],
-    }, { merge: true }); // Use merge to avoid overwriting existing data if user signs in again
+    const userRef = doc(db, 'users', user.uid);
+    const docSnap = await getDoc(userRef);
+
+    if (docSnap.exists()) {
+        // Update last login for existing user
+        await updateDoc(userRef, {
+            lastLogin: Timestamp.now(),
+        });
+    } else {
+        // Create new user document
+        const firstName = user.displayName?.split(' ')[0] || '';
+        const lastName = user.displayName?.split(' ').slice(1).join(' ') || '';
+        
+        await setDoc(userRef, {
+            uid: user.uid,
+            email: user.email,
+            firstName: firstName,
+            lastName: lastName,
+            nickname: user.displayName || '',
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            createdAt: Timestamp.now(),
+            lastLogin: Timestamp.now(),
+            emailVerified: user.emailVerified,
+            membershipTier: 'bronze',
+            loyaltyPoints: 0,
+            totalPointsEarned: 0,
+            favorites: [],
+        });
+    }
   };
 
   useEffect(() => {
@@ -66,7 +74,7 @@ export default function SignUpPage() {
       try {
         const result = await getRedirectResult(auth);
         if (result) {
-          // User successfully signed in.
+          // User successfully signed up/in.
           await createFirestoreUserDocument(result.user);
           router.push('/');
         } else {
@@ -86,7 +94,6 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
-      // Créer le compte Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         formData.email,
@@ -95,12 +102,10 @@ export default function SignUpPage() {
 
       const user = userCredential.user;
 
-      // Mettre à jour le displayName
       await updateProfile(user, {
         displayName: `${formData.firstName} ${formData.lastName}`.trim(),
       });
-
-      // Créer le document Firestore
+      
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         email: formData.email,
