@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Badge } from './ui/badge';
 import { ViewerPanel } from './viewer-panel';
 import { ScrollArea } from './ui/scroll-area';
 import Image from 'next/image';
@@ -68,7 +67,7 @@ const ImageGallery: React.FC<{ images: string[], onImageClick: (index: number) =
             
             {/* Thumbnails */}
             {images.length > 1 && (
-                <div className="w-24 flex-shrink-0">
+                <div className="w-20 flex-shrink-0">
                     <ScrollArea className="h-full max-h-[500px]">
                     <div className="flex flex-col gap-2 pr-2">
                         {images.map((url, index) => (
@@ -84,7 +83,7 @@ const ImageGallery: React.FC<{ images: string[], onImageClick: (index: number) =
                                 src={url}
                                 alt={`Gallery thumbnail ${index + 1}`}
                                 fill
-                                sizes="100px"
+                                sizes="80px"
                                 className="object-cover"
                             />
                             </div>
@@ -112,12 +111,6 @@ const TechDetailItem: React.FC<{ icon: React.ElementType; label: string; value: 
 
 export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
   const [imageViewer, setImageViewer] = useState<ImageViewerState>({ isOpen: false, images: [], selectedIndex: 0 });
-
-  const tags = {
-    Type: item.Type?.split(',').map(t => t.trim()).filter(Boolean) || [],
-    Material: item.Material?.split(',').map(t => t.trim()).filter(Boolean) || [],
-    Activity: item.Activity?.split(',').map(t => t.trim()).filter(Boolean) || [],
-  };
 
   const openImageViewer = (images: string[], index: number) => {
     setImageViewer({ isOpen: true, images, selectedIndex: index });
@@ -163,7 +156,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
                 {/* Galleries Section */}
                 {galleryTabs.length > 0 && (
                     <Tabs defaultValue={galleryTabs[0].name} className="w-full">
-                        <TabsList className="grid w-full grid-cols-3">
+                        <TabsList className={cn("grid w-full", `grid-cols-${galleryTabs.length}`)}>
                             {galleryTabs.map(tab => (
                                 <TabsTrigger key={tab.name} value={tab.name}>
                                     <tab.icon className="mr-2 h-4 w-4" />
@@ -225,7 +218,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
       
       {/* Image Viewer Dialog */}
       <Dialog open={imageViewer.isOpen} onOpenChange={(isOpen) => !isOpen && closeImageViewer()}>
-        <DialogContent className="max-w-[90vw] max-h-[90vh] w-auto h-auto p-2 bg-transparent border-0" showCloseButton={false}>
+        <DialogContent className="max-w-[90vw] max-h-[90vh] w-auto h-auto p-2 bg-transparent border-0 flex items-center justify-center">
             <DialogHeader className="sr-only">
               <DialogTitle>Visionneuse d'image</DialogTitle>
               <DialogDescription>
@@ -233,7 +226,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
               </DialogDescription>
             </DialogHeader>
             {imageViewer.isOpen && (
-                <div className="relative w-full h-full">
+                <div className="relative w-full h-full max-w-[calc(90vw-4rem)] max-h-[calc(90vh-4rem)] aspect-[3/4]">
                     <Image
                         src={imageViewer.images[imageViewer.selectedIndex]}
                         alt={`Image ${imageViewer.selectedIndex + 1}`}
