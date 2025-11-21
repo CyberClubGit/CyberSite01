@@ -166,7 +166,8 @@ const createViewerHtml = (modelUrl: string, theme: 'dark' | 'light' = 'light') =
                     metalness: 0.4,
                     roughness: 0.6,
                     transparent: true,
-                    opacity: ${faceOpacity}
+                    opacity: ${faceOpacity},
+                    side: THREE.DoubleSide
                 });
                 const faceMesh = new THREE.Mesh(geometry, faceMaterial);
                 modelGroup.add(faceMesh);
@@ -177,6 +178,7 @@ const createViewerHtml = (modelUrl: string, theme: 'dark' | 'light' = 'light') =
                     wireframe: true,
                     opacity: ${wireframeOpacity},
                     transparent: true,
+                    side: THREE.DoubleSide
                 });
                 const wireframeMesh = new THREE.Mesh(geometry, wireframeMaterial);
                 modelGroup.add(wireframeMesh);
