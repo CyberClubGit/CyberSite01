@@ -49,9 +49,13 @@ export function CatalogPageClient({ category, brand }: CatalogPageClientProps) {
       setLoading(true);
       try {
         const productsCol = collection(db, 'products');
-        const q = query(productsCol, where("active", "==", true));
-        const productSnapshot = await getDocs(q);
-        const productList = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+        // Correction: Suppression de la clause 'where' pour éviter l'erreur de permission due à l'absence d'index.
+        // Le filtrage se fera côté client.
+        const productSnapshot = await getDocs(productsCol);
+        const productList = productSnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() } as Product))
+          .filter(product => product.active === true); // Filtrage côté client
+        
         setProducts(productList);
       } catch (error) {
         console.error("Error fetching products from client:", error);
@@ -239,3 +243,5 @@ export function CatalogPageClient({ category, brand }: CatalogPageClientProps) {
     </>
   );
 }
+
+    
