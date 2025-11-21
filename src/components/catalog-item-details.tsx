@@ -156,12 +156,6 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
         <div className="lg:w-2/3 w-full flex flex-col gap-4">
           <h2 className="text-2xl font-headline font-bold text-primary flex-shrink-0">{item.title}</h2>
           
-          <div className="flex flex-wrap gap-2 flex-shrink-0">
-            {tags.Type.map(tag => <Badge key={tag} variant="secondary">Type: {tag}</Badge>)}
-            {tags.Material.map(tag => <Badge key={tag} variant="secondary">Material: {tag}</Badge>)}
-            {tags.Activity.map(tag => <Badge key={tag} variant="outline">{tag}</Badge>)}
-          </div>
-
           <div className="flex-1 min-h-0 pt-4">
             <ScrollArea className="h-full">
               <div className="space-y-8 pr-4">
