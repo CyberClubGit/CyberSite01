@@ -1,3 +1,4 @@
+
 {
   "name": "functions",
   "scripts": {
@@ -18,7 +19,7 @@
     "firebase-functions": "^5.0.0",
     "node-fetch": "^2.7.0",
     "papaparse": "^5.4.1",
-    "stripe": "^15.0.0"
+    "stripe": "^16.2.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

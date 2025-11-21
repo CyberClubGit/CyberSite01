@@ -23,6 +23,16 @@ const db = admin.firestore();
 
 // Initialize Stripe with secret key
 let stripe: Stripe;
+const ensureStripe = () => {
+  if (!stripe) {
+    const key = stripeSecretKey.value();
+    if (!key) {
+      throw new functions.https.HttpsError('internal', 'Stripe secret key is not configured.');
+    }
+    stripe = new Stripe(key, { apiVersion: '2025-11-17.clover' });
+  }
+};
+
 
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=928586250&single=true&output=csv";
 
@@ -55,13 +65,8 @@ function getFirstImage(galleryStr: string): string | null {
 
 export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).region("us-central1").https.onRequest(async (req, res) => {
   functions.logger.info("Starting product synchronization from Google Sheet.", {structuredData: true});
-  console.log("Stripe key in function (runtime):", process.env.STRIPE_SECRET_KEY);
   
-  if (!stripe) {
-    stripe = new Stripe(stripeSecretKey.value(), {
-      apiVersion: "2025-11-17.clover",
-    });
-  }
+  ensureStripe();
 
   const summary = {
     success: [] as string[],
@@ -220,5 +225,65 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
       message: `Synchronization failed: ${error.message}`,
       results: summary,
     });
+  }
+});
+
+
+export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretKey] }).region('us-central1').https.onCall(async (data, context) => {
+  ensureStripe();
+
+  // Basic validation
+  if (!Array.isArray(data.items) || data.items.length === 0) {
+    throw new functions.https.HttpsError('invalid-argument', 'The function must be called with an array of "items".');
+  }
+
+  const line_items = [];
+
+  for (const item of data.items) {
+    if (!item.id || !item.quantity) {
+      throw new functions.https.HttpsError('invalid-argument', 'Each item must have an "id" and a "quantity".');
+    }
+    
+    // For security, fetch price from Stripe instead of trusting client
+    const prices = await stripe.prices.list({
+        product: item.id,
+        active: true,
+        limit: 1, // Assuming one active price per product for simplicity
+    });
+
+    if (prices.data.length === 0) {
+        throw new functions.https.HttpsError('not-found', `No active price found for product ID: ${item.id}`);
+    }
+
+    line_items.push({
+      price: prices.data[0].id,
+      quantity: item.quantity,
+    });
+  }
+
+  const origin = context.rawRequest.headers.origin;
+  const success_url = `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`;
+  const cancel_url = `${origin}/checkout/cancel`;
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
+      line_items,
+      success_url,
+      cancel_url,
+      // Add customer info if user is logged in
+      ...(context.auth && { customer_email: context.auth.token.email }),
+    });
+
+    if (!session.url) {
+      throw new functions.https.HttpsError('internal', 'Could not create a checkout session URL.');
+    }
+
+    return { url: session.url };
+
+  } catch (error: any) {
+    functions.logger.error('Stripe checkout session creation failed:', error);
+    throw new functions.https.HttpsError('internal', `Stripe error: ${error.message}`);
   }
 });

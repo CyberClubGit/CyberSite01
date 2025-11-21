@@ -1,14 +1,42 @@
 
 'use client';
 
+import { useState } from 'react';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Image from 'next/image';
-import { X, Plus, Minus } from 'lucide-react';
+import { X, Plus, Minus, Loader2 } from 'lucide-react';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { useFirebaseApp } from '@/firebase';
 
 export function CartView() {
-  const { cart, removeFromCart, updateQuantity, totalItems, totalPrice } = useCart();
+  const { cart, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const firebaseApp = useFirebaseApp();
+
+  const handleCheckout = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const functions = getFunctions(firebaseApp, 'us-central1');
+      const createCheckoutSession = httpsCallable(functions, 'createCheckoutSession');
+      
+      const items = cart.map(item => ({ id: item.id, quantity: item.quantity }));
+      
+      const result: any = await createCheckoutSession({ items });
+      const checkoutUrl = result.data.url;
+      
+      // Redirect to Stripe checkout page
+      window.location.href = checkoutUrl;
+
+    } catch (err: any) {
+      console.error("Error creating checkout session:", err);
+      setError(err.message || "Impossible de démarrer le paiement. Veuillez réessayer.");
+      setLoading(false);
+    }
+  };
 
   if (cart.length === 0) {
     return (
@@ -29,7 +57,11 @@ export function CartView() {
           {cart.map(item => (
             <div key={item.id} className="flex items-center gap-4">
               <div className="relative h-16 w-16 rounded-md overflow-hidden bg-muted">
-                <Image src={item.image} alt={item.name} fill className="object-cover" />
+                {item.image ? (
+                   <Image src={item.image} alt={item.name} fill className="object-cover" />
+                ): (
+                   <div className="w-full h-full bg-secondary"></div>
+                )}
               </div>
               <div className="flex-1">
                 <p className="font-semibold">{item.name}</p>
@@ -54,19 +86,27 @@ export function CartView() {
         </div>
       </ScrollArea>
       <div className="border-t p-6 mt-auto">
+        {error && <p className="text-sm text-destructive mb-2">{error}</p>}
         <div className="flex justify-between items-center text-lg font-semibold mb-4">
           <span>Total</span>
           <span>{formattedTotalPrice} €</span>
         </div>
-        <Button className="w-full" size="lg" disabled>
-          Procéder au paiement
+        <Button className="w-full" size="lg" onClick={handleCheckout} disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Chargement...
+            </>
+          ) : (
+            'Procéder au paiement'
+          )}
         </Button>
       </div>
     </div>
   );
 }
 
-// Dummy icon for when CartView is imported
+// Dummy icon for when CartView is imported elsewhere
 const ShoppingCart = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.16"/></svg>
 );

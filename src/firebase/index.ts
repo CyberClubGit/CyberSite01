@@ -1,3 +1,4 @@
+
 'use client';
 
 import { initializeFirebaseApp } from './config';
