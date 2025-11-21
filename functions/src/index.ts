@@ -56,8 +56,16 @@ function getFirstImage(galleryStr: string): string | null {
 export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).region("us-central1").https.onRequest(async (req, res) => {
   functions.logger.info("Starting product synchronization from Google Sheet.", {structuredData: true});
   
+  const key = stripeSecretKey.value();
+  if (!key) {
+      functions.logger.error("CRITICAL: STRIPE_SECRET_KEY is not defined. Aborting synchronization.");
+      res.status(500).json({ success: false, message: "Stripe secret key is not configured on the server." });
+      return;
+  }
+  functions.logger.info(`Stripe key loaded successfully (last 4 chars: ...${key.slice(-4)}).`);
+
   if (!stripe) {
-    stripe = new Stripe(stripeSecretKey.value(), {
+    stripe = new Stripe(key, {
       apiVersion: "2025-11-17.clover",
     });
   }
