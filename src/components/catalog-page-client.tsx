@@ -61,7 +61,8 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
       const displayImageUrl = item.images && item.images.length > 0 ? item.images[0] : null;
       return {
         ...item,
-        title: item.name || 'Untitled', // Le nom est `name` depuis Firestore
+        // Correction: Utiliser item.name de firestore au lieu de item.title
+        title: item.name || 'Untitled', 
         description: item.description || '', // La description est `description`
         displayImageUrl,
       };
@@ -177,6 +178,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                             )}
                           </div>
                           <CardHeader onClick={() => setSelectedItem(item)} className="cursor-pointer">
+                            {/* Correction: Utiliser item.title qui est mappé depuis item.name */}
                             <CardTitle className="font-headline text-lg leading-tight">{item.title}</CardTitle>
                           </CardHeader>
                         </Card>
@@ -196,7 +198,8 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
       <Dialog open={!!selectedItem} onOpenChange={(isOpen) => !isOpen && setSelectedItem(null)}>
         <DialogContent className="max-w-6xl w-full h-[90vh] p-4 border-0 bg-background/30 backdrop-blur-sm flex flex-col overflow-hidden">
           <DialogHeader className="sr-only">
-            <DialogTitle>{selectedItem?.title || 'Item Details'}</DialogTitle>
+            {/* Correction: Utiliser selectedItem?.name pour le titre */}
+            <DialogTitle>{selectedItem?.name || 'Item Details'}</DialogTitle>
             <DialogDescription>
               Detailed view of the selected catalog item.
             </DialogDescription>

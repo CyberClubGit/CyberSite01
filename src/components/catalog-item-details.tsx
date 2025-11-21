@@ -28,7 +28,7 @@ import { ScrambleTitle } from './ScrambleTitle';
 import { InteractivePanel } from './interactive-panel';
 
 // Le type d'item vient maintenant de Firestore
-type CatalogItem = import('@/lib/firestore').Product & { displayImageUrl?: string | null };
+type CatalogItem = import('@/lib/firestore').Product;
 
 interface CatalogItemDetailsProps {
   item: CatalogItem;
@@ -130,20 +130,17 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
 
   const hasGallery = item.images && item.images.length > 0;
   
-  // Utiliser les champs de metadata de Firestore
+  // Correction: Utiliser les champs de metadata de Firestore
   const stlUrl = item.metadata?.stl_url;
 
   const galleryTabs = [
     { name: 'Galerie', icon: Images, content: hasGallery ? <ImageGallery images={item.images} onImageClick={(index) => openImageViewer(item.images, index)} /> : null, available: hasGallery },
-    // Les onglets 3D Renders et Packaging ne sont plus disponibles directement,
-    // ils sont inclus dans la galerie principale via le Google Sheet.
   ].filter(tab => tab.available);
 
   const techDetails = [
-    // Les détails techniques ne sont plus dans le modèle Firestore de base,
-    // mais on garde les champs pour l'exemple. Ils viendront de `item.type`, `item.material`, etc.
+    // Correction: utiliser item.material et item.type venant de firestore
     { icon: Layers, label: 'Material', value: item.material },
-    // On pourrait ajouter d'autres champs de `metadata` ici si nécessaire
+    { icon: Cuboid, label: 'Type', value: item.type },
   ].filter(detail => detail.value);
 
   const descriptionAndTechSection = (
