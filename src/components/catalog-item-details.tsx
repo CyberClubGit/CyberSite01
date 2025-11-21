@@ -30,21 +30,21 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
           {tags.Activity.map(tag => <Badge key={tag} variant="outline">{tag}</Badge>)}
         </div>
 
-        <div className="flex-1 min-h-0">
-          <ViewerPanel modelUrl={item.stlUrl} />
+        <div className="flex-1 min-h-0 pt-4">
+          <ScrollArea className="h-full">
+            <div className="space-y-4 pr-4">
+              <h3 className="font-headline text-lg font-semibold">Description</h3>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                {item.description || "No description available."}
+              </p>
+            </div>
+          </ScrollArea>
         </div>
       </div>
 
       {/* Right Panel */}
       <div className="lg:w-1/3 w-full lg:border-l lg:pl-6">
-        <ScrollArea className="h-full">
-          <div className="space-y-4 pr-4">
-            <h3 className="font-headline text-lg font-semibold">Description</h3>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-              {item.description || "No description available."}
-            </p>
-          </div>
-        </ScrollArea>
+        <ViewerPanel modelUrl={item.stlUrl} />
       </div>
     </div>
   );
