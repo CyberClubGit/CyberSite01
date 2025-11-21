@@ -22,9 +22,6 @@ export function HomePageClient({ category, brand }: HomePageClientProps) {
             <span className="block text-2xl sm:text-3xl md:text-4xl font-light text-muted-foreground">Welcome to</span>
             <span className="capitalize">{brandName}</span>
           </h1>
-          <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl mt-4">
-            {category?.Description || `Explore the universe of ${brandName}`}
-          </p>
         </div>
       </div>
 
