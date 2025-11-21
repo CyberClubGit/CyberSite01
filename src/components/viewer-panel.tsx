@@ -14,6 +14,7 @@ const createViewerHtml = (modelUrl: string, theme: 'dark' | 'light' = 'light') =
   
   const faceColor = isDark ? '0x333333' : '0xcccccc';
   const wireframeColor = isDark ? '0xffffff' : '0x000000';
+  const backgroundColor = isDark ? '0x000000' : '0xffffff';
   const faceOpacity = 0.8;
   const wireframeOpacity = 0.1;
 
@@ -25,7 +26,7 @@ const createViewerHtml = (modelUrl: string, theme: 'dark' | 'light' = 'light') =
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>3D Viewer</title>
         <style>
-            body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: transparent; }
+            body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
             canvas { display: block; }
             #loader {
                 position: absolute;
@@ -57,8 +58,9 @@ const createViewerHtml = (modelUrl: string, theme: 'dark' | 'light' = 'light') =
             import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
             const scene = new THREE.Scene();
-            // LA CORRECTION CLÉ: Ajout de { alpha: true } pour rendre le canvas transparent
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            scene.background = new THREE.Color(${backgroundColor});
+            
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
@@ -239,7 +241,7 @@ export const ViewerPanel: React.FC<ViewerPanelProps> = ({ modelUrl, className })
         <iframe
           key={`${modelUrl}-${resolvedTheme}`} // Force re-render on URL or theme change
           srcDoc={viewerHtml}
-          className="w-full h-full border-0 rounded-lg bg-transparent"
+          className="w-full h-full border-0 rounded-lg"
           sandbox="allow-scripts allow-same-origin"
           title="3D Model Viewer"
         />
