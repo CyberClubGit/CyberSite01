@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Mail, User, Heart, CreditCard, Box, ChevronRight, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFavorites } from '@/hooks/useFavorites';
-import { getCategoryData } from '@/lib/sheets';
 import Link from 'next/link';
 
 type View = 'profil' | 'favoris' | 'paiement' | 'espace';
