@@ -49,7 +49,7 @@ const ImageGallery: React.FC<{ images: string[], onImageClick: (index: number) =
     const mainImageUrl = images[mainImageIndex];
 
     return (
-        <div className="flex gap-2">
+        <div className="flex gap-2 h-full">
             {/* Main Image */}
             <div 
                 className="relative flex-1 aspect-[3/4] rounded-lg overflow-hidden group border cursor-pointer bg-muted"
@@ -186,49 +186,59 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
 
   return (
     <>
-      <div className="flex flex-col lg:flex-row gap-6 h-full w-full">
-        {/* Left Panel */}
-        <div className="lg:w-1/2 w-full flex flex-col gap-4">
-          <ScrambleTitle 
-              text={item.title}
-              as="h2"
-              className="text-3xl font-headline font-bold text-primary flex-shrink-0"
-          />
-          
-          <div className="flex-1 min-h-0">
-            <div className="space-y-6 h-full">
-              {/* Galleries Section */}
-              {galleryTabs.length > 0 && (
-                  <div className="border border-border/50 rounded-lg p-4 bg-muted/20 h-full flex flex-col">
-                    <Tabs defaultValue={galleryTabs[0].name} className="w-full flex-1 flex flex-col">
-                        <TabsList className={cn("grid w-full bg-transparent p-0 border-b border-border/50 rounded-none mb-4", `grid-cols-${galleryTabs.length > 0 ? galleryTabs.length : 1}`)}>
-                            {galleryTabs.map(tab => (
-                                <TabsTrigger key={tab.name} value={tab.name} className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
-                                    <tab.icon className="mr-2 h-4 w-4" />
-                                    {tab.name}
-                                </TabsTrigger>
-                            ))}
-                        </TabsList>
-                         {galleryTabs.map(tab => (
-                            <TabsContent key={tab.name} value={tab.name} className="mt-4 flex-1">
-                                {tab.content || <div className="text-center text-muted-foreground p-8">Aucun visuel disponible pour cette catégorie.</div>}
-                            </TabsContent>
-                        ))}
-                    </Tabs>
-                   </div>
-              )}
+      <div className="h-full w-full relative">
+        <div className="absolute top-0 left-4 z-10">
+            <div className={cn(
+                "relative -mb-px rounded-t-lg border-x border-t p-3 pr-6 transition-colors duration-200",
+                "border-border/80 bg-background/80 backdrop-blur-sm text-foreground shadow-sm"
+              )}>
+                 <ScrambleTitle 
+                    text={item.title}
+                    as="h2"
+                    className="text-2xl font-headline font-bold text-primary flex-shrink-0"
+                />
             </div>
-          </div>
         </div>
 
-        {/* Right Panel */}
-        <div className="lg:w-1/2 w-full flex flex-col gap-6">
-          <div className="flex-1 min-h-0">
-            <ViewerPanel modelUrl={item.stlUrl} />
-          </div>
-          <div className="flex-shrink-0">
-            {descriptionAndTechSection}
-          </div>
+        <div className="flex flex-col lg:flex-row gap-6 h-full w-full pt-16">
+            {/* Left Panel */}
+            <div className="lg:w-1/2 w-full flex flex-col gap-4">
+            
+            <div className="flex-1 min-h-0">
+                <div className="space-y-6 h-full">
+                {/* Galleries Section */}
+                {galleryTabs.length > 0 && (
+                    <div className="border border-border/50 rounded-lg p-4 bg-muted/20 h-full flex flex-col">
+                        <Tabs defaultValue={galleryTabs[0].name} className="w-full flex-1 flex flex-col">
+                            <TabsList className={cn("grid w-full bg-transparent p-0 border-b border-border/50 rounded-none mb-4", `grid-cols-${galleryTabs.length > 0 ? galleryTabs.length : 1}`)}>
+                                {galleryTabs.map(tab => (
+                                    <TabsTrigger key={tab.name} value={tab.name} className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
+                                        <tab.icon className="mr-2 h-4 w-4" />
+                                        {tab.name}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
+                            {galleryTabs.map(tab => (
+                                <TabsContent key={tab.name} value={tab.name} className="mt-4 flex-1">
+                                    {tab.content || <div className="text-center text-muted-foreground p-8">Aucun visuel disponible pour cette catégorie.</div>}
+                                </TabsContent>
+                            ))}
+                        </Tabs>
+                    </div>
+                )}
+                </div>
+            </div>
+            </div>
+
+            {/* Right Panel */}
+            <div className="lg:w-1/2 w-full flex flex-col gap-6">
+            <div className="flex-1 min-h-0">
+                <ViewerPanel modelUrl={item.stlUrl} />
+            </div>
+            <div className="flex-shrink-0">
+                {descriptionAndTechSection}
+            </div>
+            </div>
         </div>
       </div>
       
@@ -284,3 +294,5 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     </>
   );
 }
+
+    
