@@ -6,7 +6,21 @@ import { Badge } from './ui/badge';
 import { ViewerPanel } from './viewer-panel';
 import { ScrollArea } from './ui/scroll-area';
 import Image from 'next/image';
-import { Images, X, ArrowLeft, ArrowRight, FileText, Wrench, Cuboid, Package } from 'lucide-react';
+import { 
+    Images, 
+    X, 
+    ArrowLeft, 
+    ArrowRight, 
+    FileText, 
+    Wrench, 
+    Cuboid, 
+    Package,
+    Ruler,
+    Scale,
+    Cpu,
+    SquareCode,
+    Layers
+} from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -83,6 +97,18 @@ const ImageGallery: React.FC<{ images: string[], onImageClick: (index: number) =
     );
 };
 
+const TechDetailItem: React.FC<{ icon: React.ElementType; label: string; value: string | undefined }> = ({ icon: Icon, label, value }) => {
+    if (!value) return null;
+    return (
+      <div className="flex items-start gap-3">
+        <Icon className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
+        <div>
+          <p className="font-semibold">{label}</p>
+          <p className="text-sm text-muted-foreground">{value}</p>
+        </div>
+      </div>
+    );
+  };
 
 export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
   const [imageViewer, setImageViewer] = useState<ImageViewerState>({ isOpen: false, images: [], selectedIndex: 0 });
@@ -115,6 +141,13 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     { name: 'Packaging', icon: Package, content: hasPackaging ? <ImageGallery images={item.packagingUrls} onImageClick={(index) => openImageViewer(item.packagingUrls, index)} /> : null, available: hasPackaging },
   ].filter(tab => tab.available);
 
+  const techDetails = [
+    { icon: Ruler, label: 'Dimension', value: item.Dimension },
+    { icon: Scale, label: 'Weight', value: item.Weight },
+    { icon: Layers, label: 'Material', value: item.Material },
+    { icon: Cpu, label: 'Machine', value: item.Machine },
+    { icon: SquareCode, label: 'Software', value: item.Software },
+  ].filter(detail => detail.value);
 
   return (
     <>
@@ -170,10 +203,18 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
                       {item.description || "No description available."}
                     </p>
                   </TabsContent>
-                  <TabsContent value="tech" className="mt-4 p-4 border rounded-md">
-                    <p className="text-sm text-muted-foreground">
-                      Détails techniques à venir.
-                    </p>
+                   <TabsContent value="tech" className="mt-4 p-4 border rounded-md">
+                    {techDetails.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {techDetails.map(detail => (
+                          <TechDetailItem key={detail.label} {...detail} />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Aucun détail technique disponible.
+                      </p>
+                    )}
                   </TabsContent>
                 </Tabs>
 
