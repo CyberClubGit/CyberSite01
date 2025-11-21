@@ -1,12 +1,17 @@
 
-import { collection, getDocs, getFirestore } from 'firebase/firestore/lite';
-import { firebaseApp } from '@/firebase/config';
+'use server';
+
+import { getFirestore } from 'firebase-admin/firestore';
+import { initializeAdminApp } from '@/firebase/admin-config';
 import { unstable_cache } from 'next/cache';
 
-// Initialiser Firestore
-const db = getFirestore(firebaseApp);
+// Initialize the admin app
+initializeAdminApp();
 
-// Définir l'interface pour les données de produit
+// Get a reference to the Firestore database
+const db = getFirestore();
+
+// Define the interface for the product data
 export interface Product {
   id: string;
   active: boolean;
@@ -24,43 +29,50 @@ export interface Product {
 }
 
 /**
- * Récupère tous les produits depuis la collection 'products' de Firestore.
- * Utilise unstable_cache pour la mise en cache côté serveur.
+ * Fetches all products from the 'products' collection in Firestore using the Admin SDK.
+ * Uses unstable_cache for server-side caching.
  */
 export const getProducts = unstable_cache(
   async (): Promise<Product[]> => {
-    console.log('[Firestore] === Fetching Products ===');
+    console.log('[Firestore Admin] === Fetching Products ===');
     try {
-      const productsCol = collection(db, 'products');
-      const productSnapshot = await getDocs(productsCol);
-      
+      const productsCol = db.collection('products');
+      const productSnapshot = await productsCol.get();
+
+      if (productSnapshot.empty) {
+        console.log('[Firestore Admin] No products found.');
+        return [];
+      }
+
       const productList = productSnapshot.docs.map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
-          active: data.active || false,
-          name: data.name || 'Untitled',
-          description: data.description || null,
-          images: data.images || [],
-          type: data.type || null,
-          style: data.style || null,
-          material: data.material || null,
-          activity: data.activity || null,
+          active: data.active ?? false,
+          name: data.name ?? 'Untitled',
+          description: data.description ?? null,
+          images: data.images ?? [],
+          type: data.type ?? null,
+          style: data.style ?? null,
+          material: data.material ?? null,
+          activity: data.activity ?? null,
           metadata: {
-            sheetId: data.metadata?.sheetId || '',
-            stl_url: data.metadata?.stl_url || null,
+            sheetId: data.metadata?.sheetId ?? '',
+            stl_url: data.metadata?.stl_url ?? null,
           },
         } as Product;
       });
 
-      console.log(`[Firestore] ✅ Loaded ${productList.length} products`);
-      return productList.filter(p => p.active); // Ne retourner que les produits actifs
+      console.log(`[Firestore Admin] ✅ Loaded ${productList.length} products`);
+      return productList.filter(p => p.active); // Return only active products
     } catch (error) {
       const err = error as Error;
-      console.error('[Firestore] Fetch error:', err.message);
+      console.error('[Firestore Admin] Fetch error:', err.message);
+      // In a production environment, you might want to throw the error
+      // or handle it differently. For now, we return an empty array.
       return [];
     }
   },
-  ['products'], // Clé de cache
-  { revalidate: 300 } // Revalider toutes les 5 minutes
+  ['products'], // Cache key
+  { revalidate: 300 } // Revalidate every 5 minutes
 );
