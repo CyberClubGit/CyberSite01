@@ -173,7 +173,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
       </div>
 
       <Dialog open={!!selectedItem} onOpenChange={(isOpen) => !isOpen && setSelectedItem(null)}>
-        <DialogContent className="max-w-6xl w-full h-[90vh] p-4 border-0 backdrop-blur-sm flex flex-col overflow-hidden">
+        <DialogContent className="max-w-6xl w-full h-[90vh] p-4 border-0 backdrop-blur-sm flex flex-col overflow-hidden bg-transparent">
           <DialogHeader className="sr-only">
             <DialogTitle>{selectedItem?.title || 'Item Details'}</DialogTitle>
             <DialogDescription>
