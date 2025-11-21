@@ -55,6 +55,7 @@ function getFirstImage(galleryStr: string): string | null {
 
 export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).region("us-central1").https.onRequest(async (req, res) => {
   functions.logger.info("Starting product synchronization from Google Sheet.", {structuredData: true});
+  console.log("Stripe key in function (runtime):", process.env.STRIPE_SECRET_KEY);
   
   if (!stripe) {
     stripe = new Stripe(stripeSecretKey.value(), {
@@ -108,7 +109,7 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
         const firstImage = getFirstImage(product.Gallery);
 
         const stripeProductData = {
-            name: productTitle, // ✅ MAPPING CORRIGÉ ET VÉRIFIÉ
+            name: productTitle,
             description: product.Description,
             images: firstImage ? [firstImage] : [],
             active: true,
