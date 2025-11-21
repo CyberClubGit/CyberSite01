@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { useAuth, googleProvider } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,25 @@ export default function SignInPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isCheckingRedirect, setIsCheckingRedirect] = useState(true);
+
+  useEffect(() => {
+    const checkRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          // User successfully signed in.
+          router.push('/');
+        } else {
+          setIsCheckingRedirect(false);
+        }
+      } catch (err: any) {
+        setError(err.message || 'Erreur lors de la connexion via redirection.');
+        setIsCheckingRedirect(false);
+      }
+    };
+    checkRedirect();
+  }, [auth, router]);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,16 +58,18 @@ export default function SignInPage() {
   const handleGoogleSignIn = async () => {
     setError('');
     setLoading(true);
-
-    try {
-      await signInWithPopup(auth, googleProvider);
-      router.push('/');
-    } catch (err: any) {
-      setError(err.message || 'Erreur de connexion Google');
-    } finally {
-      setLoading(false);
-    }
+    // We don't need a try-catch here for the redirect itself,
+    // as errors are caught by getRedirectResult.
+    await signInWithRedirect(auth, googleProvider);
   };
+
+  if (isCheckingRedirect) {
+    return (
+      <div className="container flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="container flex items-center justify-center min-h-screen py-12">

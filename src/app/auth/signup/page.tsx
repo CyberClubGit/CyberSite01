@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { useAuth, useFirestore, googleProvider } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ export default function SignUpPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isCheckingRedirect, setIsCheckingRedirect] = useState(true);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -34,6 +35,50 @@ export default function SignUpPage() {
       [e.target.name]: e.target.value
     }));
   };
+  
+  const createFirestoreUserDocument = async (user: any) => {
+    const isNewUser = !user.metadata.lastSignInTime; // A good heuristic for new user
+    
+    // For Google Sign-In, extract names
+    const firstName = user.displayName?.split(' ')[0] || '';
+    const lastName = user.displayName?.split(' ').slice(1).join(' ') || '';
+    
+    await setDoc(doc(db, 'users', user.uid), {
+      uid: user.uid,
+      email: user.email,
+      firstName: firstName,
+      lastName: lastName,
+      nickname: user.displayName || '',
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+      createdAt: isNewUser ? Timestamp.now() : user.metadata.creationTime,
+      lastLogin: Timestamp.now(),
+      emailVerified: user.emailVerified,
+      membershipTier: 'bronze',
+      loyaltyPoints: 0,
+      totalPointsEarned: 0,
+      favorites: [],
+    }, { merge: true }); // Use merge to avoid overwriting existing data if user signs in again
+  };
+
+  useEffect(() => {
+    const checkRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          // User successfully signed in.
+          await createFirestoreUserDocument(result.user);
+          router.push('/');
+        } else {
+          setIsCheckingRedirect(false);
+        }
+      } catch (err: any) {
+        setError(err.message || 'Erreur lors de l\'inscription via redirection.');
+        setIsCheckingRedirect(false);
+      }
+    };
+    checkRedirect();
+  }, [auth, router]);
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,36 +129,16 @@ export default function SignUpPage() {
   const handleGoogleSignUp = async () => {
     setError('');
     setLoading(true);
-
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-
-      // Créer le document Firestore (si nouveau user)
-      await setDoc(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        email: user.email,
-        firstName: user.displayName?.split(' ')[0] || '',
-        lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
-        nickname: user.displayName || '',
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        createdAt: Timestamp.now(),
-        lastLogin: Timestamp.now(),
-        emailVerified: user.emailVerified,
-        membershipTier: 'bronze',
-        loyaltyPoints: 0,
-        totalPointsEarned: 0,
-        favorites: [],
-      }, { merge: true }); // merge pour ne pas écraser si existe déjà
-
-      router.push('/');
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de l\'inscription Google');
-    } finally {
-      setLoading(false);
-    }
+    await signInWithRedirect(auth, googleProvider);
   };
+  
+  if (isCheckingRedirect) {
+    return (
+      <div className="container flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="container flex items-center justify-center min-h-screen py-12">
