@@ -23,15 +23,6 @@ const db = admin.firestore();
 
 // Initialize Stripe with secret key
 let stripe: Stripe;
-const ensureStripe = () => {
-  if (!stripe) {
-    const key = stripeSecretKey.value();
-    if (!key) {
-      throw new functions.https.HttpsError('internal', 'Stripe secret key is not configured.');
-    }
-    stripe = new Stripe(key, { apiVersion: '2025-11-17.clover' });
-  }
-};
 
 
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=928586250&single=true&output=csv";
@@ -66,7 +57,17 @@ function getFirstImage(galleryStr: string): string | null {
 export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).region("us-central1").https.onRequest(async (req, res) => {
   functions.logger.info("Starting product synchronization from Google Sheet.", {structuredData: true});
   
-  ensureStripe();
+  if (!stripe) {
+    const key = stripeSecretKey.value();
+    if (!key) {
+        functions.logger.error("CRITICAL: STRIPE_SECRET_KEY is not defined. Aborting synchronization.");
+        res.status(500).json({ success: false, message: "Stripe secret key is not configured on the server." });
+        return;
+    }
+    stripe = new Stripe(key, {
+      apiVersion: "2025-11-17.clover",
+    });
+  }
 
   const summary = {
     success: [] as string[],
@@ -230,7 +231,15 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
 
 
 export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretKey] }).region('us-central1').https.onCall(async (data, context) => {
-  ensureStripe();
+  // Initialize Stripe within the function call
+  if (!stripe) {
+    const key = stripeSecretKey.value();
+    if (!key) {
+      functions.logger.error("Stripe secret key is not available.");
+      throw new functions.https.HttpsError('internal', 'The server is not configured for payments.');
+    }
+    stripe = new Stripe(key, { apiVersion: '2025-11-17.clover' });
+  }
 
   // Basic validation
   if (!Array.isArray(data.items) || data.items.length === 0) {
@@ -266,15 +275,20 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
   const cancel_url = `${origin}/checkout/cancel`;
 
   try {
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: 'payment',
-      line_items,
-      success_url,
-      cancel_url,
-      // Add customer info if user is logged in
-      ...(context.auth && context.auth.token.email && { customer_email: context.auth.token.email }),
-    });
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+        payment_method_types: ['card'],
+        mode: 'payment',
+        line_items,
+        success_url,
+        cancel_url,
+    };
+    
+    // Safely add customer email if the user is authenticated
+    if (context.auth?.token?.email) {
+      sessionParams.customer_email = context.auth.token.email;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     if (!session.url) {
       throw new functions.https.HttpsError('internal', 'Could not create a checkout session URL.');
