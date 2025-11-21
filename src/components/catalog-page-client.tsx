@@ -16,7 +16,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { CatalogItemDetails } from './catalog-item-details';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/hooks/useFavorites';
-import { Heart } from 'lucide-react';
+import { Heart, ShoppingCart } from 'lucide-react';
+import { useCart } from '@/hooks/useCart';
 
 // The data is now coming from Google Sheets again, so we can use a more generic type
 type CatalogItem = {
@@ -46,6 +47,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   const { user } = useAuth();
   // Favorites will use the 'ID' column from the sheet
   const { favorites, toggleFavorite } = useFavorites(user?.uid);
+  const { addToCart } = useCart();
 
   const handleFilterChange = (filterType: 'type' | 'material', value: string) => {
     const setter = filterType === 'type' ? setSelectedTypes : setSelectedMaterials;
@@ -79,6 +81,18 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   const resetFilters = () => {
     setSelectedTypes([]);
     setSelectedMaterials([]);
+  };
+
+  const handleAddToCart = (e: React.MouseEvent, item: CatalogItem) => {
+    e.stopPropagation();
+    const priceModel = item.Price_Model ? parseFloat(item.Price_Model.replace(',', '.')) : 0;
+    addToCart({
+      id: item.ID,
+      name: item.title,
+      price: priceModel * 100, // Store price in cents
+      image: item.galleryUrls?.[0] || '',
+      quantity: 1,
+    });
   };
 
   return (
@@ -171,20 +185,31 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                                 className="object-cover"
                               />
                             )}
-                             {user && (
+                             <div className="absolute top-2 right-2 flex flex-col gap-2">
+                                {user && (
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="rounded-full h-8 w-8 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleFavorite(item.id);
+                                        }}
+                                    >
+                                        <Heart className={cn("h-5 w-5 transition-all", isFavorited ? "fill-red-500 text-red-500" : "fill-transparent")} />
+                                        <span className="sr-only">Ajouter aux favoris</span>
+                                    </Button>
+                                )}
                                 <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="absolute top-2 right-2 rounded-full h-8 w-8 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        toggleFavorite(item.id);
-                                    }}
+                                  size="icon"
+                                  variant="ghost"
+                                  className="rounded-full h-8 w-8 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
+                                  onClick={(e) => handleAddToCart(e, item)}
                                 >
-                                    <Heart className={cn("h-5 w-5 transition-all", isFavorited ? "fill-red-500 text-red-500" : "fill-transparent")} />
-                                    <span className="sr-only">Ajouter aux favoris</span>
+                                  <ShoppingCart className="h-5 w-5" />
+                                  <span className="sr-only">Ajouter au panier</span>
                                 </Button>
-                            )}
+                             </div>
                           </div>
                           <CardHeader onClick={() => setSelectedItem(item)} className="cursor-pointer">
                             <CardTitle className="font-headline text-lg leading-tight">{item.title}</CardTitle>

@@ -3,6 +3,7 @@
 
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ThemeProvider } from '@/components/theme-provider';
+import { CartProvider } from '@/hooks/useCart';
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -17,7 +18,9 @@ export function Providers({ children }: ProvidersProps) {
         enableSystem
         disableTransitionOnChange
       >
-        {children}
+        <CartProvider>
+          {children}
+        </CartProvider>
       </ThemeProvider>
     </FirebaseClientProvider>
   );

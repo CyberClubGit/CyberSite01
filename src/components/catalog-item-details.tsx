@@ -18,7 +18,9 @@ import {
   Scale,
   Cpu,
   SquareCode,
-  Layers
+  Layers,
+  ShoppingCart,
+  Heart,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from './ui/button';
@@ -26,6 +28,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 import { ScrambleTitle } from './ScrambleTitle';
 import { InteractivePanel } from './interactive-panel';
+import { useCart } from '@/hooks/useCart';
+import { useAuth } from '@/hooks/useAuth';
+import { useFavorites } from '@/hooks/useFavorites';
 
 // The item type comes from the sheet processing
 type CatalogItem = ReturnType<typeof import('@/lib/sheets').processGalleryLinks>;
@@ -116,6 +121,11 @@ const TechDetailItem: React.FC<{ icon: React.ElementType; label: string; value: 
 
 export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
   const [imageViewer, setImageViewer] = useState<ImageViewerState>({ isOpen: false, images: [], selectedIndex: 0 });
+  
+  const { user } = useAuth();
+  const { favorites, toggleFavorite } = useFavorites(user?.uid);
+  const { addToCart } = useCart();
+  
   const openImageViewer = (images: string[], index: number) => {
     setImageViewer({ isOpen: true, images, selectedIndex: index });
   };
@@ -128,8 +138,19 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     setImageViewer(prev => ({ ...prev, selectedIndex: (prev.selectedIndex - 1 + prev.images.length) % prev.images.length }));
   };
 
+  const handleAddToCart = () => {
+    const priceModel = item.Price_Model ? parseFloat(item.Price_Model.replace(',', '.')) : 0;
+    addToCart({
+      id: item.ID,
+      name: item.title,
+      price: priceModel * 100, // Store price in cents
+      image: item.galleryUrls?.[0] || '',
+      quantity: 1,
+    });
+  };
+
+  const isFavorited = favorites.includes(item.ID);
   const hasGallery = item.galleryUrls && item.galleryUrls.length > 0;
-  
   const stlUrl = item.stlUrl;
 
   const galleryTabs = [
@@ -183,17 +204,30 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
       </Tabs>
     </InteractivePanel>
   );
+  
+  const priceModel = item.Price_Model ? parseFloat(item.Price_Model.replace(',', '.')) : 0;
+  const pricePrint = item.Price_Print ? parseFloat(item.Price_Print.replace(',', '.')) : 0;
 
   return (
     <>
       <div className="flex flex-col h-full w-full">
-        <div className="relative w-fit -mb-px z-10">
+        <div className="relative w-fit -mb-px z-10 flex justify-between items-start w-full">
             <div className="relative -mb-px rounded-t-lg border-x border-t p-3 pr-6 transition-colors duration-200 border-border/80 bg-background/80 backdrop-blur-sm text-foreground shadow-sm">
                 <ScrambleTitle
                     text={item.title}
                     as="h2"
                     className="text-2xl font-headline font-bold text-primary flex-shrink-0"
                 />
+            </div>
+            <div className="flex gap-2 p-2">
+              {user && (
+                  <Button size="icon" variant="ghost" className="rounded-full h-10 w-10 bg-background/50 backdrop-blur-sm" onClick={() => toggleFavorite(item.ID)}>
+                      <Heart className={cn("h-5 w-5", isFavorited ? "fill-red-500 text-red-500" : "text-foreground")} />
+                  </Button>
+              )}
+              <Button size="icon" variant="ghost" className="rounded-full h-10 w-10 bg-background/50 backdrop-blur-sm" onClick={handleAddToCart}>
+                  <ShoppingCart className="h-5 w-5 text-foreground" />
+              </Button>
             </div>
         </div>
 
@@ -229,8 +263,22 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
               <InteractivePanel className="flex-1 min-h-0">
                 <ViewerPanel modelUrl={stlUrl} />
               </InteractivePanel>
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 flex flex-col gap-4">
                 {descriptionAndTechSection}
+                <div className="grid grid-cols-2 gap-4">
+                    {priceModel > 0 && (
+                        <Button size="lg" onClick={handleAddToCart}>
+                            <ShoppingCart className="mr-2 h-5 w-5"/>
+                            Ajouter Fichier 3D ({(priceModel).toFixed(2)} €)
+                        </Button>
+                    )}
+                    {pricePrint > 0 && (
+                        <Button size="lg" variant="secondary">
+                            <ShoppingCart className="mr-2 h-5 w-5"/>
+                            Impression 3D ({(pricePrint).toFixed(2)} €)
+                        </Button>
+                    )}
+                </div>
               </div>
             </div>
           </div>

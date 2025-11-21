@@ -34,6 +34,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Brand, Category } from '@/lib/sheets';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { CartIcon } from './cart-icon';
 
 
 interface HeaderProps {
@@ -304,7 +305,8 @@ export function Header({ categories, brands }: HeaderProps) {
           </nav>
         </div>
 
-        <div className="ml-auto flex items-center justify-end space-x-2">
+        <div className="ml-auto flex items-center justify-end space-x-4">
+            <CartIcon />
             <div className="hidden md:flex">
               {renderAuthSection()}
             </div>
