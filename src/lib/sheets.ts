@@ -1,3 +1,4 @@
+
 import { unstable_cache } from 'next/cache';
 import { robustCsvParse, rowsToObjects } from './sheets-parser';
 import { 
@@ -211,8 +212,8 @@ export function processGalleryLinks<T extends Record<string, any>>(item: T): T &
       ? convertGoogleDriveLinkToDirect(item.Cover)
       : null,
     
-    stlUrl: item.Stl
-      ? convertGoogleDriveLinkToDirect(item.Stl)
+    stlUrl: item.Stl // <-- CORRECTION: We pass the raw URL to the component
+      ? item.Stl.trim()
       : null,
       
     pdfUrl: item.Pdf
