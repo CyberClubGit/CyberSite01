@@ -23,7 +23,7 @@ type CatalogItem = {
   id: string;
   title: string;
   description: string;
-  displayImageUrl?: string | null;
+  galleryUrls: string[];
   Type?: string;
   Material?: string;
   [key: string]: any; // Allow other properties from the sheet
@@ -71,6 +71,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
         id: item.ID, // Make sure the ID field is explicitly set for the key and favorites
         title: item.title,
         description: item.description,
+        galleryUrls: item.galleryUrls || [],
       };
     });
   }, [filteredData]);
@@ -150,6 +151,8 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {finalData.map((item) => {
                       const isFavorited = favorites.includes(item.id);
+                      const displayImageUrl = item.galleryUrls && item.galleryUrls.length > 0 ? item.galleryUrls[0] : null;
+
                       return (
                         <Card 
                           key={item.id}
@@ -159,9 +162,9 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                               className="relative w-full aspect-[3/4] bg-muted cursor-pointer"
                               onClick={() => setSelectedItem(item)}
                            >
-                            {item.displayImageUrl && (
+                            {displayImageUrl && (
                               <Image
-                                src={item.displayImageUrl}
+                                src={displayImageUrl}
                                 alt={item.title}
                                 fill
                                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
