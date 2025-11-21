@@ -4,13 +4,25 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow users to manage their own profile document
+    // La collection des produits est lisible par tout le monde,
+    // mais ne peut être modifiée que par les fonctions backend.
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if false; // Empêche les modifications côté client
+
+      // La sous-collection des prix est également lisible publiquement.
+      match /prices/{priceId} {
+        allow read: if true;
+        allow write: if false;
+      }
+    }
+
+    // Autorise les utilisateurs à gérer leur propre document de profil
     match /users/{userId} {
-      // A user can create their own profile document.
-      // The request.auth.uid must match the document's userId.
+      // Un utilisateur peut créer son propre document de profil.
       allow create: if request.auth != null && request.auth.uid == userId;
       
-      // A logged-in user can read and update their own profile.
+      // Un utilisateur connecté peut lire et mettre à jour son propre profil.
       allow read, update: if request.auth != null && request.auth.uid == userId;
     }
 
