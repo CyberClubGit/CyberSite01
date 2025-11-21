@@ -15,18 +15,16 @@ export function initializeAdminApp() {
     return adminApp;
   }
 
-  if (!serviceAccount) {
-    // This will happen in the Firebase Hosting environment where default credentials are used.
-    console.log('[Admin SDK] Initializing with default application credentials.');
-    adminApp = admin.initializeApp();
+  if (serviceAccount) {
+    console.log('[Admin SDK] Initializing with service account credentials.');
+    adminApp = admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
     return adminApp;
   }
   
-  console.log('[Admin SDK] Initializing with service account credentials.');
-  adminApp = admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    // You might need to add your databaseURL if it's not automatically detected
-    // databaseURL: `https://${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.firebaseio.com`
-  });
+  // Fallback for environments where default credentials are expected (like production Firebase Hosting)
+  console.log('[Admin SDK] Initializing with default application credentials.');
+  adminApp = admin.initializeApp();
   return adminApp;
 }
