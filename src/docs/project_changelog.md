@@ -18,6 +18,51 @@ L'application repose sur une architecture entièrement pilotée par des données
 
 ---
 
+## Synchronisation des Produits avec Stripe et Firestore
+
+Pour le catalogue, les données des produits suivent un flux de synchronisation en trois étapes pour garantir la cohérence entre la gestion de l'inventaire, le paiement et l'affichage sur le site.
+
+- **Étape 1 : Source de Données (Google Sheets)**
+  - Une feuille de calcul dédiée contient la liste complète des produits avec leurs détails (ID, titre, description, prix, type, images, etc.). C'est le point d'entrée pour la gestion de l'inventaire.
+
+- **Étape 2 : Synchronisation vers Stripe (Firebase Functions)**
+  - Une fonction Firebase (`syncProductsFromSheet`) est déclenchée manuellement (via un appel `curl` sécurisé).
+  - Cette fonction lit la feuille de calcul des produits, la parse, et pour chaque ligne :
+    - Elle crée ou met à jour un produit correspondant dans **Stripe**.
+    - Elle crée les prix associés (ex: "Fichier 3D", "Impression 3D") dans Stripe.
+  - Stripe devient ainsi la source de vérité pour tout ce qui concerne les paiements.
+
+- **Étape 3 : Synchronisation vers Firestore**
+  - Après avoir créé ou mis à jour le produit dans Stripe, la même fonction Firebase synchronise ces informations dans la base de données **Firestore**, dans une collection `/products`.
+  - Firestore devient alors la source de vérité pour l'affichage du catalogue sur le site web. Cette approche permet de charger les données rapidement côté client sans exposer directement les clés d'API Stripe.
+
+- **Affichage sur le Site**
+  - La page "Catalogue" de l'application lit les données directement depuis la collection `/products` de Firestore pour afficher la liste des articles. Les règles de sécurité de Firestore sont configurées pour autoriser la lecture publique de cette collection.
+
+---
+
+## Gestion des Utilisateurs et Authentification
+
+Le système gère les membres via Firebase Authentication et stocke les informations de profil dans Firestore.
+
+- **Fournisseurs d'Authentification** :
+  - Inscription et connexion via **Google**.
+  - Inscription et connexion par **Email et Mot de passe**.
+
+- **Base de Données des Utilisateurs (Firestore)** :
+  - Lors de la première connexion ou inscription d'un utilisateur, un document est créé pour lui dans Firestore à l'emplacement `/users/{userId}`.
+  - Ce document stocke des informations publiques et privées telles que :
+    - `uid`, `email`, `displayName`, `photoURL` (depuis Firebase Auth)
+    - `nickname`, `firstName`, `lastName` (renseignés à l'inscription)
+    - **`favorites`** : Un tableau contenant les IDs des produits que l'utilisateur a marqués comme favoris.
+
+- **Gestion des Favoris** :
+  - Le hook `useFavorites` permet d'interagir avec le tableau `favorites` de l'utilisateur connecté.
+  - Les utilisateurs peuvent ajouter ou retirer des produits de leurs favoris, et ces changements sont mis à jour en temps réel dans leur document Firestore.
+  - Les règles de sécurité de Firestore garantissent qu'un utilisateur ne peut modifier que son propre document (et donc sa propre liste de favoris).
+
+---
+
 ## Système de Branding Adaptatif
 
 Un sélecteur de marque (`Brand Selector`) permet de changer l'identité visuelle de l'ensemble du site en temps réel.
