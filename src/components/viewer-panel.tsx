@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import { useTheme } from 'next-themes';
 import { Skeleton } from './ui/skeleton';
 
 interface ViewerPanelProps {
@@ -9,9 +10,14 @@ interface ViewerPanelProps {
   className?: string;
 }
 
-const createViewerHtml = (modelUrl: string) => {
-  // We are injecting a full, self-contained HTML document into the iframe.
-  // This is a robust way to isolate the Three.js environment.
+const createViewerHtml = (modelUrl: string, theme: 'dark' | 'light' = 'light') => {
+  const isDark = theme === 'dark';
+  
+  const faceColor = isDark ? '0x333333' : '0xcccccc';
+  const wireframeColor = isDark ? '0xffffff' : '0x000000';
+  const faceOpacity = 0.8;
+  const wireframeOpacity = 0.1;
+
   return `
     <!DOCTYPE html>
     <html lang="en">
@@ -27,7 +33,7 @@ const createViewerHtml = (modelUrl: string) => {
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                color: #ccc;
+                color: ${isDark ? '#555' : '#ccc'};
                 font-family: monospace;
             }
         </style>
@@ -49,7 +55,6 @@ const createViewerHtml = (modelUrl: string) => {
             import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
             import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
             import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-            import { FilmPass } from 'three/addons/postprocessing/FilmPass.js';
             import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
             const scene = new THREE.Scene();
@@ -108,24 +113,17 @@ const createViewerHtml = (modelUrl: string) => {
             };
             const chromaticPass = new ShaderPass(ChromaticAberrationShader);
             composer.addPass(chromaticPass);
-
-            // Film Grain Pass
-            const filmPass = new FilmPass(0.15, 0.025, 648, false);
-            composer.addPass(filmPass);
-
-
+            
             // --- Load Model ---
             const loader = new STLLoader();
             
             async function loadModelData(url) {
-                console.log('[Debug] Initial URL:', url);
                 const GOOGLE_DRIVE_REGEX = /https?:\\/\\/drive\\.google\\.com\\/(file\\/d\\/|open\\?id=)([\\w-]+)/;
                 const match = url.match(GOOGLE_DRIVE_REGEX);
                 let fetchUrl = url;
 
                 if (match && match[2]) {
                     fetchUrl = \`https://drive.google.com/uc?export=download&id=\${match[2]}\`;
-                    console.log('[Debug] Google Drive URL detected. Fetching from:', fetchUrl);
                 }
 
                 const corsProxies = [
@@ -133,29 +131,22 @@ const createViewerHtml = (modelUrl: string) => {
                     'https://api.allorigins.win/raw?url='
                 ];
 
-                // Attempt 1: Direct fetch
                 try {
-                    console.log('[Debug] Attempt 1: Direct fetch from', fetchUrl);
                     const response = await fetch(fetchUrl);
                     if (!response.ok) throw new Error(\`Direct fetch failed with status \${response.status}\`);
-                    console.log('[Debug] Direct fetch successful!');
                     return await response.arrayBuffer();
                 } catch (e) {
-                    console.warn('[Debug] Direct fetch failed:', e.message);
+                    // Fallback to proxies
                 }
                 
-                // Attempt 2 & 3: Proxies
-                for (let i = 0; i < corsProxies.length; i++) {
-                    const proxy = corsProxies[i];
+                for (let proxy of corsProxies) {
                     try {
                         const proxiedUrl = proxy + encodeURIComponent(fetchUrl);
-                        console.log(\`[Debug] Attempt \${i + 2}: Fetch via proxy\`, proxiedUrl);
                         const response = await fetch(proxiedUrl);
                         if (!response.ok) throw new Error(\`Proxy fetch failed for \${proxy} with status \${response.status}\`);
-                        console.log(\`[Debug] Proxy fetch successful with \${proxy}\`);
                         return await response.arrayBuffer();
                     } catch(e) {
-                        console.warn(\`[Debug] Proxy fetch \${i + 2} failed:\`, e.message);
+                        // Continue to next proxy
                     }
                 }
                 throw new Error('All fetch attempts failed for URL: ' + fetchUrl);
@@ -163,50 +154,46 @@ const createViewerHtml = (modelUrl: string) => {
 
             loadModelData("${modelUrl}").then(data => {
                 const geometry = loader.parse(data);
-
-                // Normalize geometry
                 geometry.center();
 
                 const modelGroup = new THREE.Group();
                 
-                // Solid face material
+                // Solid face material (theme aware)
                 const faceMaterial = new THREE.MeshStandardMaterial({
-                    color: 0xcccccc,
-                    metalness: 0.6,
-                    roughness: 0.4,
+                    color: parseInt(${faceColor}),
+                    metalness: 0.4,
+                    roughness: 0.6,
+                    transparent: true,
+                    opacity: ${faceOpacity}
                 });
                 const faceMesh = new THREE.Mesh(geometry, faceMaterial);
                 modelGroup.add(faceMesh);
 
-                // Wireframe material
+                // Wireframe material (theme aware)
                 const wireframeMaterial = new THREE.MeshBasicMaterial({
-                    color: 0xffffff,
+                    color: parseInt(${wireframeColor}),
                     wireframe: true,
-                    opacity: 0.1,
+                    opacity: ${wireframeOpacity},
                     transparent: true,
                 });
                 const wireframeMesh = new THREE.Mesh(geometry, wireframeMaterial);
                 modelGroup.add(wireframeMesh);
                 
-                // Normalize scale
                 const box = new THREE.Box3().setFromObject(modelGroup);
                 const size = box.getSize(new THREE.Vector3());
                 const scale = 100 / Math.max(size.x, size.y, size.z);
                 modelGroup.scale.set(scale, scale, scale);
 
-                // Standard rotation for STL
                 modelGroup.rotation.x = -Math.PI / 2;
 
                 scene.add(modelGroup);
                 loaderElement.style.display = 'none';
 
             }).catch(error => {
-                console.error('[Debug] FINAL ERROR:', error);
+                console.error('Error loading 3D model:', error);
                 loaderElement.textContent = 'Error: Could not load model.';
             });
             
-
-            // --- Animation Loop ---
             function animate() {
                 requestAnimationFrame(animate);
                 controls.update();
@@ -214,7 +201,6 @@ const createViewerHtml = (modelUrl: string) => {
             }
             animate();
 
-            // --- Resize Listener ---
             window.addEventListener('resize', () => {
                 const aspect = window.innerWidth / window.innerHeight;
                 camera.left = frustumSize * aspect / -2;
@@ -225,7 +211,6 @@ const createViewerHtml = (modelUrl: string) => {
                 renderer.setSize(window.innerWidth, window.innerHeight);
                 composer.setSize(window.innerWidth, window.innerHeight);
             }, false);
-
         </script>
     </body>
     </html>
@@ -233,10 +218,12 @@ const createViewerHtml = (modelUrl: string) => {
 };
 
 export const ViewerPanel: React.FC<ViewerPanelProps> = ({ modelUrl, className }) => {
+  const { resolvedTheme } = useTheme();
+
   const viewerHtml = useMemo(() => {
     if (!modelUrl) return '';
-    return createViewerHtml(modelUrl);
-  }, [modelUrl]);
+    return createViewerHtml(modelUrl, resolvedTheme as 'dark' | 'light');
+  }, [modelUrl, resolvedTheme]);
 
   if (!modelUrl) {
     return (
@@ -250,7 +237,7 @@ export const ViewerPanel: React.FC<ViewerPanelProps> = ({ modelUrl, className })
     <div className={`w-full h-full flex flex-col ${className || ''}`}>
       <div className="flex-1 w-full h-full relative">
         <iframe
-          key={modelUrl} // Force re-render on URL change to clear memory
+          key={`${modelUrl}-${resolvedTheme}`} // Force re-render on URL or theme change
           srcDoc={viewerHtml}
           className="w-full h-full border-0 rounded-lg"
           sandbox="allow-scripts allow-same-origin"
