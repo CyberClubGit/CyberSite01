@@ -10,17 +10,20 @@ interface HomePageClientProps {
 }
 
 export function HomePageClient({ category, brand }: HomePageClientProps) {
+  const brandName = brand?.Brand || 'CYBER CLUB';
+
   return (
     <>
       {/* Section 1: Hero with Video Background */}
       <div className="relative h-screen flex flex-col justify-center items-center text-center p-4">
         {category.Background && <VideoBackground src={category.Background} />}
         <div className="relative z-10">
-          <h1 className="text-4xl font-headline font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl/none capitalize">
-            {brand?.Brand || category?.Name || 'CYBER CLUB'}
+          <h1 className="text-4xl font-headline font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl/none">
+            <span className="block text-2xl sm:text-3xl md:text-4xl font-light text-muted-foreground">Welcome to</span>
+            <span className="capitalize">{brandName}</span>
           </h1>
           <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl mt-4">
-            {category?.Description || (brand ? `Contenu pour ${category?.Name} sous la marque ${brand.Brand}` : `Bienvenue`)}
+            {category?.Description || `Explore the universe of ${brandName}`}
           </p>
         </div>
       </div>
