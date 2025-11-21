@@ -149,7 +149,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
       <div className="flex flex-col lg:flex-row gap-6 h-full w-full">
         {/* Left Panel */}
         <div className="lg:w-1/2 w-full flex flex-col gap-4">
-          <h2 className="text-2xl font-headline font-bold text-primary flex-shrink-0">{item.title}</h2>
+          <h2 className="text-3xl font-headline font-bold text-primary flex-shrink-0">{item.title}</h2>
           
           <div className="flex-1 min-h-0 pt-4">
             <ScrollArea className="h-full">
