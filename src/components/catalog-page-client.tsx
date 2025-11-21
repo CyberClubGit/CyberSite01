@@ -15,6 +15,9 @@ import { cn } from '@/lib/utils';
 import { VideoBackground } from './video-background';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CatalogItemDetails } from './catalog-item-details';
+import { useAuth } from '@/hooks/useAuth';
+import { useFavorites } from '@/hooks/useFavorites';
+import { Heart } from 'lucide-react';
 
 type ProcessedItem = ReturnType<typeof processGalleryLinks>;
 
@@ -30,6 +33,9 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [selectedItem, setSelectedItem] = useState<ProcessedItem | null>(null);
+
+  const { user } = useAuth();
+  const { favorites, toggleFavorite } = useFavorites(user?.uid);
 
   const handleFilterChange = (filterType: 'type' | 'material', value: string) => {
     const setter = filterType === 'type' ? setSelectedTypes : setSelectedMaterials;
@@ -139,28 +145,47 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
             <main>
                 {finalData && finalData.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {finalData.map((item, index) => (
-                      <Card 
-                        key={index} 
-                        className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-background/80 backdrop-blur-sm cursor-pointer"
-                        onClick={() => setSelectedItem(item)}
-                      >
-                        {item.displayImageUrl && (
-                          <div className="relative w-full aspect-[3/4] bg-muted">
-                            <Image
-                              src={item.displayImageUrl}
-                              alt={item.title}
-                              fill
-                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                              className="object-cover"
-                            />
+                    {finalData.map((item, index) => {
+                      const isFavorited = favorites.includes(item.title);
+                      return (
+                        <Card 
+                          key={index} 
+                          className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-background/80 backdrop-blur-sm group"
+                        >
+                           <div 
+                              className="relative w-full aspect-[3/4] bg-muted cursor-pointer"
+                              onClick={() => setSelectedItem(item)}
+                           >
+                            {item.displayImageUrl && (
+                              <Image
+                                src={item.displayImageUrl}
+                                alt={item.title}
+                                fill
+                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                className="object-cover"
+                              />
+                            )}
+                             {user && (
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="absolute top-2 right-2 rounded-full h-8 w-8 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // Prevent opening the dialog
+                                        toggleFavorite(item.title);
+                                    }}
+                                >
+                                    <Heart className={cn("h-5 w-5 transition-all", isFavorited ? "fill-red-500 text-red-500" : "fill-transparent")} />
+                                    <span className="sr-only">Ajouter aux favoris</span>
+                                </Button>
+                            )}
                           </div>
-                        )}
-                        <CardHeader>
-                          <CardTitle className="font-headline text-lg leading-tight">{item.title}</CardTitle>
-                        </CardHeader>
-                      </Card>
-                    ))}
+                          <CardHeader onClick={() => setSelectedItem(item)} className="cursor-pointer">
+                            <CardTitle className="font-headline text-lg leading-tight">{item.title}</CardTitle>
+                          </CardHeader>
+                        </Card>
+                      )
+                    })}
                   </div>
                 ) : (
                   <div className="mt-12 text-center text-muted-foreground md:mt-0 md:flex md:items-center md:justify-center h-full">
@@ -173,7 +198,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
       </div>
 
       <Dialog open={!!selectedItem} onOpenChange={(isOpen) => !isOpen && setSelectedItem(null)}>
-        <DialogContent className="max-w-6xl w-full h-[90vh] p-4 border-0 backdrop-blur-sm flex flex-col overflow-hidden bg-transparent">
+        <DialogContent className="max-w-6xl w-full h-[90vh] p-4 border-0 bg-background/30 backdrop-blur-sm flex flex-col overflow-hidden">
           <DialogHeader className="sr-only">
             <DialogTitle>{selectedItem?.title || 'Item Details'}</DialogTitle>
             <DialogDescription>

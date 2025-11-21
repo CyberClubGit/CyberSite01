@@ -19,6 +19,7 @@ export interface UserData {
   lastName?: string;
   nickname?: string;
   emailVerified: boolean;
+  favorites?: string[]; // Add favorites to user data
 }
 
 export function useAuth() {
@@ -30,13 +31,12 @@ export function useAuth() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        let additionalData = {};
+        let additionalData: Partial<UserData> = {};
         try {
-          // Attempt to fetch additional user data from Firestore
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userDoc = await getDoc(userDocRef);
           if (userDoc.exists()) {
-            additionalData = userDoc.data();
+            additionalData = userDoc.data() as UserData;
           }
         } catch (error) {
           console.warn(
@@ -52,6 +52,7 @@ export function useAuth() {
           displayName: firebaseUser.displayName,
           photoURL: firebaseUser.photoURL,
           emailVerified: firebaseUser.emailVerified,
+          favorites: [], // Default to empty array
           ...additionalData,
         };
         
