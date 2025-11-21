@@ -49,6 +49,7 @@ export function CartView() {
   }
   
   const formattedTotalPrice = (totalPrice / 100).toFixed(2).replace('.', ',');
+  const dataToSend = cart.map(item => ({ id: item.id, quantity: item.quantity }));
 
   return (
     <div className="flex flex-col h-full">
@@ -101,6 +102,23 @@ export function CartView() {
             'Procéder au paiement'
           )}
         </Button>
+        
+        {/* --- DEBUG BOX --- */}
+        {process.env.NODE_ENV === 'development' && (
+            <div className="mt-4 p-2 border bg-muted/50 rounded-lg text-xs">
+                <h4 className="font-bold text-center mb-2">Debug Info</h4>
+                <p className="font-semibold">Data sent to function:</p>
+                <pre className="whitespace-pre-wrap break-all bg-background/50 p-1 rounded">
+                    <code>{JSON.stringify(dataToSend, null, 2)}</code>
+                </pre>
+                <p className="font-semibold mt-2">Full cart state:</p>
+                <pre className="whitespace-pre-wrap break-all bg-background/50 p-1 rounded max-h-40 overflow-auto">
+                    <code>{JSON.stringify(cart, null, 2)}</code>
+                </pre>
+            </div>
+        )}
+        {/* --- END DEBUG BOX --- */}
+
       </div>
     </div>
   );
