@@ -21,9 +21,22 @@ const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 admin.initializeApp();
 const db = admin.firestore();
 
-// Initialize Stripe with secret key
+// Initialize Stripe with secret key - lazily
 let stripe: Stripe;
 
+function ensureStripe() {
+  if (!stripe) {
+    const key = stripeSecretKey.value();
+    if (!key) {
+      console.error("CRITICAL: STRIPE_SECRET_KEY is not defined.");
+      throw new functions.https.HttpsError('internal', 'Stripe secret key is not configured on the server.');
+    }
+    console.info(`Stripe key loaded successfully (last 4 chars: ...${key.slice(-4)}).`);
+    stripe = new Stripe(key, {
+      apiVersion: "2025-11-17.clover",
+    });
+  }
+}
 
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=928586250&single=true&output=csv";
 
@@ -57,17 +70,7 @@ function getFirstImage(galleryStr: string): string | null {
 export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).region("us-central1").https.onRequest(async (req, res) => {
   functions.logger.info("Starting product synchronization from Google Sheet.", {structuredData: true});
   
-  if (!stripe) {
-    const key = stripeSecretKey.value();
-    if (!key) {
-        functions.logger.error("CRITICAL: STRIPE_SECRET_KEY is not defined. Aborting synchronization.");
-        res.status(500).json({ success: false, message: "Stripe secret key is not configured on the server." });
-        return;
-    }
-    stripe = new Stripe(key, {
-      apiVersion: "2025-11-17.clover",
-    });
-  }
+  ensureStripe();
 
   const summary = {
     success: [] as string[],
@@ -231,17 +234,8 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
 
 
 export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretKey] }).region('us-central1').https.onCall(async (data, context) => {
-  // Initialize Stripe within the function call
-  if (!stripe) {
-    const key = stripeSecretKey.value();
-    if (!key) {
-      functions.logger.error("Stripe secret key is not available.");
-      throw new functions.https.HttpsError('internal', 'The server is not configured for payments.');
-    }
-    stripe = new Stripe(key, { apiVersion: '2025-11-17.clover' });
-  }
+  ensureStripe();
 
-  // Basic validation
   if (!Array.isArray(data.items) || data.items.length === 0) {
     throw new functions.https.HttpsError('invalid-argument', 'The function must be called with an array of "items".');
   }
@@ -253,15 +247,27 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
       throw new functions.https.HttpsError('invalid-argument', 'Each item must have an "id" and a "quantity".');
     }
     
-    // For security, fetch price from Stripe instead of trusting client
+    // --- THIS IS THE FIX ---
+    // Search for the Stripe product using the sheet_id stored in metadata.
+    const products = await stripe.products.search({
+      query: `metadata['sheet_id']:'${item.id}'`,
+      limit: 1,
+    });
+
+    if (products.data.length === 0) {
+        throw new functions.https.HttpsError('not-found', `No Stripe product found for sheet ID: ${item.id}`);
+    }
+    const stripeProduct = products.data[0];
+    
+    // Now that we have the Stripe Product, find its active price.
     const prices = await stripe.prices.list({
-        product: item.id,
+        product: stripeProduct.id,
         active: true,
-        limit: 1, // Assuming one active price per product for simplicity
+        limit: 1, // Assuming one active price per product for simplicity.
     });
 
     if (prices.data.length === 0) {
-        throw new functions.https.HttpsError('not-found', `No active price found for product ID: ${item.id}`);
+        throw new functions.https.HttpsError('not-found', `No active price found for Stripe product ID: ${stripeProduct.id}`);
     }
 
     line_items.push({
@@ -270,7 +276,7 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     });
   }
 
-  const origin = context.rawRequest.headers.origin;
+  const origin = context.rawRequest.headers.origin || 'http://localhost:9002';
   const success_url = `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`;
   const cancel_url = `${origin}/checkout/cancel`;
 
@@ -283,7 +289,6 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
         cancel_url,
     };
     
-    // Safely add customer email if the user is authenticated
     if (context.auth?.token?.email) {
       sessionParams.customer_email = context.auth.token.email;
     }
