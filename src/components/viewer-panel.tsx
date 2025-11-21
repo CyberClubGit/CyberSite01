@@ -239,11 +239,10 @@ export const ViewerPanel: React.FC<ViewerPanelProps> = ({ modelUrl, className })
         <iframe
           key={`${modelUrl}-${resolvedTheme}`} // Force re-render on URL or theme change
           srcDoc={viewerHtml}
-          className="w-full h-full border-0 rounded-lg"
+          className="w-full h-full border-0 rounded-lg bg-transparent"
           sandbox="allow-scripts allow-same-origin"
           title="3D Model Viewer"
         />
-        <Skeleton className="absolute inset-0 w-full h-full -z-10" />
       </div>
     </div>
   );
