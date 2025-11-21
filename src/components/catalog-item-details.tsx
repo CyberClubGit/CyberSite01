@@ -159,14 +159,14 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="description" className="mt-4">
-             <ScrollArea className="h-48 pr-4">
+             <ScrollArea className="h-24 pr-4">
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                   {item.description || "No description available."}
                 </p>
              </ScrollArea>
           </TabsContent>
            <TabsContent value="tech" className="mt-4">
-            <ScrollArea className="h-48 pr-4">
+            <ScrollArea className="h-24 pr-4">
                 {techDetails.length > 0 ? (
                   <div className="grid grid-cols-1 gap-4">
                     {techDetails.map(detail => (
