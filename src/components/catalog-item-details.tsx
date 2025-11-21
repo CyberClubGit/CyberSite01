@@ -38,7 +38,7 @@ const ImageGallery: React.FC<{ images: string[], onImageClick: (index: number) =
         <div className="flex gap-4">
             {/* Main Image */}
             <div 
-                className="relative flex-1 aspect-square rounded-lg overflow-hidden group border cursor-pointer bg-muted"
+                className="relative flex-1 aspect-[3/4] rounded-lg overflow-hidden group border cursor-pointer bg-muted"
                 onClick={() => onImageClick(mainImageIndex)}
             >
                 {mainImageUrl && (
@@ -62,7 +62,7 @@ const ImageGallery: React.FC<{ images: string[], onImageClick: (index: number) =
                             key={index}
                             onClick={() => setMainImageIndex(index)}
                             className={cn(
-                                "relative w-full aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all",
+                                "relative w-full aspect-[3/4] rounded-md overflow-hidden cursor-pointer border-2 transition-all",
                                 mainImageIndex === index ? 'border-primary' : 'border-transparent hover:border-muted-foreground'
                             )}
                             >
