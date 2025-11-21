@@ -1,6 +1,5 @@
 
 import { getBrands, getCategories, getCategoryData, processGalleryLinks, type Brand, type Category } from '@/lib/sheets';
-import { getProducts } from '@/lib/firestore'; // Importer la nouvelle fonction
 import { notFound } from 'next/navigation';
 import { CatalogPageClient } from '@/components/catalog-page-client';
 import DefaultPageLayout from '@/components/default-page-layout';
@@ -76,18 +75,13 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
 
   // Specific layout for the Catalog page
   if (category.Url.toLowerCase() === 'catalog') {
-    // Lire les produits depuis Firestore au lieu de Google Sheet
-    const products = await getProducts();
-    const types = [...new Set(products.map(item => item.type).filter(Boolean) as string[])];
-    const materials = [...new Set(products.map(item => item.material).filter(Boolean) as string[])];
-
     return (
       <CatalogPageClient 
-        initialData={products} // Passer les produits de Firestore
+        initialData={[]}
         category={category}
         brand={brand}
-        types={types}
-        materials={materials}
+        types={[]}
+        materials={[]}
       />
     );
   }

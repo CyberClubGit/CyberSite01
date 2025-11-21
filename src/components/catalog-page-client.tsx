@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { Brand, Category } from '@/lib/sheets';
 import { filterItemsByBrandActivity } from '@/lib/activity-filter';
 import Image from 'next/image';
@@ -16,27 +16,55 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { CatalogItemDetails } from './catalog-item-details';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/hooks/useFavorites';
-import { Heart } from 'lucide-react';
-import type { Product } from '@/lib/firestore'; // Importer le type Product
+import { Heart, Loader2 } from 'lucide-react';
+import type { Product } from '@/lib/firestore';
+import { useFirestore } from '@/firebase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 
-// Le type des données initiales est maintenant `Product`
+
 type CatalogItem = Product & { displayImageUrl?: string | null };
 
 interface CatalogPageClientProps {
-  initialData: Product[];
+  initialData: Product[]; // This will now be an empty array initially
   category: Category;
   brand?: Brand;
-  types: string[];
-  materials: string[];
+  types: string[]; // These will also be empty initially
+  materials: string[]; // This will also be empty initially
 }
 
-export function CatalogPageClient({ initialData, category, brand, types, materials }: CatalogPageClientProps) {
+export function CatalogPageClient({ category, brand }: CatalogPageClientProps) {
+  const db = useFirestore();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [selectedItem, setSelectedItem] = useState<CatalogItem | null>(null);
 
   const { user } = useAuth();
   const { favorites, toggleFavorite } = useFavorites(user?.uid);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
+        const productsCol = collection(db, 'products');
+        const q = query(productsCol, where("active", "==", true));
+        const productSnapshot = await getDocs(q);
+        const productList = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+        setProducts(productList);
+      } catch (error) {
+        console.error("Error fetching products from client:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, [db]);
+
+  const types = useMemo(() => [...new Set(products.map(item => item.type).filter(Boolean) as string[])], [products]);
+  const materials = useMemo(() => [...new Set(products.map(item => item.material).filter(Boolean) as string[])], [products]);
+
 
   const handleFilterChange = (filterType: 'type' | 'material', value: string) => {
     const setter = filterType === 'type' ? setSelectedTypes : setSelectedMaterials;
@@ -46,24 +74,21 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   };
 
   const filteredData = useMemo(() => {
-    // Les données de Firestore ont des noms de champs différents
-    const brandFiltered = filterItemsByBrandActivity(initialData, brand?.Brand);
+    const brandFiltered = filterItemsByBrandActivity(products, brand?.Brand);
     return brandFiltered.filter(item => {
       const typeMatch = selectedTypes.length === 0 || (item.type && selectedTypes.includes(item.type));
       const materialMatch = selectedMaterials.length === 0 || (item.material && selectedMaterials.includes(item.material));
       return typeMatch && materialMatch;
     });
-  }, [initialData, brand, selectedTypes, selectedMaterials]);
+  }, [products, brand, selectedTypes, selectedMaterials]);
 
   const finalData: CatalogItem[] = useMemo(() => {
     return filteredData.map(item => {
-      // Les données de Firestore ont un champ `images` qui est un tableau
       const displayImageUrl = item.images && item.images.length > 0 ? item.images[0] : null;
       return {
         ...item,
-        // Correction: Utiliser item.name de firestore au lieu de item.title
         title: item.name || 'Untitled', 
-        description: item.description || '', // La description est `description`
+        description: item.description || '',
         displayImageUrl,
       };
     });
@@ -140,13 +165,17 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
             </aside>
 
             <main>
-                {finalData && finalData.length > 0 ? (
+                {loading ? (
+                    <div className="flex justify-center items-center h-64">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                    </div>
+                ) : finalData && finalData.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {finalData.map((item) => {
-                      const isFavorited = favorites.includes(item.id); // Utiliser l'ID de Firestore
+                      const isFavorited = favorites.includes(item.id);
                       return (
                         <Card 
-                          key={item.id} // Utiliser l'ID de Firestore
+                          key={item.id}
                           className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-background/80 backdrop-blur-sm group"
                         >
                            <div 
@@ -169,7 +198,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                                     className="absolute top-2 right-2 rounded-full h-8 w-8 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        toggleFavorite(item.id); // Utiliser l'ID de Firestore
+                                        toggleFavorite(item.id);
                                     }}
                                 >
                                     <Heart className={cn("h-5 w-5 transition-all", isFavorited ? "fill-red-500 text-red-500" : "fill-transparent")} />
@@ -178,7 +207,6 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                             )}
                           </div>
                           <CardHeader onClick={() => setSelectedItem(item)} className="cursor-pointer">
-                            {/* Correction: Utiliser item.title qui est mappé depuis item.name */}
                             <CardTitle className="font-headline text-lg leading-tight">{item.title}</CardTitle>
                           </CardHeader>
                         </Card>
@@ -198,7 +226,6 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
       <Dialog open={!!selectedItem} onOpenChange={(isOpen) => !isOpen && setSelectedItem(null)}>
         <DialogContent className="max-w-6xl w-full h-[90vh] p-4 border-0 bg-background/30 backdrop-blur-sm flex flex-col overflow-hidden">
           <DialogHeader className="sr-only">
-            {/* Correction: Utiliser selectedItem?.name pour le titre */}
             <DialogTitle>{selectedItem?.name || 'Item Details'}</DialogTitle>
             <DialogDescription>
               Detailed view of the selected catalog item.
