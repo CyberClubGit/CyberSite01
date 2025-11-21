@@ -168,7 +168,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
            <TabsContent value="tech" className="mt-4">
             <ScrollArea className="h-24 pr-4">
                 {techDetails.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     {techDetails.map(detail => (
                       <TechDetailItem key={detail.label} {...detail} />
                     ))}
@@ -222,7 +222,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
         </div>
 
         {/* Right Panel */}
-        <div className="lg:w-1/2 w-full flex flex-col gap-6 lg:border-l lg:pl-6">
+        <div className="lg:w-1/2 w-full flex flex-col gap-6">
           <div className="flex-1 min-h-0">
             <ViewerPanel modelUrl={item.stlUrl} />
           </div>
