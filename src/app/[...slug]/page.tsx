@@ -14,7 +14,12 @@ export async function generateStaticParams() {
   // Default paths without brand
   categories.forEach(category => {
     if (category.Url) {
-      paths.push({ slug: [category.Url.toLowerCase()] });
+      // Handle home page specifically if its slug is 'home'
+      if (category.Url.toLowerCase() === 'home') {
+        paths.push({ slug: ['home'] });
+      } else {
+        paths.push({ slug: [category.Url.toLowerCase()] });
+      }
     }
   });
 
@@ -22,17 +27,21 @@ export async function generateStaticParams() {
   brands.forEach(brand => {
     if (brand.Activity && brand.Brand !== 'Cyber Club') {
       categories.forEach(category => {
-        if (category.Url) {
+        if (category.Url && category.Url.toLowerCase() !== 'home') { // Avoid /brand/home routes
           paths.push({ slug: [brand.Activity.toLowerCase(), category.Url.toLowerCase()] });
         }
       });
     }
   });
-
-  // Add homepage path
+  
+  // Ensure the root path '/' handled by /home is considered
+  // The redirect in page.tsx handles the root, but generateStaticParams needs to know about /home
   if (!paths.some(p => p.slug.length === 1 && p.slug[0] === 'home')) {
-    paths.push({ slug: ['home'] });
+     paths.push({ slug: ['home'] });
   }
+
+  // Add root path for generation if needed, though redirect is often better.
+  // paths.push({ slug: [] }); // Represents the root path
 
   return paths;
 }
