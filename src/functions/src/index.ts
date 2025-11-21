@@ -58,7 +58,7 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
   
   if (!stripe) {
     stripe = new Stripe(stripeSecretKey.value(), {
-      apiVersion: "2024-11-20.acacia",
+      apiVersion: "2024-06-20",
     });
   }
 
