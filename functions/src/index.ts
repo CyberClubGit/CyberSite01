@@ -134,6 +134,12 @@ export const syncProductsFromSheet = functions.region("us-central1").https.onReq
           throw error; // Renvoyer les autres erreurs
         });
         
+        // Désactiver les anciens prix avant d'en créer de nouveaux
+        const existingPrices = await stripe.prices.list({ product: stripeProduct.id, active: true });
+        for (const price of existingPrices.data) {
+            await stripe.prices.update(price.id, { active: false });
+        }
+        
         const pricePromises: Promise<any>[] = [];
 
         // Créer/mettre à jour le prix pour le modèle 3D
@@ -159,7 +165,7 @@ export const syncProductsFromSheet = functions.region("us-central1").https.onReq
         }
 
         const stripePrices = await Promise.all(pricePromises);
-        functions.logger.log(`Created/updated ${stripePrices.length} prices for ${productId} in Stripe.`);
+        functions.logger.log(`Created ${stripePrices.length} new prices for ${productId} in Stripe.`);
 
         // 5. Synchroniser avec Firestore
         functions.logger.log(`Syncing product ${productId} to Firestore.`);
