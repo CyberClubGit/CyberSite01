@@ -26,7 +26,7 @@ export function useFavorites(userId: string | undefined) {
                     setFavorites(userDoc.data().favorites || []);
                 }
             } catch (error) {
-                console.error("Error fetching favorites: ", error);
+                console.error("Error fetching favorites: This is likely a Firestore security rule issue.", error);
             } finally {
                 setLoading(false);
             }
@@ -36,7 +36,10 @@ export function useFavorites(userId: string | undefined) {
     }, [userId, db]);
 
     const toggleFavorite = useCallback(async (itemId: string) => {
-        if (!userId) return;
+        if (!userId) {
+            console.error("Cannot toggle favorite: User is not logged in.");
+            return;
+        };
 
         const userDocRef = doc(db, 'users', userId);
         const isCurrentlyFavorite = favorites.includes(itemId);
@@ -59,7 +62,7 @@ export function useFavorites(userId: string | undefined) {
                 });
             }
         } catch (error) {
-            console.error("Error updating favorites: ", error);
+            console.error("Error updating favorites: This is likely a Firestore security rule issue.", error);
             // Revert optimistic update on error
             setFavorites(prevFavorites =>
                 isCurrentlyFavorite

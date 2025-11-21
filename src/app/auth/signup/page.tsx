@@ -70,6 +70,7 @@ export default function SignUpPage() {
         membershipTier: 'bronze',
         loyaltyPoints: 0,
         totalPointsEarned: 0,
+        favorites: [],
       });
 
       router.push('/');
@@ -103,6 +104,7 @@ export default function SignUpPage() {
         membershipTier: 'bronze',
         loyaltyPoints: 0,
         totalPointsEarned: 0,
+        favorites: [],
       }, { merge: true }); // merge pour ne pas écraser si existe déjà
 
       router.push('/');
