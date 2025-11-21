@@ -19,7 +19,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { Heart, Loader2 } from 'lucide-react';
 import type { Product } from '@/lib/firestore';
 import { useFirestore } from '@/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query } from 'firebase/firestore';
 
 
 type CatalogItem = Product & { displayImageUrl?: string | null };
@@ -47,10 +47,12 @@ export function CatalogPageClient({ category, brand }: CatalogPageClientProps) {
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
+      if (!db) {
+        setLoading(false);
+        return;
+      }
       try {
         const productsCol = collection(db, 'products');
-        // Correction: Suppression de la clause 'where' pour éviter l'erreur de permission due à l'absence d'index.
-        // Le filtrage se fera côté client.
         const productSnapshot = await getDocs(productsCol);
         const productList = productSnapshot.docs
           .map(doc => ({ id: doc.id, ...doc.data() } as Product))

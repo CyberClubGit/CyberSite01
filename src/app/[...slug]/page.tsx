@@ -75,6 +75,7 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
 
   // Specific layout for the Catalog page
   if (category.Url.toLowerCase() === 'catalog') {
+    // For the catalog, we pass empty arrays. The client component will fetch the data.
     return (
       <CatalogPageClient 
         initialData={[]}
