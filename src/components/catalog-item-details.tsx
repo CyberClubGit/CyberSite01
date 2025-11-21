@@ -18,7 +18,10 @@ import {
     Scale,
     Cpu,
     SquareCode,
-    Layers
+    Layers,
+    Badge,
+    Users,
+    Shapes
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from './ui/button';
@@ -48,7 +51,7 @@ const ImageGallery: React.FC<{ images: string[], onImageClick: (index: number) =
     const mainImageUrl = images[mainImageIndex];
 
     return (
-        <div className="flex gap-4">
+        <div className="flex gap-2">
             {/* Main Image */}
             <div 
                 className="relative flex-1 aspect-[3/4] rounded-lg overflow-hidden group border cursor-pointer bg-muted"
@@ -67,7 +70,7 @@ const ImageGallery: React.FC<{ images: string[], onImageClick: (index: number) =
             
             {/* Thumbnails */}
             {images.length > 1 && (
-                <div className="w-16 flex-shrink-0">
+                <div className="w-14 flex-shrink-0">
                     <ScrollArea className="h-full max-h-[500px]">
                     <div className="flex flex-col gap-2 pr-2">
                         {images.map((url, index) => (
@@ -111,7 +114,6 @@ const TechDetailItem: React.FC<{ icon: React.ElementType; label: string; value: 
 
 export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
   const [imageViewer, setImageViewer] = useState<ImageViewerState>({ isOpen: false, images: [], selectedIndex: 0 });
-
   const openImageViewer = (images: string[], index: number) => {
     setImageViewer({ isOpen: true, images, selectedIndex: index });
   };
@@ -156,7 +158,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
                 {/* Galleries Section */}
                 {galleryTabs.length > 0 && (
                     <Tabs defaultValue={galleryTabs[0].name} className="w-full">
-                        <TabsList className={cn("grid w-full", `grid-cols-${galleryTabs.length}`)}>
+                        <TabsList className={cn("grid w-full", `grid-cols-${galleryTabs.length > 0 ? galleryTabs.length : 1}`)}>
                             {galleryTabs.map(tab => (
                                 <TabsTrigger key={tab.name} value={tab.name}>
                                     <tab.icon className="mr-2 h-4 w-4" />
@@ -268,5 +270,3 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     </>
   );
 }
-
-    
