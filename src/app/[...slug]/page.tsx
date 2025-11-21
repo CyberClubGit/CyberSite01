@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { CatalogPageClient } from '@/components/catalog-page-client';
 import DefaultPageLayout from '@/components/default-page-layout';
 import { HomePageClient } from '@/components/home-page-client';
+import { getProducts } from '@/lib/firestore';
 
 export async function generateStaticParams() {
   const categories = await getCategories();
@@ -46,7 +47,7 @@ export async function generateStaticParams() {
   return paths;
 }
 
-export default async function CatchAllPage({ params }: { params: { slug: string[] } }) {
+export default async function CatchAllPage({ params }: { params: { slug:string[] } }) {
   const slugArray = params.slug || [];
   
   const categories = await getCategories();
@@ -75,14 +76,17 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
 
   // Specific layout for the Catalog page
   if (category.Url.toLowerCase() === 'catalog') {
-    // For the catalog, we pass empty arrays. The client component will fetch the data.
+    const products = await getProducts();
+    const types = [...new Set(products.map(p => p.type).filter(Boolean) as string[])];
+    const materials = [...new Set(products.map(p => p.material).filter(Boolean) as string[])];
+    
     return (
       <CatalogPageClient 
-        initialData={[]}
+        initialData={products}
         category={category}
         brand={brand}
-        types={[]}
-        materials={[]}
+        types={types}
+        materials={materials}
       />
     );
   }

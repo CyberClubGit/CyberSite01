@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import type { Brand, Category } from '@/lib/sheets';
 import { filterItemsByBrandActivity } from '@/lib/activity-filter';
 import Image from 'next/image';
@@ -16,61 +16,26 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { CatalogItemDetails } from './catalog-item-details';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/hooks/useFavorites';
-import { Heart, Loader2 } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import type { Product } from '@/lib/firestore';
-import { useFirestore } from '@/firebase';
-import { collection, getDocs, query } from 'firebase/firestore';
-
 
 type CatalogItem = Product & { displayImageUrl?: string | null };
 
 interface CatalogPageClientProps {
-  initialData: Product[]; // This will now be an empty array initially
+  initialData: Product[];
   category: Category;
   brand?: Brand;
-  types: string[]; // These will also be empty initially
-  materials: string[]; // This will also be empty initially
+  types: string[];
+  materials: string[];
 }
 
-export function CatalogPageClient({ category, brand }: CatalogPageClientProps) {
-  const db = useFirestore();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  
+export function CatalogPageClient({ initialData, category, brand, types, materials }: CatalogPageClientProps) {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [selectedItem, setSelectedItem] = useState<CatalogItem | null>(null);
 
   const { user } = useAuth();
   const { favorites, toggleFavorite } = useFavorites(user?.uid);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true);
-      if (!db) {
-        setLoading(false);
-        return;
-      }
-      try {
-        const productsCol = collection(db, 'products');
-        const productSnapshot = await getDocs(productsCol);
-        const productList = productSnapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() } as Product))
-          .filter(product => product.active === true); // Filtrage côté client
-        
-        setProducts(productList);
-      } catch (error) {
-        console.error("Error fetching products from client:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProducts();
-  }, [db]);
-
-  const types = useMemo(() => [...new Set(products.map(item => item.type).filter(Boolean) as string[])], [products]);
-  const materials = useMemo(() => [...new Set(products.map(item => item.material).filter(Boolean) as string[])], [products]);
-
 
   const handleFilterChange = (filterType: 'type' | 'material', value: string) => {
     const setter = filterType === 'type' ? setSelectedTypes : setSelectedMaterials;
@@ -80,13 +45,13 @@ export function CatalogPageClient({ category, brand }: CatalogPageClientProps) {
   };
 
   const filteredData = useMemo(() => {
-    const brandFiltered = filterItemsByBrandActivity(products, brand?.Brand);
+    const brandFiltered = filterItemsByBrandActivity(initialData, brand?.Brand);
     return brandFiltered.filter(item => {
       const typeMatch = selectedTypes.length === 0 || (item.type && selectedTypes.includes(item.type));
       const materialMatch = selectedMaterials.length === 0 || (item.material && selectedMaterials.includes(item.material));
       return typeMatch && materialMatch;
     });
-  }, [products, brand, selectedTypes, selectedMaterials]);
+  }, [initialData, brand, selectedTypes, selectedMaterials]);
 
   const finalData: CatalogItem[] = useMemo(() => {
     return filteredData.map(item => {
@@ -171,11 +136,7 @@ export function CatalogPageClient({ category, brand }: CatalogPageClientProps) {
             </aside>
 
             <main>
-                {loading ? (
-                    <div className="flex justify-center items-center h-64">
-                        <Loader2 className="h-8 w-8 animate-spin" />
-                    </div>
-                ) : finalData && finalData.length > 0 ? (
+              {finalData && finalData.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {finalData.map((item) => {
                       const isFavorited = favorites.includes(item.id);
@@ -245,5 +206,3 @@ export function CatalogPageClient({ category, brand }: CatalogPageClientProps) {
     </>
   );
 }
-
-    
