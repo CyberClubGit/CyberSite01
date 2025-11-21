@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -29,9 +30,21 @@ export function useAuth() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Récupérer les données supplémentaires depuis Firestore
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const userDoc = await getDoc(userDocRef);
+        let additionalData = {};
+        try {
+          // Attempt to fetch additional user data from Firestore
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            additionalData = userDoc.data();
+          }
+        } catch (error) {
+          console.warn(
+            'Could not fetch user document from Firestore. ' +
+            'This might be due to Firestore security rules.',
+            error
+          );
+        }
         
         const userData: UserData = {
           uid: firebaseUser.uid,
@@ -39,7 +52,7 @@ export function useAuth() {
           displayName: firebaseUser.displayName,
           photoURL: firebaseUser.photoURL,
           emailVerified: firebaseUser.emailVerified,
-          ...(userDoc.exists() ? userDoc.data() : {}),
+          ...additionalData,
         };
         
         setUser(userData);
