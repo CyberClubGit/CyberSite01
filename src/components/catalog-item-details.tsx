@@ -67,7 +67,7 @@ const ImageGallery: React.FC<{ images: string[], onImageClick: (index: number) =
             
             {/* Thumbnails */}
             {images.length > 1 && (
-                <div className="w-20 flex-shrink-0">
+                <div className="w-14 flex-shrink-0">
                     <ScrollArea className="h-full max-h-[500px]">
                     <div className="flex flex-col gap-2 pr-2">
                         {images.map((url, index) => (
