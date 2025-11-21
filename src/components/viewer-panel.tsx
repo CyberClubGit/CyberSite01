@@ -12,7 +12,7 @@ interface ViewerPanelProps {
 const createViewerHtml = (modelUrl: string, theme: 'dark' | 'light' = 'light') => {
   const isDark = theme === 'dark';
   
-  const faceColor = isDark ? '0x333333' : '0xcccccc';
+  const faceColor = isDark ? '0x2B2B2B' : '0xDDDDDD';
   const wireframeColor = isDark ? '0xffffff' : '0x000000';
   const backgroundColor = isDark ? '0x000000' : '0xffffff';
   const faceOpacity = 0.8;
