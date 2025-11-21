@@ -1,5 +1,6 @@
 
 import { getBrands, getCategories, getCategoryData, processGalleryLinks, type Brand, type Category } from '@/lib/sheets';
+import { getProducts } from '@/lib/firestore'; // Importer la nouvelle fonction
 import { notFound } from 'next/navigation';
 import { CatalogPageClient } from '@/components/catalog-page-client';
 import DefaultPageLayout from '@/components/default-page-layout';
@@ -67,9 +68,6 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
   if (!category || !category.Url) {
     notFound();
   }
-
-  const rawCategoryData = await getCategoryData(category.Url);
-  const processedData = rawCategoryData.map(processGalleryLinks);
   
   // Specific layout for the Home page
   if (category.Url.toLowerCase() === 'home') {
@@ -78,12 +76,14 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
 
   // Specific layout for the Catalog page
   if (category.Url.toLowerCase() === 'catalog') {
-    const types = [...new Set(rawCategoryData.map(item => item.Type).filter(Boolean) as string[])];
-    const materials = [...new Set(rawCategoryData.map(item => item.Material).filter(Boolean) as string[])];
+    // Lire les produits depuis Firestore au lieu de Google Sheet
+    const products = await getProducts();
+    const types = [...new Set(products.map(item => item.type).filter(Boolean) as string[])];
+    const materials = [...new Set(products.map(item => item.material).filter(Boolean) as string[])];
 
     return (
       <CatalogPageClient 
-        initialData={processedData} 
+        initialData={products} // Passer les produits de Firestore
         category={category}
         brand={brand}
         types={types}
@@ -93,5 +93,7 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
   }
   
   // For all other pages (including Projects)
+  const rawCategoryData = await getCategoryData(category.Url);
+  const processedData = rawCategoryData.map(processGalleryLinks);
   return <DefaultPageLayout category={category} brand={brand} initialData={processedData} brands={brands} />;
 }

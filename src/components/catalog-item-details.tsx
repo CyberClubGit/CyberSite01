@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -26,11 +27,11 @@ import { cn } from '@/lib/utils';
 import { ScrambleTitle } from './ScrambleTitle';
 import { InteractivePanel } from './interactive-panel';
 
-
-type ProcessedItem = ReturnType<typeof import('@/lib/sheets').processGalleryLinks>;
+// Le type d'item vient maintenant de Firestore
+type CatalogItem = import('@/lib/firestore').Product & { displayImageUrl?: string | null };
 
 interface CatalogItemDetailsProps {
-  item: ProcessedItem;
+  item: CatalogItem;
 }
 
 interface ImageViewerState {
@@ -100,7 +101,7 @@ const ImageGallery: React.FC<{ images: string[], onImageClick: (index: number) =
   );
 };
 
-const TechDetailItem: React.FC<{ icon: React.ElementType; label: string; value: string | undefined }> = ({ icon: Icon, label, value }) => {
+const TechDetailItem: React.FC<{ icon: React.ElementType; label: string; value: string | undefined | null }> = ({ icon: Icon, label, value }) => {
   if (!value) return null;
   return (
     <div className="flex items-start gap-3">
@@ -127,22 +128,22 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     setImageViewer(prev => ({ ...prev, selectedIndex: (prev.selectedIndex - 1 + prev.images.length) % prev.images.length }));
   };
 
-  const hasGallery = item.galleryUrls && item.galleryUrls.length > 0;
-  const has3DRenders = item.threeDRenderUrls && item.threeDRenderUrls.length > 0;
-  const hasPackaging = item.packagingUrls && item.packagingUrls.length > 0;
+  const hasGallery = item.images && item.images.length > 0;
+  
+  // Utiliser les champs de metadata de Firestore
+  const stlUrl = item.metadata?.stl_url;
 
   const galleryTabs = [
-    { name: 'Galerie', icon: Images, content: hasGallery ? <ImageGallery images={item.galleryUrls} onImageClick={(index) => openImageViewer(item.galleryUrls, index)} /> : null, available: hasGallery },
-    { name: 'Rendus 3D', icon: Cuboid, content: has3DRenders ? <ImageGallery images={item.threeDRenderUrls} onImageClick={(index) => openImageViewer(item.threeDRenderUrls, index)} /> : null, available: has3DRenders },
-    { name: 'Packaging', icon: Package, content: hasPackaging ? <ImageGallery images={item.packagingUrls} onImageClick={(index) => openImageViewer(item.packagingUrls, index)} /> : null, available: hasPackaging },
+    { name: 'Galerie', icon: Images, content: hasGallery ? <ImageGallery images={item.images} onImageClick={(index) => openImageViewer(item.images, index)} /> : null, available: hasGallery },
+    // Les onglets 3D Renders et Packaging ne sont plus disponibles directement,
+    // ils sont inclus dans la galerie principale via le Google Sheet.
   ].filter(tab => tab.available);
 
   const techDetails = [
-    { icon: Ruler, label: 'Dimension', value: item.Dimension },
-    { icon: Scale, label: 'Weight', value: item.Weight },
-    { icon: Layers, label: 'Material', value: item.Material },
-    { icon: Cpu, label: 'Machine', value: item.Machine },
-    { icon: SquareCode, label: 'Software', value: item.Software },
+    // Les détails techniques ne sont plus dans le modèle Firestore de base,
+    // mais on garde les champs pour l'exemple. Ils viendront de `item.type`, `item.material`, etc.
+    { icon: Layers, label: 'Material', value: item.material },
+    // On pourrait ajouter d'autres champs de `metadata` ici si nécessaire
   ].filter(detail => detail.value);
 
   const descriptionAndTechSection = (
@@ -190,7 +191,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
         <div className="relative w-fit -mb-px z-10">
             <div className="relative -mb-px rounded-t-lg border-x border-t p-3 pr-6 transition-colors duration-200 border-border/80 bg-background/80 backdrop-blur-sm text-foreground shadow-sm">
                 <ScrambleTitle
-                    text={item.title}
+                    text={item.name}
                     as="h2"
                     className="text-2xl font-headline font-bold text-primary flex-shrink-0"
                 />
@@ -227,7 +228,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
 
             <div className="lg:w-1/2 w-full flex flex-col gap-6">
               <InteractivePanel className="flex-1 min-h-0">
-                <ViewerPanel modelUrl={item.stlUrl} />
+                <ViewerPanel modelUrl={stlUrl} />
               </InteractivePanel>
               <div className="flex-shrink-0">
                 {descriptionAndTechSection}

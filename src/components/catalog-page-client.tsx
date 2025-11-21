@@ -4,7 +4,6 @@
 import { useState, useMemo } from 'react';
 import type { Brand, Category } from '@/lib/sheets';
 import { filterItemsByBrandActivity } from '@/lib/activity-filter';
-import { processGalleryLinks } from '@/lib/sheets';
 import Image from 'next/image';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,11 +17,13 @@ import { CatalogItemDetails } from './catalog-item-details';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/hooks/useFavorites';
 import { Heart } from 'lucide-react';
+import type { Product } from '@/lib/firestore'; // Importer le type Product
 
-type ProcessedItem = ReturnType<typeof processGalleryLinks>;
+// Le type des données initiales est maintenant `Product`
+type CatalogItem = Product & { displayImageUrl?: string | null };
 
 interface CatalogPageClientProps {
-  initialData: ProcessedItem[];
+  initialData: Product[];
   category: Category;
   brand?: Brand;
   types: string[];
@@ -32,7 +33,7 @@ interface CatalogPageClientProps {
 export function CatalogPageClient({ initialData, category, brand, types, materials }: CatalogPageClientProps) {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
-  const [selectedItem, setSelectedItem] = useState<ProcessedItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<CatalogItem | null>(null);
 
   const { user } = useAuth();
   const { favorites, toggleFavorite } = useFavorites(user?.uid);
@@ -45,28 +46,23 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   };
 
   const filteredData = useMemo(() => {
+    // Les données de Firestore ont des noms de champs différents
     const brandFiltered = filterItemsByBrandActivity(initialData, brand?.Brand);
     return brandFiltered.filter(item => {
-      const typeMatch = selectedTypes.length === 0 || (item.Type && selectedTypes.includes(item.Type));
-      const materialMatch = selectedMaterials.length === 0 || (item.Material && selectedMaterials.includes(item.Material));
+      const typeMatch = selectedTypes.length === 0 || (item.type && selectedTypes.includes(item.type));
+      const materialMatch = selectedMaterials.length === 0 || (item.material && selectedMaterials.includes(item.material));
       return typeMatch && materialMatch;
     });
   }, [initialData, brand, selectedTypes, selectedMaterials]);
 
-  const finalData = useMemo(() => {
-    return filteredData.map(processGalleryLinks).map(item => {
-      let displayImageUrl = null;
-      if (item.coverUrl) {
-        displayImageUrl = item.coverUrl;
-      } else if (item.galleryUrls && item.galleryUrls.length > 0) {
-        displayImageUrl = item.galleryUrls[0];
-      } else if (item['Url Logo Png']) {
-        displayImageUrl = item['Url Logo Png'];
-      }
+  const finalData: CatalogItem[] = useMemo(() => {
+    return filteredData.map(item => {
+      // Les données de Firestore ont un champ `images` qui est un tableau
+      const displayImageUrl = item.images && item.images.length > 0 ? item.images[0] : null;
       return {
         ...item,
-        title: item.Title || item.Name || item.Item || 'Untitled',
-        description: item.Description || item.Content || '',
+        title: item.name || 'Untitled', // Le nom est `name` depuis Firestore
+        description: item.description || '', // La description est `description`
         displayImageUrl,
       };
     });
@@ -145,11 +141,11 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
             <main>
                 {finalData && finalData.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {finalData.map((item, index) => {
-                      const isFavorited = favorites.includes(item.title);
+                    {finalData.map((item) => {
+                      const isFavorited = favorites.includes(item.id); // Utiliser l'ID de Firestore
                       return (
                         <Card 
-                          key={index} 
+                          key={item.id} // Utiliser l'ID de Firestore
                           className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-background/80 backdrop-blur-sm group"
                         >
                            <div 
@@ -171,8 +167,8 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                                     variant="ghost"
                                     className="absolute top-2 right-2 rounded-full h-8 w-8 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
                                     onClick={(e) => {
-                                        e.stopPropagation(); // Prevent opening the dialog
-                                        toggleFavorite(item.title);
+                                        e.stopPropagation();
+                                        toggleFavorite(item.id); // Utiliser l'ID de Firestore
                                     }}
                                 >
                                     <Heart className={cn("h-5 w-5 transition-all", isFavorited ? "fill-red-500 text-red-500" : "fill-transparent")} />

@@ -23,6 +23,7 @@ export function useFavorites(userId: string | undefined) {
                 const userDocRef = doc(db, 'users', userId);
                 const userDoc = await getDoc(userDocRef);
                 if (userDoc.exists()) {
+                    // Les favoris sont stockés par ID de produit (qui est l'ID de document Firestore)
                     setFavorites(userDoc.data().favorites || []);
                 }
             } catch (error) {
@@ -35,30 +36,30 @@ export function useFavorites(userId: string | undefined) {
         fetchFavorites();
     }, [userId, db]);
 
-    const toggleFavorite = useCallback(async (itemId: string) => {
+    const toggleFavorite = useCallback(async (productId: string) => {
         if (!userId) {
             console.error("Cannot toggle favorite: User is not logged in.");
             return;
         };
 
         const userDocRef = doc(db, 'users', userId);
-        const isCurrentlyFavorite = favorites.includes(itemId);
+        const isCurrentlyFavorite = favorites.includes(productId);
 
         // Optimistic UI update
         setFavorites(prevFavorites =>
             isCurrentlyFavorite
-                ? prevFavorites.filter(id => id !== itemId)
-                : [...prevFavorites, itemId]
+                ? prevFavorites.filter(id => id !== productId)
+                : [...prevFavorites, productId]
         );
 
         try {
             if (isCurrentlyFavorite) {
                 await updateDoc(userDocRef, {
-                    favorites: arrayRemove(itemId)
+                    favorites: arrayRemove(productId)
                 });
             } else {
                 await updateDoc(userDocRef, {
-                    favorites: arrayUnion(itemId)
+                    favorites: arrayUnion(productId)
                 });
             }
         } catch (error) {
@@ -66,8 +67,8 @@ export function useFavorites(userId: string | undefined) {
             // Revert optimistic update on error
             setFavorites(prevFavorites =>
                 isCurrentlyFavorite
-                    ? [...prevFavorites, itemId]
-                    : prevFavorites.filter(id => id !== itemId)
+                    ? [...prevFavorites, productId]
+                    : prevFavorites.filter(id => id !== productId)
             );
         }
     }, [userId, db, favorites]);
