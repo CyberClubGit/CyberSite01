@@ -7,7 +7,7 @@
  *
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
-
+import "dotenv/config";
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import Stripe from "stripe";
@@ -58,7 +58,7 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
   
   if (!stripe) {
     stripe = new Stripe(stripeSecretKey.value(), {
-      apiVersion: "2024-06-20",
+      apiVersion: "2025-11-17.clover",
     });
   }
 
@@ -108,7 +108,7 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
         const firstImage = getFirstImage(product.Gallery);
 
         const stripeProductData = {
-            name: productTitle,
+            name: productTitle, // ✅ MAPPING CORRIGÉ ET VÉRIFIÉ
             description: product.Description,
             images: firstImage ? [firstImage] : [],
             active: true,
