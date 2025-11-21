@@ -37,6 +37,12 @@ Nous avons fait face à une série de pannes critiques. En voici les causes raci
 - **Problème :** L'ajout de guillemets inutiles autour de noms de propriétés simples (`'Name'`) dans une interface TypeScript a forcé l'utilisation de la notation `objet['propriété']`, cassant le code qui utilisait `objet.propriété`.
 - **Règle d'or :** Dans une interface TypeScript, les guillemets autour d'une propriété ne sont utilisés **QUE SI** le nom contient un espace ou un caractère spécial (ex: `'Url Sheet'`). Pour les noms simples, ne pas utiliser de guillemets.
 
+### Leçon n°6 : Conversion abusive des liens (L'erreur `STL` vs `Image`)
+- **Problème :** Le code de traitement des données (`src/lib/sheets.ts`) convertissait systématiquement tous les liens Google Drive en URL d'image directe (`lh3.googleusercontent.com/...`). Cela a cassé la visionneuse 3D, qui attendait l'URL de partage Google Drive originale (`drive.google.com/file/d/...`) pour télécharger le fichier `.stl`.
+- **Règle d'or :** Distinguer le traitement des liens par type de contenu.
+    - **Images (PNG, JPG) :** DOIVENT être converties en URL `lh3.googleusercontent.com` pour un affichage direct.
+    - **Fichiers (STL, PDF) :** DOIVENT conserver leur URL de partage originale. Les composants qui les utilisent (ex: `ViewerPanel`, `PdfThumbnail`) contiennent leur propre logique pour gérer ces liens spécifiques (via proxy CORS ou API).
+
 ---
 
 ## 3. Flux de Données et Affichage Correct des Éléments
