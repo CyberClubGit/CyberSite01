@@ -27,8 +27,8 @@ import { cn } from '@/lib/utils';
 import { ScrambleTitle } from './ScrambleTitle';
 import { InteractivePanel } from './interactive-panel';
 
-// Le type d'item vient maintenant de Firestore
-type CatalogItem = import('@/lib/firestore').Product;
+// The item type comes from the sheet processing
+type CatalogItem = ReturnType<typeof import('@/lib/sheets').processGalleryLinks>;
 
 interface CatalogItemDetailsProps {
   item: CatalogItem;
@@ -128,19 +128,21 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     setImageViewer(prev => ({ ...prev, selectedIndex: (prev.selectedIndex - 1 + prev.images.length) % prev.images.length }));
   };
 
-  const hasGallery = item.images && item.images.length > 0;
+  const hasGallery = item.galleryUrls && item.galleryUrls.length > 0;
   
-  // Correction: Utiliser les champs de metadata de Firestore
-  const stlUrl = item.metadata?.stl_url;
+  const stlUrl = item.stlUrl;
 
   const galleryTabs = [
-    { name: 'Galerie', icon: Images, content: hasGallery ? <ImageGallery images={item.images} onImageClick={(index) => openImageViewer(item.images, index)} /> : null, available: hasGallery },
+    { name: 'Galerie', icon: Images, content: hasGallery ? <ImageGallery images={item.galleryUrls} onImageClick={(index) => openImageViewer(item.galleryUrls, index)} /> : null, available: hasGallery },
   ].filter(tab => tab.available);
 
   const techDetails = [
-    // Correction: utiliser item.material et item.type venant de firestore
-    { icon: Layers, label: 'Material', value: item.material },
-    { icon: Cuboid, label: 'Type', value: item.type },
+    { icon: Layers, label: 'Material', value: item.Material },
+    { icon: Cuboid, label: 'Type', value: item.Type },
+    { icon: Scale, label: 'Weight', value: item.Weight },
+    { icon: Ruler, label: 'Dimensions', value: item.Dimensions },
+    { icon: Cpu, label: 'Software', value: item.Software },
+    { icon: SquareCode, label: 'Gcode', value: item.Gcode_config },
   ].filter(detail => detail.value);
 
   const descriptionAndTechSection = (
@@ -188,7 +190,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
         <div className="relative w-fit -mb-px z-10">
             <div className="relative -mb-px rounded-t-lg border-x border-t p-3 pr-6 transition-colors duration-200 border-border/80 bg-background/80 backdrop-blur-sm text-foreground shadow-sm">
                 <ScrambleTitle
-                    text={item.name}
+                    text={item.title}
                     as="h2"
                     className="text-2xl font-headline font-bold text-primary flex-shrink-0"
                 />

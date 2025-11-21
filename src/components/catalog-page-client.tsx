@@ -17,12 +17,21 @@ import { CatalogItemDetails } from './catalog-item-details';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/hooks/useFavorites';
 import { Heart } from 'lucide-react';
-import type { Product } from '@/lib/firestore';
 
-type CatalogItem = Product & { displayImageUrl?: string | null };
+// The data is now coming from Google Sheets again, so we can use a more generic type
+type CatalogItem = {
+  id: string;
+  title: string;
+  description: string;
+  displayImageUrl?: string | null;
+  Type?: string;
+  Material?: string;
+  [key: string]: any; // Allow other properties from the sheet
+};
+
 
 interface CatalogPageClientProps {
-  initialData: Product[];
+  initialData: any[]; // Data comes from processGalleryLinks
   category: Category;
   brand?: Brand;
   types: string[];
@@ -35,6 +44,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   const [selectedItem, setSelectedItem] = useState<CatalogItem | null>(null);
 
   const { user } = useAuth();
+  // Favorites will use the 'ID' column from the sheet
   const { favorites, toggleFavorite } = useFavorites(user?.uid);
 
   const handleFilterChange = (filterType: 'type' | 'material', value: string) => {
@@ -45,23 +55,22 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   };
 
   const filteredData = useMemo(() => {
-    // We already have the initial data, so we just filter it.
     const brandFiltered = filterItemsByBrandActivity(initialData, brand?.Brand);
     return brandFiltered.filter(item => {
-      const typeMatch = selectedTypes.length === 0 || (item.type && selectedTypes.includes(item.type));
-      const materialMatch = selectedMaterials.length === 0 || (item.material && selectedMaterials.includes(item.material));
+      const typeMatch = selectedTypes.length === 0 || (item.Type && selectedTypes.includes(item.Type));
+      const materialMatch = selectedMaterials.length === 0 || (item.Material && selectedMaterials.includes(item.Material));
       return typeMatch && materialMatch;
     });
   }, [initialData, brand, selectedTypes, selectedMaterials]);
 
   const finalData: CatalogItem[] = useMemo(() => {
     return filteredData.map(item => {
-      const displayImageUrl = item.images && item.images.length > 0 ? item.images[0] : null;
+      // processGalleryLinks from sheets.ts already gives us what we need
       return {
         ...item,
-        title: item.name || 'Untitled', 
-        description: item.description || '',
-        displayImageUrl,
+        id: item.ID, // Make sure the ID field is explicitly set for the key and favorites
+        title: item.title,
+        description: item.description,
       };
     });
   }, [filteredData]);
@@ -194,7 +203,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
       <Dialog open={!!selectedItem} onOpenChange={(isOpen) => !isOpen && setSelectedItem(null)}>
         <DialogContent className="max-w-6xl w-full h-[90vh] p-4 border-0 bg-background/30 backdrop-blur-sm flex flex-col overflow-hidden">
           <DialogHeader className="sr-only">
-            <DialogTitle>{selectedItem?.name || 'Item Details'}</DialogTitle>
+            <DialogTitle>{selectedItem?.title || 'Item Details'}</DialogTitle>
             <DialogDescription>
               Detailed view of the selected catalog item.
             </DialogDescription>

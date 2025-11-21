@@ -74,16 +74,18 @@ export default async function CatchAllPage({ params }: { params: { slug:string[]
     return <HomePageClient category={category} brand={brand} />;
   }
 
-  // Specific layout for the Catalog page
+  // Specific layout for the Catalog page - REVERTED TO GOOGLE SHEETS
   if (category.Url.toLowerCase() === 'catalog') {
-    const products = await getProducts(); // Fetch data on the server
-    const types = [...new Set(products.map(p => p.type).filter(Boolean) as string[])];
-    const materials = [...new Set(products.map(p => p.material).filter(Boolean) as string[])];
+    const rawCategoryData = await getCategoryData(category.Url);
+    const processedData = rawCategoryData.map(processGalleryLinks);
     
-    // Pass the fetched data as a prop
+    // Extract filters from the raw sheet data
+    const types = [...new Set(rawCategoryData.map(p => p.Type).filter(Boolean) as string[])];
+    const materials = [...new Set(rawCategoryData.map(p => p.Material).filter(Boolean) as string[])];
+    
     return (
       <CatalogPageClient 
-        initialData={products}
+        initialData={processedData}
         category={category}
         brand={brand}
         types={types}
