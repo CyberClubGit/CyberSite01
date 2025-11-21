@@ -3,6 +3,7 @@ import { getBrands, getCategories, getCategoryData, processGalleryLinks, type Br
 import { notFound } from 'next/navigation';
 import { CatalogPageClient } from '@/components/catalog-page-client';
 import DefaultPageLayout from '@/components/default-page-layout';
+import { HomePageClient } from '@/components/home-page-client';
 
 export default async function CatchAllPage({ params }: { params: { slug: string[] } }) {
   const slug = params.slug || [];
@@ -29,8 +30,13 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
   const rawCategoryData = await getCategoryData(category.Url);
   const processedData = rawCategoryData.map(processGalleryLinks);
   
+  // Specific layout for the Home page
+  if (category.Url.toLowerCase() === 'home') {
+    return <HomePageClient category={category} brand={brand} />;
+  }
+
+  // Specific layout for the Catalog page
   if (category.Url.toLowerCase() === 'catalog') {
-    // Logique spécifique pour la page Catalogue
     const types = [...new Set(rawCategoryData.map(item => item.Type).filter(Boolean) as string[])];
     const materials = [...new Set(rawCategoryData.map(item => item.Material).filter(Boolean) as string[])];
 
@@ -45,6 +51,6 @@ export default async function CatchAllPage({ params }: { params: { slug: string[
     );
   }
   
-  // Pour toutes les autres pages (y compris Projects)
+  // For all other pages (including Projects)
   return <DefaultPageLayout category={category} brand={brand} initialData={processedData} brands={brands} />;
 }
