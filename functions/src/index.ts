@@ -1,3 +1,4 @@
+
 /**
  * Import function triggers from their respective submodules:
  *
@@ -20,10 +21,8 @@ const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 admin.initializeApp();
 const db = admin.firestore();
 
-// Initialize Stripe with secret key from Firebase Functions config
-const stripe = new Stripe(stripeSecretKey.value(), {
-  apiVersion: "2024-06-20",
-});
+// Initialize Stripe with secret key
+let stripe: Stripe;
 
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=928586250&single=true&output=csv";
 
@@ -56,6 +55,12 @@ function getFirstImage(galleryStr: string): string | null {
 
 export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).region("us-central1").https.onRequest(async (req, res) => {
   functions.logger.info("Starting product synchronization from Google Sheet.", {structuredData: true});
+  
+  if (!stripe) {
+    stripe = new Stripe(stripeSecretKey.value(), {
+      apiVersion: "2025-11-17.clover",
+    });
+  }
 
   const summary = {
     success: [] as string[],
@@ -102,38 +107,29 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
         functions.logger.log(`Processing Stripe product: ${productTitle} (ID: ${productId})`);
         const firstImage = getFirstImage(product.Gallery);
 
-        const stripeProduct = await stripe.products.create({
-          id: productId,
-          name: productTitle,
-          description: product.Description,
-          images: firstImage ? [firstImage] : [],
-          active: true,
-          metadata: {
-            type: product.Type,
-            style: product.Style,
-            material: product.Material,
-            activity: product.Activity,
-            stl_url: product.Stl,
-            sheet_id: productId,
-          },
-        }).catch(async (error: any) => {
-          // Si le produit existe déjà (code: 'resource_already_exists'), on le met à jour
-          if (error.code === "resource_already_exists") {
-            functions.logger.log(`Product ${productId} already exists in Stripe, updating...`);
-            return await stripe.products.update(productId, {
-              name: productTitle,
-              description: product.Description,
-              images: firstImage ? [firstImage] : [],
-              active: true,
-              metadata: {
+        const stripeProductData = {
+            name: productTitle,
+            description: product.Description,
+            images: firstImage ? [firstImage] : [],
+            active: true,
+            metadata: {
                 type: product.Type,
                 style: product.Style,
                 material: product.Material,
                 activity: product.Activity,
                 stl_url: product.Stl,
                 sheet_id: productId,
-              },
-            });
+            },
+        };
+
+        const stripeProduct = await stripe.products.create({
+          id: productId,
+          ...stripeProductData
+        }).catch(async (error: any) => {
+          // Si le produit existe déjà (code: 'resource_already_exists'), on le met à jour
+          if (error.code === "resource_already_exists") {
+            functions.logger.log(`Product ${productId} already exists in Stripe, updating...`);
+            return await stripe.products.update(productId, stripeProductData);
           }
           throw error; // Renvoyer les autres erreurs
         });

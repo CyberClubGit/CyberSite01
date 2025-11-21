@@ -1,3 +1,4 @@
+
 "use strict";
 /**
  * Import function triggers from their respective submodules:
@@ -82,7 +83,7 @@ exports.syncProductsFromSheet = functions.runWith({ secrets: [stripeSecretKey] }
     functions.logger.info("Starting product synchronization from Google Sheet.", { structuredData: true });
     if (!stripe) {
         stripe = new stripe_1.default(stripeSecretKey.value(), {
-            apiVersion: "2024-06-20",
+            apiVersion: "2025-11-17.clover",
         });
     }
     const summary = {
