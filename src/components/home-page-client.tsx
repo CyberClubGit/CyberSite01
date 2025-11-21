@@ -17,9 +17,9 @@ export function HomePageClient({ category, brand }: HomePageClientProps) {
       {/* Section 1: Hero with Video Background */}
       <div className="relative h-screen flex flex-col justify-center items-center text-center p-4">
         {category.Background && <VideoBackground src={category.Background} />}
-        <div className="relative z-10">
+        <div className="relative z-10 bg-background/20 backdrop-blur-sm p-8 rounded-lg">
           <h1 className="text-4xl font-headline font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl/none">
-            <span className="block text-2xl sm:text-3xl md:text-4xl font-light text-muted-foreground">Welcome to</span>
+            <span className="block text-2xl sm:text-3xl md:text-4xl font-light text-muted-foreground tracking-widest">Welcome to</span>
             <span className="capitalize">{brandName}</span>
           </h1>
         </div>
