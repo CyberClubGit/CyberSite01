@@ -45,6 +45,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   };
 
   const filteredData = useMemo(() => {
+    // We already have the initial data, so we just filter it.
     const brandFiltered = filterItemsByBrandActivity(initialData, brand?.Brand);
     return brandFiltered.filter(item => {
       const typeMatch = selectedTypes.length === 0 || (item.type && selectedTypes.includes(item.type));

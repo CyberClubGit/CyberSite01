@@ -76,10 +76,11 @@ export default async function CatchAllPage({ params }: { params: { slug:string[]
 
   // Specific layout for the Catalog page
   if (category.Url.toLowerCase() === 'catalog') {
-    const products = await getProducts();
+    const products = await getProducts(); // Fetch data on the server
     const types = [...new Set(products.map(p => p.type).filter(Boolean) as string[])];
     const materials = [...new Set(products.map(p => p.material).filter(Boolean) as string[])];
     
+    // Pass the fetched data as a prop
     return (
       <CatalogPageClient 
         initialData={products}
