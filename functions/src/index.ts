@@ -12,13 +12,16 @@ import * as admin from "firebase-admin";
 import Stripe from "stripe";
 import fetch from "node-fetch";
 import Papa from "papaparse";
+import { defineSecret } from "firebase-functions/params";
+
+const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 const db = admin.firestore();
 
 // Initialize Stripe with secret key from Firebase Functions config
-const stripe = new Stripe(functions.config().stripe.secret_key, {
+const stripe = new Stripe(stripeSecretKey.value(), {
   apiVersion: "2024-06-20",
 });
 
@@ -51,7 +54,7 @@ function getFirstImage(galleryStr: string): string | null {
 }
 // #endregion
 
-export const syncProductsFromSheet = functions.region("us-central1").https.onRequest(async (req, res) => {
+export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).region("us-central1").https.onRequest(async (req, res) => {
   functions.logger.info("Starting product synchronization from Google Sheet.", {structuredData: true});
 
   const summary = {
@@ -121,6 +124,7 @@ export const syncProductsFromSheet = functions.region("us-central1").https.onReq
               name: productTitle,
               description: product.Description,
               images: firstImage ? [firstImage] : [],
+              active: true,
               metadata: {
                 type: product.Type,
                 style: product.Style,
