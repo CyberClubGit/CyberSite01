@@ -6,10 +6,11 @@ import { Badge } from './ui/badge';
 import { ViewerPanel } from './viewer-panel';
 import { ScrollArea } from './ui/scroll-area';
 import Image from 'next/image';
-import { Images, ExternalLink, X, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Images, ExternalLink, X, ArrowLeft, ArrowRight, FileText, Wrench } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from './ui/button';
-import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 type ProcessedItem = ReturnType<typeof import('@/lib/sheets').processGalleryLinks>;
 
@@ -85,13 +86,30 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
                   </div>
                 )}
 
-                {/* Description Section */}
-                <div className="space-y-4">
-                  <h3 className="font-headline text-lg font-semibold">Description</h3>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {item.description || "No description available."}
-                  </p>
-                </div>
+                {/* Tabs Section */}
+                <Tabs defaultValue="description" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="description">
+                        <FileText className="mr-2 h-4 w-4" />
+                        Description
+                    </TabsTrigger>
+                    <TabsTrigger value="tech">
+                        <Wrench className="mr-2 h-4 w-4" />
+                        Détails Techniques
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="description" className="mt-4 p-4 border rounded-md">
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {item.description || "No description available."}
+                    </p>
+                  </TabsContent>
+                  <TabsContent value="tech" className="mt-4 p-4 border rounded-md">
+                    <p className="text-sm text-muted-foreground">
+                      Détails techniques à venir.
+                    </p>
+                  </TabsContent>
+                </Tabs>
+
               </div>
             </ScrollArea>
           </div>
