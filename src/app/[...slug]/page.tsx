@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation';
 import { CatalogPageClient } from '@/components/catalog-page-client';
 import DefaultPageLayout from '@/components/default-page-layout';
 import { HomePageClient } from '@/components/home-page-client';
-import { getProducts } from '@/lib/firestore';
 
 export async function generateStaticParams() {
   const categories = await getCategories();
@@ -74,10 +73,21 @@ export default async function CatchAllPage({ params }: { params: { slug:string[]
     return <HomePageClient category={category} brand={brand} />;
   }
 
-  // Specific layout for the Catalog page - REVERTED TO GOOGLE SHEETS
+  // Specific layout for the Catalog page - Data source from Google Sheets
   if (category.Url.toLowerCase() === 'catalog') {
     const rawCategoryData = await getCategoryData(category.Url);
-    const processedData = rawCategoryData.map(processGalleryLinks);
+    
+    // Server-side data processing to ensure data integrity
+    const processedData = rawCategoryData.map(item => {
+      const processedItem = processGalleryLinks(item);
+      return {
+        ...processedItem,
+        // ** THE FIX **: Ensure ID is correctly named and passed.
+        // The client component expects 'ID' in uppercase.
+        ID: item.ID || '', 
+        title: processedItem.title, // Ensure title is standardized
+      };
+    });
     
     // Extract filters from the raw sheet data
     const types = [...new Set(rawCategoryData.map(p => p.Type).filter(Boolean) as string[])];
