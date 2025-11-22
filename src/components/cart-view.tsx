@@ -13,14 +13,16 @@ import { useRouter } from 'next/navigation';
 
 export function CartView() {
   const { cart, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
-  const { user } = useAuth();
+  const auth = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const firebaseApp = useFirebaseApp();
   const router = useRouter();
 
   const handleSendOrder = async () => {
-    if (!user) {
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) {
       setError("Veuillez vous connecter pour envoyer une commande.");
       router.push('/auth/signin');
       return;
