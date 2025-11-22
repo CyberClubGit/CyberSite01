@@ -11,44 +11,11 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useFirebaseApp, useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
 
-const DebugInfoBox = ({ loading, error, dataSent }: { loading: boolean; error: string | null; dataSent: any }) => {
-    if (process.env.NODE_ENV !== 'development') {
-        return null;
-    }
-
-    return (
-        <div className="mt-4 p-4 bg-muted/50 border border-dashed rounded-lg text-sm">
-            <h4 className="font-bold font-mono">Debug Info</h4>
-            <div className="mt-2 space-y-2">
-                <p><span className="font-semibold">Status:</span> {loading ? 'Chargement...' : error ? <span className="text-destructive">Erreur</span> : 'Inactif'}</p>
-                {dataSent && (
-                    <div>
-                        <p className="font-semibold">Données envoyées à la fonction :</p>
-                        <pre className="text-xs bg-background p-2 rounded-md overflow-x-auto">
-                            {JSON.stringify(dataSent, null, 2)}
-                        </pre>
-                    </div>
-                )}
-                {error && (
-                    <div>
-                        <p className="font-semibold text-destructive">Erreur détaillée reçue :</p>
-                        <pre className="text-xs bg-background p-2 rounded-md text-destructive whitespace-pre-wrap">
-                            {error}
-                        </pre>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
-
-
 export function CartView() {
   const { cart, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dataSent, setDataSent] = useState<any>(null);
   const firebaseApp = useFirebaseApp();
   const router = useRouter();
 
@@ -61,7 +28,6 @@ export function CartView() {
     
     setLoading(true);
     setError(null);
-    setDataSent(null);
 
     const items = cart.map(item => ({ 
       id: item.id, 
@@ -71,8 +37,6 @@ export function CartView() {
       quantity: item.quantity 
     }));
     
-    setDataSent(items);
-
     try {
       const functions = getFunctions(firebaseApp, 'us-central1');
       const sendOrderEmail = httpsCallable(functions, 'sendOrderEmail');
@@ -163,7 +127,12 @@ export function CartView() {
             </>
           )}
         </Button>
-        <DebugInfoBox loading={loading} error={error} dataSent={dataSent} />
+        {error && (
+            <div className="mt-4 p-4 bg-destructive/10 text-destructive text-sm rounded-lg">
+                <p className="font-bold">Erreur lors de l'envoi</p>
+                <p>{error}</p>
+            </div>
+        )}
       </div>
     </div>
   );
