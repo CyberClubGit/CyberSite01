@@ -57,7 +57,7 @@ function getFirstImage(galleryStr: string): string | null {
 }
 // #endregion
 
-export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).region("us-central1").https.onCall(async (data, context) => {
+export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).region("us-central1").https.onRequest(async (req, res) => {
   functions.logger.info("Starting product synchronization from Google Sheet.", {structuredData: true});
   
   ensureStripeIsInitialized();
@@ -188,14 +188,17 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
     }
 
     functions.logger.info("Synchronization finished.", summary);
-    return {
+    res.status(200).json({
       success: true,
       message: `Synchronization complete. Processed ${products.length} rows.`,
       results: summary,
-    };
+    });
   } catch (error: any) {
     functions.logger.error("Fatal error during synchronization:", error);
-    throw new functions.https.HttpsError('internal', `Synchronization failed: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: `Synchronization failed: ${error.message}`,
+    });
   }
 });
 
@@ -210,7 +213,7 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
   const line_items = [];
 
   for (const item of data.items) {
-    if (!item.id || !item.quantity || item.id.includes('#NAME?')) {
+    if (!item.id || item.id.includes('#NAME?')) {
         functions.logger.warn(`Invalid or missing ID for item in cart: ${item.id}. Skipping.`);
         continue;
     }
