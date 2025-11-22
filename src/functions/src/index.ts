@@ -63,14 +63,14 @@ function getFirstImage(galleryStr: string): string | null {
 // #endregion
 
 export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).https.onRequest(async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  if (req.method === 'OPTIONS') {
-      res.set('Access-Control-Allow-Methods', 'GET, POST');
-      res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-      res.set('Access-Control-Max-Age', '3600');
-      res.status(204).send('');
-      return;
-  }
+    res.set('Access-Control-Allow-Origin', '*');
+    if (req.method === 'OPTIONS') {
+        res.set('Access-Control-Allow-Methods', 'GET, POST');
+        res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.set('Access-Control-Max-Age', '3600');
+        res.status(204).send('');
+        return;
+    }
     
   functions.logger.info("Starting product synchronization from Google Sheet.");
   
@@ -98,64 +98,82 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
     const products = parsed.data as any[];
 
     for (const product of products) {
-      const productId = product.ID?.trim();
+      const sheetId = product.ID?.trim();
       const productTitle = product.Title?.trim();
 
-      if (!productId || !productTitle || productId.includes('#NAME?')) {
+      if (!sheetId || !productTitle || sheetId.includes('#NAME?')) {
         summary.skipped.push(`Product with invalid ID or Title: ${JSON.stringify(product)}`);
         continue;
       }
       
       const pricePrint = cleanPrice(product.Price_Print);
-
       if (pricePrint === 0) {
-        summary.skipped.push(`${productTitle} (ID: ${productId}) - No valid 'Price_Print'.`);
+        summary.skipped.push(`${productTitle} (ID: ${sheetId}) - No valid 'Price_Print'.`);
         continue;
       }
 
       try {
         const firstImage = getFirstImage(product.Gallery);
 
-        const stripeProductData: Stripe.ProductUpdateParams = {
+        const stripeProductData = {
             name: productTitle,
             description: product.Description,
             images: firstImage ? [firstImage] : [],
             active: true,
             metadata: {
-                sheet_id: productId,
+                sheet_id: sheetId,
             },
         };
         
-        let existingProduct: Stripe.Product | null = null;
-        try {
-            existingProduct = await stripe.products.retrieve(productId);
-        } catch(e: any) {
-            if (e.code !== 'resource_missing') throw e;
-        }
+        const existingProducts = await stripe.products.search({
+            query: `metadata['sheet_id']:'${sheetId}'`,
+            limit: 1
+        });
+        
+        let stripeProduct: Stripe.Product;
 
-        if (existingProduct) {
-            await stripe.products.update(productId, stripeProductData);
+        if (existingProducts.data.length > 0) {
+            stripeProduct = await stripe.products.update(existingProducts.data[0].id, stripeProductData);
             summary.updated.push(productTitle);
         } else {
-            await stripe.products.create({ id: productId, ...stripeProductData });
+            stripeProduct = await stripe.products.create(stripeProductData);
             summary.created.push(productTitle);
         }
-
-        const existingPrices = await stripe.prices.list({ product: productId, active: true });
+        
+        const productDocRef = db.collection("products").doc(stripeProduct.id);
+        
+        await productDocRef.set({
+          name: stripeProduct.name,
+          description: stripeProduct.description,
+          images: stripeProduct.images,
+          active: stripeProduct.active,
+          metadata: { sheet_id: sheetId }
+        });
+        
+        const existingPrices = await stripe.prices.list({ product: stripeProduct.id, active: true });
         for (const price of existingPrices.data) {
             await stripe.prices.update(price.id, { active: false });
         }
         
-        await stripe.prices.create({
-          product: productId,
+        const newPrice = await stripe.prices.create({
+          product: stripeProduct.id,
           unit_amount: pricePrint,
           currency: "eur",
           nickname: "Print Price",
         });
 
+        const pricesCollectionRef = productDocRef.collection("prices");
+        await pricesCollectionRef.doc(newPrice.id).set({
+            active: newPrice.active,
+            currency: newPrice.currency,
+            description: newPrice.nickname,
+            unit_amount: newPrice.unit_amount,
+        });
+
+
       } catch (error: any) {
-        functions.logger.error(`Error processing product ${productId}:`, error.message);
-        summary.errors.push({id: productId, error: error.message});
+        functions.logger.error(`Error processing product ${sheetId}:`, error.message);
+        summary.errors.push({id: sheetId, error: error.message});
       }
     }
 
@@ -179,6 +197,7 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
   try {
     ensureStripeIsInitialized();
   } catch (error: any) {
+    functions.logger.error("Stripe initialization failed in createCheckoutSession:", error);
     throw new functions.https.HttpsError('internal', error.message);
   }
 
@@ -190,13 +209,23 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
 
   for (const item of data.items) {
     if (!item.id || item.id.includes('#NAME?')) {
-        functions.logger.warn(`Invalid or missing ID for item in cart: ${item.id}. Skipping.`);
+        functions.logger.warn(`Invalid or missing sheet_id for item in cart: ${item.id}. Skipping.`);
         continue;
     }
     
     try {
-      // Step 1: Retrieve the Stripe product directly by its ID (which is the sheet ID)
-      const stripeProduct = await stripe.products.retrieve(item.id);
+      // Step 1: Search for the product in Stripe using the sheet_id metadata
+      const products = await stripe.products.search({
+        query: `metadata['sheet_id']:'${item.id}'`,
+        limit: 1
+      });
+
+      if (products.data.length === 0) {
+        functions.logger.error(`Product with sheet_id '${item.id}' not found in Stripe. Please re-sync products.`);
+        throw new functions.https.HttpsError('not-found', `Product with ID '${item.id}' could not be found. Please contact support.`);
+      }
+      
+      const stripeProduct = products.data[0];
 
       // Step 2: List active prices for that product
       const prices = await stripe.prices.list({
@@ -206,7 +235,7 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
       });
 
       if (prices.data.length === 0) {
-          functions.logger.error(`No active price found for Stripe product ID: ${stripeProduct.id}`);
+          functions.logger.error(`No active price found for Stripe product ID: ${stripeProduct.id} (sheet_id: ${item.id})`);
           throw new functions.https.HttpsError('not-found', `A price for '${stripeProduct.name}' could not be found. Please contact support.`);
       }
 
@@ -216,10 +245,8 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
       });
 
     } catch (error: any) {
-       functions.logger.error(`Failed to process item with ID ${item.id}:`, error);
-       if (error.code === 'resource_missing') {
-           throw new functions.https.HttpsError('not-found', `Product with ID '${item.id}' not found in our payment system. Please re-sync products.`);
-       }
+       functions.logger.error(`Failed to process item with sheet_id ${item.id}:`, error);
+       if (error instanceof functions.https.HttpsError) throw error; // Re-throw specific errors
        throw new functions.https.HttpsError('internal', `An error occurred while processing item ${item.id}.`);
     }
   }
