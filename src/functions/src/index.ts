@@ -41,8 +41,14 @@ function ensureStripeIsInitialized() {
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=928586250&single=true&output=csv";
 
 // #region Fonctions utilitaires
+/**
+ * Nettoie une chaîne de prix et la convertit en centimes.
+ * Gère les formats "22,4" et "10.00".
+ * @param priceStr - La chaîne de prix.
+ * @return Le prix en centimes, ou 0 si invalide.
+ */
 function cleanPrice(priceStr: string): number {
-  if (!priceStr || priceStr.trim() === "") return 0;
+  if (!priceStr || typeof priceStr !== 'string' || priceStr.trim() === "") return 0;
   const cleaned = priceStr.replace(",", ".");
   const price = parseFloat(cleaned);
   if (isNaN(price)) return 0;
@@ -60,7 +66,13 @@ function getFirstImage(galleryStr: string): string | null {
 export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).region("us-central1").https.onRequest(async (req, res) => {
   functions.logger.info("Starting product synchronization from Google Sheet.", {structuredData: true});
   
-  ensureStripeIsInitialized();
+  try {
+    ensureStripeIsInitialized();
+  } catch (error: any) {
+    functions.logger.error("Stripe initialization failed:", error);
+    res.status(500).json({ success: false, message: error.message });
+    return;
+  }
 
   const summary = {
     success: [] as string[],
@@ -89,12 +101,11 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
         summary.skipped.push(`Product with missing ID or Title: ${JSON.stringify(product)}`);
         continue;
       }
-
-      const priceModel = cleanPrice(product.Price_Model);
+      
       const pricePrint = cleanPrice(product.Price_Print);
 
-      if (priceModel === 0 && pricePrint === 0) {
-        summary.skipped.push(`${productTitle} (ID: ${productId}) - No valid price.`);
+      if (pricePrint === 0) {
+        summary.skipped.push(`${productTitle} (ID: ${productId}) - No valid 'Price_Print'.`);
         continue;
       }
 
@@ -135,12 +146,10 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
         
         const pricePromises: Promise<any>[] = [];
         
-        const pricePrintToUse = cleanPrice(product.Price_Print);
-
-        if (pricePrintToUse > 0) {
+        if (pricePrint > 0) {
           pricePromises.push(stripe.prices.create({
             product: stripeProduct.id,
-            unit_amount: pricePrintToUse,
+            unit_amount: pricePrint,
             currency: "eur",
             nickname: "Impression 3D",
             metadata: {type: "print"},
@@ -204,7 +213,11 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
 
 
 export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretKey] }).region('us-central1').https.onCall(async (data, context) => {
-  ensureStripeIsInitialized();
+  try {
+    ensureStripeIsInitialized();
+  } catch (error: any) {
+    throw new functions.https.HttpsError('internal', error.message);
+  }
 
   if (!Array.isArray(data.items) || data.items.length === 0) {
     throw new functions.https.HttpsError('invalid-argument', 'The function must be called with an array of "items".');
@@ -270,7 +283,7 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     const session = await stripe.checkout.sessions.create(sessionParams);
 
     if (!session.url) {
-      throw new functions.https.HttpsError('internal', 'Could not create a checkout session URL.');
+      throw new functions.https.GaxiosError('Could not create a checkout session URL.', {}, {} as any);
     }
 
     return { url: session.url };

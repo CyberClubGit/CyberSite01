@@ -27,7 +27,7 @@ type CatalogItem = {
   description: string;
   galleryUrls: string[];
   displayImageUrl: string | null;
-  Price_Print: number; // Price in cents
+  Price_Print: string; // Price is a string from the sheet
   [key: string]: any; // Allow other properties
 };
 
@@ -39,6 +39,16 @@ interface CatalogPageClientProps {
   types: string[];
   materials: string[];
 }
+
+// Utility to convert price string to cents
+function priceToCents(priceStr: string): number {
+  if (!priceStr || typeof priceStr !== 'string') return 0;
+  const cleaned = priceStr.replace(',', '.');
+  const price = parseFloat(cleaned);
+  if (isNaN(price)) return 0;
+  return Math.round(price * 100);
+}
+
 
 export function CatalogPageClient({ initialData, category, brand, types, materials }: CatalogPageClientProps) {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
@@ -75,11 +85,10 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   const handleAddToCart = (e: React.MouseEvent, item: CatalogItem) => {
     e.stopPropagation(); // Prevent opening the details dialog
     
-    // The Sheet ID is used here and must be valid
     addToCart({
       id: item.ID, 
       name: item.title,
-      price: item.Price_Print, // Price is already in cents
+      price: priceToCents(item.Price_Print), // Convert price to cents
       image: item.displayImageUrl || '',
       quantity: 1,
     });
