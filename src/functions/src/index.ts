@@ -14,11 +14,17 @@ import Stripe from "stripe";
 import fetch from "node-fetch";
 import Papa from "papaparse";
 import { defineSecret } from "firebase-functions/params";
+import { setGlobalOptions } from "firebase-functions/v2";
+
+// --- NEW: Set global options to allow public access to functions in this region
+setGlobalOptions({ region: "us-central1" });
 
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 
-// Initialize Firebase Admin SDK
-admin.initializeApp();
+// --- NEW: Safe initialization of Firebase Admin SDK
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
 const db = admin.firestore();
 
 // Initialize Stripe with secret key - lazily
@@ -47,7 +53,7 @@ const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQut
  * @param priceStr - La chaîne de prix.
  * @return Le prix en centimes, ou 0 si invalide.
  */
-function cleanPrice(priceStr: string): number {
+function cleanPrice(priceStr: string | undefined): number {
   if (!priceStr || typeof priceStr !== 'string' || priceStr.trim() === "") return 0;
   const cleaned = priceStr.replace(",", ".");
   const price = parseFloat(cleaned);
@@ -63,7 +69,17 @@ function getFirstImage(galleryStr: string): string | null {
 }
 // #endregion
 
-export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).region("us-central1").https.onRequest(async (req, res) => {
+export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).https.onRequest(async (req, res) => {
+  // --- NEW: Allow public access by handling CORS and preflight requests
+  res.set('Access-Control-Allow-Origin', '*');
+  if (req.method === 'OPTIONS') {
+      res.set('Access-Control-Allow-Methods', 'GET');
+      res.set('Access-Control-Allow-Headers', 'Content-Type');
+      res.set('Access-Control-Max-Age', '3600');
+      res.status(204).send('');
+      return;
+  }
+    
   functions.logger.info("Starting product synchronization from Google Sheet.", {structuredData: true});
   
   try {
@@ -212,7 +228,7 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
 });
 
 
-export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretKey] }).region('us-central1').https.onCall(async (data, context) => {
+export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretKey] }).https.onCall(async (data, context) => {
   try {
     ensureStripeIsInitialized();
   } catch (error: any) {
@@ -283,7 +299,7 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     const session = await stripe.checkout.sessions.create(sessionParams);
 
     if (!session.url) {
-      throw new functions.https.GaxiosError('Could not create a checkout session URL.', {}, {} as any);
+      throw new functions.https.HttpsError('internal', 'Could not create a checkout session URL.');
     }
 
     return { url: session.url };
