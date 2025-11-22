@@ -10,18 +10,13 @@
 import "dotenv/config";
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import { defineSecret, setGlobalOptions } from "firebase-functions/params";
 import { HttpsError } from "firebase-functions/v2/https";
-
-// Set global options for the region
-setGlobalOptions({ region: "us-central1" });
+import * as nodemailer from "nodemailer";
 
 // Safe initialization of Firebase Admin SDK
-// This ensures it's initialized only once per instance.
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
-
 
 // #region --- New Email Order Function ---
 
@@ -32,15 +27,15 @@ function formatItemsToHtml(items: any[]): string {
   const itemsHtml = items.map(item => `
     <tr>
       <td style="padding: 8px; border-bottom: 1px solid #ddd;">
-        <img src="${item.image}" alt="${item.name}" width="50" style="border-radius: 4px;">
+        <img src="${item.image}" alt="${item.name}" width="50" style="border-radius: 4px; vertical-align: middle;">
       </td>
-      <td style="padding: 8px; border-bottom: 1px solid #ddd;">
+      <td style="padding: 8px; border-bottom: 1px solid #ddd; vertical-align: middle;">
         ${item.name}<br>
         <small style="color: #555;">ID: ${item.id}</small>
       </td>
-      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(item.price / 100)}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format((item.price * item.quantity) / 100)}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center; vertical-align: middle;">${item.quantity}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right; vertical-align: middle;">${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(item.price / 100)}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right; vertical-align: middle;">${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format((item.price * item.quantity) / 100)}</td>
     </tr>
   `).join('');
 
@@ -72,50 +67,65 @@ function formatItemsToHtml(items: any[]): string {
 
 
 export const sendOrderEmail = functions.https.onCall(async (data, context) => {
-  functions.logger.info("--- Received new order to send by email ---");
+  functions.logger.info("--- Received new order to send by email using Nodemailer ---");
 
-  // Validate cart data first
+  // 1. Validate environment variables
+  const emailUserName = process.env.EMAIL_USERNAME;
+  const emailPassword = process.env.EMAIL_PASSWORD;
+
+  if (!emailUserName || !emailPassword) {
+      functions.logger.error("FATAL: EMAIL_USERNAME or EMAIL_PASSWORD is not set in .env file.");
+      throw new HttpsError('internal', 'La configuration du serveur de messagerie est manquante. Contactez l\'administrateur.');
+  }
+
+  // 2. Validate cart data
   if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
     functions.logger.error("Validation failed: 'items' is not a non-empty array.", data);
     throw new HttpsError('invalid-argument', 'La fonction doit être appelée avec un tableau "items" non vide.');
   }
 
-  try {
-    // Get a Firestore instance inside the function call for robustness
-    const db = admin.firestore();
+  // 3. Validate user authentication
+  if (!context.auth) {
+      throw new HttpsError('unauthenticated', 'La fonction doit être appelée par un utilisateur authentifié.');
+  }
 
-    const userEmail = context.auth?.token?.email || 'email.non.fourni@exemple.com';
-    const htmlBody = formatItemsToHtml(data.items);
-    const subject = `Nouvelle commande de ${userEmail}`;
-    const recipientEmail = "contact@cyber-club.net";
+  // 4. Prepare email content
+  const fromUserEmail = context.auth.token.email || 'email.non.fourni@exemple.com';
+  const htmlBody = formatItemsToHtml(data.items);
+  const subject = `Nouvelle commande de ${fromUserEmail}`;
+  const recipientEmail = "contact@cyber-club.net";
 
-    const mailEntry = {
-      to: [recipientEmail],
-      message: {
-        subject: subject,
-        html: htmlBody,
+  // 5. Configure Nodemailer transporter using Gmail
+  const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+          user: emailUserName,
+          pass: emailPassword,
       },
-    };
-    
-    functions.logger.info(`Attempting to queue email to '${recipientEmail}'...`);
-    
-    // This writes the email to the 'mail' collection.
-    // The "Trigger Email" Firebase Extension must be installed to process this queue.
-    await db.collection('mail').add(mailEntry);
-    
-    functions.logger.info(`Successfully queued order email to ${recipientEmail}`, { userEmail });
-    return { success: true, message: `Commande envoyée avec succès à ${recipientEmail}.` };
-    
+  });
+
+  const mailOptions = {
+      from: `CYBER CLUB <${emailUserName}>`, // L'expéditeur est votre compte authentifié
+      to: recipientEmail, // Le destinataire est votre adresse de contact
+      replyTo: fromUserEmail, // **LA CORRECTION CLÉ** : Permet de répondre directement au client
+      subject: subject,
+      html: htmlBody,
+  };
+
+  // 6. Send the email
+  try {
+      functions.logger.info(`Attempting to send email to '${recipientEmail}' with reply-to '${fromUserEmail}'...`);
+      await transporter.sendMail(mailOptions);
+      functions.logger.info(`Successfully sent order email to ${recipientEmail}`, { fromUserEmail });
+      return { success: true, message: `Commande envoyée avec succès à ${recipientEmail}.` };
   } catch (error: any) {
-    // This will catch any errors during the database write or any other logic
-    functions.logger.error("CRITICAL: A fatal error occurred in sendOrderEmail.", {
-        errorMessage: error.message,
-        errorDetails: error,
-        dataReceived: data, // Log the data that caused the error
-    });
-    
-    // Send a specific, helpful error message back to the client.
-    throw new HttpsError('internal', `Une erreur est survenue lors de la mise en file de l'e-mail. Cause: ${error.message}`);
+      functions.logger.error("CRITICAL: Nodemailer failed to send email.", {
+          errorMessage: error.message,
+          errorStack: error.stack,
+          dataReceived: data,
+      });
+      // Provide a clear error message back to the client
+      throw new HttpsError('internal', `Échec de l'envoi de l'e-mail. Cause: ${error.message}`);
   }
 });
 
@@ -123,10 +133,7 @@ export const sendOrderEmail = functions.https.onCall(async (data, context) => {
 
 
 // This is kept for reference, but can be removed if Stripe integration is abandoned.
-const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=928586250&single=true&output=csv";
-export const syncProductsFromSheet = functions.runWith({ secrets: [stripeSecretKey] }).https.onCall(async (data, context) => {
+export const syncProductsFromSheet = functions.https.onCall(async (data, context) => {
     functions.logger.warn("syncProductsFromSheet was called, but is deprecated.");
     return { success: true, message: "This function is deprecated." };
 });
-
