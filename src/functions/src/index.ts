@@ -13,6 +13,8 @@ import * as admin from "firebase-admin";
 import Stripe from "stripe";
 import { defineSecret, setGlobalOptions } from "firebase-functions/params";
 import { HttpsError } from "firebase-functions/v2/https";
+import fetch from "node-fetch";
+import Papa from "papaparse";
 
 // Set global options for the region
 setGlobalOptions({ region: "us-central1" });
@@ -23,6 +25,7 @@ const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
+const db = admin.firestore();
 
 // Lazily initialize Stripe
 let stripe: Stripe;
@@ -143,3 +146,142 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     throw new HttpsError('internal', `Erreur Stripe: ${error.message}`);
   }
 });
+
+
+// #region --- Sync Function ---
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=928586250&single=true&output=csv";
+
+function cleanPrice(priceStr: string): number {
+    if (!priceStr || priceStr.trim() === "") return 0;
+    const cleaned = priceStr.replace(",", ".");
+    const price = parseFloat(cleaned);
+    if (isNaN(price)) return 0;
+    return Math.round(price * 100);
+}
+
+function getFirstImage(galleryStr: string): string | null {
+    if (!galleryStr || galleryStr.trim() === "") return null;
+    const images = galleryStr.split(/[\r\n]+/).filter((url) => url.trim() !== "");
+    if (images.length === 0) return null;
+    return images[0].trim();
+}
+
+// Converted to an onCall function for secure client-side invocation
+export const syncProductsFromSheet = functions.runWith({ secrets: [stripeSecretKey] }).https.onCall(async (data, context) => {
+    // Optional: Add authentication check if needed in the future
+    // if (!context.auth) {
+    //     throw new HttpsError('unauthenticated', 'Vous devez être authentifié pour lancer la synchronisation.');
+    // }
+    
+    functions.logger.info("Starting product synchronization from Google Sheet...", { structuredData: true });
+    
+    try {
+        ensureStripeIsInitialized();
+    } catch (error: any) {
+        functions.logger.error("Stripe initialization failed:", error);
+        throw new HttpsError('internal', error.message);
+    }
+
+    const summary = {
+        processed: 0,
+        created: 0,
+        updated: 0,
+        skipped: 0,
+        errors: 0,
+        errorDetails: [] as { id?: string, title?: string, error: string }[],
+    };
+
+    try {
+        functions.logger.log("Fetching CSV from Google Sheet...");
+        const response = await fetch(SHEET_URL);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch Google Sheet: ${response.statusText}`);
+        }
+        const csvText = await response.text();
+        functions.logger.log("CSV fetched successfully.");
+
+        const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+        const products = parsed.data as any[];
+        functions.logger.log(`Parsed ${products.length} products from CSV.`);
+        summary.processed = products.length;
+
+        for (const product of products) {
+            const productId = product.ID?.trim();
+            const productTitle = product.Title?.trim();
+
+            if (!productId || !productTitle || productId.includes('#NAME?')) {
+                summary.skipped++;
+                summary.errorDetails.push({ id: productId, title: productTitle, error: "Missing or invalid ID/Title." });
+                continue;
+            }
+
+            const priceModel = cleanPrice(product.Price_Model);
+            const pricePrint = cleanPrice(product.Price_Print);
+
+            if (priceModel === 0 && pricePrint === 0) {
+                summary.skipped++;
+                continue;
+            }
+
+            try {
+                const firstImage = getFirstImage(product.Gallery);
+                const stripeProductData = {
+                    name: productTitle,
+                    description: product.Description,
+                    images: firstImage ? [firstImage] : [],
+                    active: true,
+                    metadata: { sheet_id: productId },
+                };
+
+                let stripeProduct: Stripe.Product;
+                const existingProducts = await stripe.products.search({ query: `metadata['sheet_id']:'${productId}'` });
+
+                if (existingProducts.data.length > 0) {
+                    stripeProduct = await stripe.products.update(existingProducts.data[0].id, stripeProductData);
+                    summary.updated++;
+                } else {
+                    stripeProduct = await stripe.products.create(stripeProductData);
+                    summary.created++;
+                }
+
+                const existingPrices = await stripe.prices.list({ product: stripeProduct.id, active: true });
+                for (const price of existingPrices.data) {
+                    await stripe.prices.update(price.id, { active: false });
+                }
+
+                const pricePromises: Promise<any>[] = [];
+                if (priceModel > 0) {
+                    pricePromises.push(stripe.prices.create({ product: stripeProduct.id, unit_amount: priceModel, currency: "eur", nickname: "Fichier 3D", metadata: { type: "model" } }));
+                }
+                if (pricePrint > 0) {
+                    pricePromises.push(stripe.prices.create({ product: stripeProduct.id, unit_amount: pricePrint, currency: "eur", nickname: "Impression 3D", metadata: { type: "print" } }));
+                }
+                const stripePrices = await Promise.all(pricePromises);
+
+                const productDocRef = db.collection("products").doc(stripeProduct.id);
+                await productDocRef.set({ active: true, name: stripeProduct.name, description: stripeProduct.description, images: stripeProduct.images, metadata: { sheetId: productId } });
+
+                const pricesCollectionRef = productDocRef.collection("prices");
+                for (const price of stripePrices) {
+                    await pricesCollectionRef.doc(price.id).set({ active: price.active, currency: price.currency, description: price.nickname, type: price.type, unit_amount: price.unit_amount, metadata: price.metadata });
+                }
+
+            } catch (error: any) {
+                summary.errors++;
+                summary.errorDetails.push({ id: productId, title: productTitle, error: error.message });
+                functions.logger.error(`Error processing product ${productId}:`, error.message);
+            }
+        }
+
+        functions.logger.info("Synchronization finished.", summary);
+        return { success: true, message: "Synchronization complete.", results: summary };
+
+    } catch (error: any) {
+        functions.logger.error("Fatal error during synchronization:", error);
+        summary.errors++;
+        summary.errorDetails.push({ error: `Fatal: ${error.message}` });
+        throw new HttpsError('internal', `Synchronization failed: ${error.message}`, { results: summary });
+    }
+});
+// #endregion
+
