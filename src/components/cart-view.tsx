@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -9,37 +10,76 @@ import { X, Plus, Minus, Loader2, ShoppingCart } from 'lucide-react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useFirebaseApp } from '@/firebase';
 
+// This is a new component for the debug box
+const DebugInfoBox = ({ loading, error, dataSent }: { loading: boolean; error: string | null; dataSent: any }) => {
+    if (process.env.NODE_ENV !== 'development') {
+        return null;
+    }
+
+    return (
+        <div className="mt-4 p-4 bg-muted/50 border border-dashed rounded-lg text-sm">
+            <h4 className="font-bold font-mono">Debug Info</h4>
+            <div className="mt-2 space-y-2">
+                <p>Status: {loading ? 'Loading...' : error ? 'Error' : 'Idle'}</p>
+                {dataSent && (
+                    <div>
+                        <p className="font-semibold">Data sent to function:</p>
+                        <pre className="text-xs bg-background p-2 rounded-md overflow-x-auto">
+                            {JSON.stringify(dataSent, null, 2)}
+                        </pre>
+                    </div>
+                )}
+                {error && (
+                    <div>
+                        <p className="font-semibold text-destructive">Error received:</p>
+                        <pre className="text-xs bg-background p-2 rounded-md text-destructive">
+                            {error}
+                        </pre>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+
 export function CartView() {
   const { cart, removeFromCart, updateQuantity, totalPrice } = useCart();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dataSent, setDataSent] = useState<any>(null); // State to hold data for debug box
   const firebaseApp = useFirebaseApp();
 
   const handleCheckout = async () => {
     setLoading(true);
     setError(null);
+    setDataSent(null);
+
     try {
       const functions = getFunctions(firebaseApp, 'us-central1');
       const createCheckoutSession = httpsCallable(functions, 'createCheckoutSession');
       
-      // Prepare the items array with the sheet_id for the backend
       const items = cart.map(item => ({ 
-        id: item.id, // This is the Google Sheet ID
+        id: item.id, 
         quantity: item.quantity 
       }));
+
+      // Store the data being sent for debugging purposes
+      setDataSent(items);
       
       const result: any = await createCheckoutSession({ items });
       
       if (result.data.url) {
-        // Redirect to Stripe checkout page
         window.location.href = result.data.url;
       } else {
-        throw new Error("L'URL de paiement n'a pas été reçue.");
+        throw new Error("The payment URL was not received from the server.");
       }
 
     } catch (err: any) {
       console.error("Error creating checkout session:", err);
-      setError(err.message || "Impossible de démarrer le paiement. Veuillez réessayer.");
+      // More descriptive error handling
+      const errorMessage = err.details?.message || err.message || "An unknown error occurred. Please try again.";
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -54,7 +94,6 @@ export function CartView() {
     );
   }
   
-  // Format total price from cents to a localized string "2,00 €"
   const formattedTotalPrice = new Intl.NumberFormat('fr-FR', {
     style: 'currency',
     currency: 'EUR',
@@ -96,7 +135,6 @@ export function CartView() {
         </div>
       </ScrollArea>
       <div className="border-t p-6 mt-auto">
-        {error && <p className="text-sm text-destructive mb-2">{error}</p>}
         <div className="flex justify-between items-center text-lg font-semibold mb-4">
           <span>Total</span>
           <span>{formattedTotalPrice}</span>
@@ -111,6 +149,7 @@ export function CartView() {
             'Procéder au paiement'
           )}
         </Button>
+        <DebugInfoBox loading={loading} error={error} dataSent={dataSent} />
       </div>
     </div>
   );
