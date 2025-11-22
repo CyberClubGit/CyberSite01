@@ -41,24 +41,14 @@ function ensureStripeIsInitialized() {
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=928586250&single=true&output=csv";
 
 // #region Fonctions utilitaires
-/**
- * Nettoie une chaîne de prix et la convertit en centimes.
- * @param {string} priceStr - La chaîne de prix (ex: "22,4" ou "10.00").
- * @return {number} Le prix en centimes, ou 0 si invalide.
- */
 function cleanPrice(priceStr: string): number {
   if (!priceStr || priceStr.trim() === "") return 0;
   const cleaned = priceStr.replace(",", ".");
   const price = parseFloat(cleaned);
   if (isNaN(price)) return 0;
-  return Math.round(price * 100); // Convertir en centimes
+  return Math.round(price * 100); 
 }
 
-/**
- * Extrait la première URL d'image d'une chaîne contenant plusieurs URLs.
- * @param {string} galleryStr - La chaîne contenant des URLs séparées par des sauts de ligne.
- * @return {string | null} La première URL valide, ou null.
- */
 function getFirstImage(galleryStr: string): string | null {
   if (!galleryStr || galleryStr.trim() === "") return null;
   const images = galleryStr.split(/[\r\n]+/).filter((url) => url.trim() !== "");
@@ -67,7 +57,7 @@ function getFirstImage(galleryStr: string): string | null {
 }
 // #endregion
 
-export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).region("us-central1").https.onRequest(async (req, res) => {
+export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).region("us-central1").https.onCall(async (data, context) => {
   functions.logger.info("Starting product synchronization from Google Sheet.", {structuredData: true});
   
   ensureStripeIsInitialized();
@@ -79,7 +69,6 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
   };
 
   try {
-    // 1. Récupérer le CSV depuis Google Sheets
     functions.logger.log("Fetching CSV from Google Sheet...");
     const response = await fetch(SHEET_URL);
     if (!response.ok) {
@@ -88,17 +77,14 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
     const csvText = await response.text();
     functions.logger.log("CSV fetched successfully.");
 
-    // 2. Parser le CSV
     const parsed = Papa.parse(csvText, {header: true, skipEmptyLines: true});
     const products = parsed.data as any[];
     functions.logger.log(`Parsed ${products.length} products from CSV.`);
 
-    // 3. Traiter chaque produit
     for (const product of products) {
       const productId = product.ID?.trim();
       const productTitle = product.Title?.trim();
 
-      // Validation de base
       if (!productId || !productTitle) {
         summary.skipped.push(`Product with missing ID or Title: ${JSON.stringify(product)}`);
         continue;
@@ -113,7 +99,6 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
       }
 
       try {
-        // 4. Créer ou mettre à jour les produits dans Stripe
         functions.logger.log(`Processing Stripe product: ${productTitle} (ID: ${productId})`);
         const firstImage = getFirstImage(product.Gallery);
 
@@ -128,7 +113,7 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
                 material: product.Material,
                 activity: product.Activity,
                 stl_url: product.Stl,
-                sheet_id: productId, // ** IMPORTANT: This is the link to the Google Sheet ID **
+                sheet_id: productId,
             },
         };
 
@@ -149,21 +134,13 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
         }
         
         const pricePromises: Promise<any>[] = [];
+        
+        const pricePrintToUse = cleanPrice(product.Price_Print);
 
-        if (priceModel > 0) {
+        if (pricePrintToUse > 0) {
           pricePromises.push(stripe.prices.create({
             product: stripeProduct.id,
-            unit_amount: priceModel,
-            currency: "eur",
-            nickname: "Fichier 3D",
-            metadata: {type: "model"},
-          }));
-        }
-
-        if (pricePrint > 0) {
-          pricePromises.push(stripe.prices.create({
-            product: stripeProduct.id,
-            unit_amount: pricePrint,
+            unit_amount: pricePrintToUse,
             currency: "eur",
             nickname: "Impression 3D",
             metadata: {type: "print"},
@@ -173,7 +150,6 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
         const stripePrices = await Promise.all(pricePromises);
         functions.logger.log(`Created ${stripePrices.length} new prices for ${productId} in Stripe.`);
 
-        // 5. Synchroniser avec Firestore
         functions.logger.log(`Syncing product ${productId} to Firestore.`);
         const productDocRef = db.collection("products").doc(stripeProduct.id);
 
@@ -212,18 +188,14 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
     }
 
     functions.logger.info("Synchronization finished.", summary);
-    res.status(200).json({
+    return {
       success: true,
       message: `Synchronization complete. Processed ${products.length} rows.`,
       results: summary,
-    });
+    };
   } catch (error: any) {
     functions.logger.error("Fatal error during synchronization:", error);
-    res.status(500).json({
-      success: false,
-      message: `Synchronization failed: ${error.message}`,
-      results: summary,
-    });
+    throw new functions.https.HttpsError('internal', `Synchronization failed: ${error.message}`);
   }
 });
 
@@ -243,7 +215,6 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
         continue;
     }
     
-    // ** THE FIX IS HERE: Search Stripe product by the sheet_id in metadata **
     const products = await stripe.products.search({
       query: `metadata['sheet_id']:'${item.id}'`,
       limit: 1,
@@ -255,7 +226,6 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     }
     const stripeProduct = products.data[0];
     
-    // Now find its active price.
     const prices = await stripe.prices.list({
         product: stripeProduct.id,
         active: true,
@@ -307,5 +277,3 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     throw new functions.https.HttpsError('internal', `Stripe error: ${error.message}`);
   }
 });
-
-    
