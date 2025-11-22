@@ -10,20 +10,14 @@
 import "dotenv/config";
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import Stripe from "stripe";
 import { defineSecret, setGlobalOptions } from "firebase-functions/params";
 import { HttpsError } from "firebase-functions/v2/https";
-
-// Using require for CJS compatibility
-const fetch = require("node-fetch");
-const Papa = require("papaparse");
 
 // Set global options for the region
 setGlobalOptions({ region: "us-central1" });
 
-const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
-
 // Safe initialization of Firebase Admin SDK
+// This ensures it's initialized only once per instance.
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
@@ -80,42 +74,47 @@ function formatItemsToHtml(items: any[]): string {
 export const sendOrderEmail = functions.https.onCall(async (data, context) => {
   functions.logger.info("--- Received new order to send by email ---");
 
-  // Get a Firestore instance. This is the robust way.
-  const db = admin.firestore();
-
-  // Validate cart data
-  if (!Array.isArray(data.items) || data.items.length === 0) {
+  // Validate cart data first
+  if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
     functions.logger.error("Validation failed: 'items' is not a non-empty array.", data);
     throw new HttpsError('invalid-argument', 'La fonction doit être appelée avec un tableau "items" non vide.');
   }
 
-  const userEmail = context.auth?.token?.email || 'email.non.fourni@exemple.com';
-  const htmlBody = formatItemsToHtml(data.items);
-  const subject = `Nouvelle commande de ${userEmail}`;
-  const recipientEmail = "contact@cyber-club.net";
-
-  const mailEntry = {
-    to: [recipientEmail],
-    message: {
-      subject: subject,
-      html: htmlBody,
-    },
-  };
-
   try {
+    // Get a Firestore instance inside the function call for robustness
+    const db = admin.firestore();
+
+    const userEmail = context.auth?.token?.email || 'email.non.fourni@exemple.com';
+    const htmlBody = formatItemsToHtml(data.items);
+    const subject = `Nouvelle commande de ${userEmail}`;
+    const recipientEmail = "contact@cyber-club.net";
+
+    const mailEntry = {
+      to: [recipientEmail],
+      message: {
+        subject: subject,
+        html: htmlBody,
+      },
+    };
+    
     functions.logger.info(`Attempting to queue email to '${recipientEmail}'...`);
+    
     // This writes the email to the 'mail' collection.
     // The "Trigger Email" Firebase Extension must be installed to process this queue.
     await db.collection('mail').add(mailEntry);
+    
     functions.logger.info(`Successfully queued order email to ${recipientEmail}`, { userEmail });
     return { success: true, message: `Commande envoyée avec succès à ${recipientEmail}.` };
+    
   } catch (error: any) {
-    // This will catch any errors during the database write (e.g., permissions)
-    functions.logger.error("CRITICAL: Failed to write to 'mail' collection.", {
+    // This will catch any errors during the database write or any other logic
+    functions.logger.error("CRITICAL: A fatal error occurred in sendOrderEmail.", {
         errorMessage: error.message,
         errorDetails: error,
+        dataReceived: data, // Log the data that caused the error
     });
-    // And send a specific error message back to the client.
+    
+    // Send a specific, helpful error message back to the client.
     throw new HttpsError('internal', `Une erreur est survenue lors de la mise en file de l'e-mail. Cause: ${error.message}`);
   }
 });
@@ -123,15 +122,11 @@ export const sendOrderEmail = functions.https.onCall(async (data, context) => {
 // #endregion
 
 
-// #region --- Sync Function (for reference, can be removed if not needed) ---
+// This is kept for reference, but can be removed if Stripe integration is abandoned.
+const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=928586250&single=true&output=csv";
-
 export const syncProductsFromSheet = functions.runWith({ secrets: [stripeSecretKey] }).https.onCall(async (data, context) => {
-    // This function is kept for reference but is no longer the primary focus.
-    // The implementation below is a placeholder and should be reviewed if needed.
-    functions.logger.warn("syncProductsFromSheet was called, but is currently not the primary focus.");
-    
-    // For now, return a success message to avoid confusion.
-    return { success: true, message: "Sync function was called but is not fully implemented for Stripe." };
+    functions.logger.warn("syncProductsFromSheet was called, but is deprecated.");
+    return { success: true, message: "This function is deprecated." };
 });
-// #endregion
+
