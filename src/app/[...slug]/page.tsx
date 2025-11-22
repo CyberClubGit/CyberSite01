@@ -109,3 +109,5 @@ export default async function CatchAllPage({ params }: { params: { slug:string[]
   const processedData = rawCategoryData.map(processGalleryLinks);
   return <DefaultPageLayout category={category} brand={brand} initialData={processedData} brands={brands} />;
 }
+
+    

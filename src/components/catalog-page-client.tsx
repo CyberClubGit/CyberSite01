@@ -260,3 +260,5 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
 }
 
     
+
+    
