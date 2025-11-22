@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useCart } from '@/hooks/useCart';
+import { useCart, CartItem } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Image from 'next/image';
@@ -61,6 +61,9 @@ export function CartView() {
       
       const items = cart.map(item => ({ 
         id: item.id, 
+        name: item.name,
+        price: item.price, // Price is already in cents
+        image: item.image,
         quantity: item.quantity 
       }));
 
@@ -80,7 +83,8 @@ export function CartView() {
       // More descriptive error handling
       const errorMessage = err.details?.message || err.message || "An unknown error occurred. Please try again.";
       setError(errorMessage);
-      setLoading(false);
+    } finally {
+        setLoading(false);
     }
   };
 

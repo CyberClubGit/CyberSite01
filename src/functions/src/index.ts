@@ -11,8 +11,6 @@ import "dotenv/config";
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import Stripe from "stripe";
-import fetch from "node-fetch";
-import Papa from "papaparse";
 import { defineSecret, setGlobalOptions } from "firebase-functions/params";
 import { HttpsError } from "firebase-functions/v2/https";
 
@@ -25,7 +23,6 @@ const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
-const db = admin.firestore();
 
 // Lazily initialize Stripe
 let stripe: Stripe;
@@ -43,130 +40,6 @@ function ensureStripeIsInitialized() {
   }
 }
 
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=928586250&single=true&output=csv";
-
-// #region Utility Functions
-function cleanPrice(priceStr: string | undefined): number {
-  if (!priceStr || typeof priceStr !== 'string' || priceStr.trim() === "") return 0;
-  const cleaned = priceStr.replace(",", ".");
-  const price = parseFloat(cleaned);
-  if (isNaN(price)) return 0;
-  return Math.round(price * 100); 
-}
-
-function getFirstImage(galleryStr: string): string | null {
-  if (!galleryStr || galleryStr.trim() === "") return null;
-  const images = galleryStr.split(/[\r\n]+/).filter((url) => url.trim() !== "");
-  if (images.length === 0) return null;
-  return images[0].trim();
-}
-// #endregion
-
-export const syncProductsFromSheet = functions
-  .runWith({ secrets: [stripeSecretKey], invoker: 'public' }) // <-- LA CORRECTION CLÉ
-  .https.onRequest(async (req, res) => {
-    
-  functions.logger.info("Starting product synchronization from Google Sheet.");
-  
-  try {
-    ensureStripeIsInitialized();
-  } catch (error: any) {
-    functions.logger.error("Stripe initialization failed:", error);
-    res.status(500).send(`Stripe initialization failed: ${error.message}`);
-    return;
-  }
-
-  const summary = {
-    created: [] as string[],
-    updated: [] as string[],
-    skipped: [] as string[],
-    errors: [] as {id: string, error: string}[],
-  };
-
-  try {
-    const response = await fetch(SHEET_URL);
-    if (!response.ok) throw new Error(`Failed to fetch Google Sheet: ${response.statusText}`);
-    const csvText = await response.text();
-    
-    const parsed = Papa.parse(csvText, {header: true, skipEmptyLines: true});
-    const products = parsed.data as any[];
-
-    for (const product of products) {
-      const sheetId = product.ID?.trim();
-      const productTitle = product.Title?.trim();
-
-      if (!sheetId || !productTitle || sheetId.includes('#NAME?')) {
-        summary.skipped.push(`Product with invalid ID or Title: ${JSON.stringify(product)}`);
-        continue;
-      }
-      
-      const pricePrint = cleanPrice(product.Price_Print);
-      if (pricePrint === 0) {
-        summary.skipped.push(`${productTitle} (ID: ${sheetId}) - No valid 'Price_Print'.`);
-        continue;
-      }
-
-      try {
-        const firstImage = getFirstImage(product.Gallery);
-
-        const stripeProductData = {
-            name: productTitle,
-            description: product.Description,
-            images: firstImage ? [firstImage] : [],
-            active: true,
-            metadata: {
-                sheet_id: sheetId,
-            },
-        };
-        
-        const existingProducts = await stripe.products.search({
-            query: `metadata['sheet_id']:'${sheetId}'`,
-            limit: 1
-        });
-        
-        let stripeProduct: Stripe.Product;
-
-        if (existingProducts.data.length > 0) {
-            stripeProduct = await stripe.products.update(existingProducts.data[0].id, stripeProductData);
-            summary.updated.push(productTitle);
-        } else {
-            stripeProduct = await stripe.products.create(stripeProductData);
-            summary.created.push(productTitle);
-        }
-        
-        const existingPrices = await stripe.prices.list({ product: stripeProduct.id, active: true });
-        for (const price of existingPrices.data) {
-            await stripe.prices.update(price.id, { active: false });
-        }
-        
-        await stripe.prices.create({
-          product: stripeProduct.id,
-          unit_amount: pricePrint,
-          currency: "eur",
-          nickname: "Print Price",
-        });
-
-      } catch (error: any) {
-        functions.logger.error(`Error processing product ${sheetId}:`, error.message);
-        summary.errors.push({id: sheetId, error: error.message});
-      }
-    }
-
-    functions.logger.info("Synchronization finished.", summary);
-    res.status(200).send(`
-      <h1>Synchronisation Réussie</h1>
-      <pre>${JSON.stringify(summary, null, 2)}</pre>
-    `);
-  } catch (error: any) {
-    functions.logger.error("Fatal error during synchronization:", error);
-    res.status(500).send(`
-      <h1>Erreur Fatale</h1>
-      <p>${error.message}</p>
-    `);
-  }
-});
-
-
 export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretKey] }).https.onCall(async (data, context) => {
   try {
     ensureStripeIsInitialized();
@@ -175,11 +48,7 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     throw new functions.https.HttpsError('internal', error.message);
   }
 
-  // Check for authenticated user
-  // if (!context.auth) {
-  //   throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
-  // }
-
+  // Validate cart data
   if (!Array.isArray(data.items) || data.items.length === 0) {
     throw new functions.https.HttpsError('invalid-argument', 'The function must be called with an array of "items".');
   }
@@ -187,44 +56,34 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
   const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
 
   for (const item of data.items) {
-    if (!item.id || item.id.includes('#NAME?')) {
-        functions.logger.warn(`Invalid or missing sheet_id for item in cart: ${item.id}. Skipping.`);
-        continue; // Skip this item
+    // Validate each item
+    if (!item.id || !item.name || typeof item.price !== 'number' || item.price <= 0 || typeof item.quantity !== 'number' || item.quantity <= 0) {
+      functions.logger.error(`Invalid item in cart: ${JSON.stringify(item)}`);
+      throw new functions.https.HttpsError('invalid-argument', `Invalid item found in cart: ${item.name || 'Unknown'}.`);
     }
-    
+
     try {
-      const products = await stripe.products.search({
-        query: `metadata['sheet_id']:'${item.id}'`,
-        limit: 1
+      // Create a temporary product and price in Stripe for this transaction
+      const price = await stripe.prices.create({
+        currency: 'eur',
+        unit_amount: item.price, // Price is already in cents from the frontend
+        product_data: {
+          name: item.name,
+          images: item.image ? [item.image] : [],
+          metadata: {
+            sheet_id: item.id
+          }
+        }
       });
-
-      if (products.data.length === 0) {
-        functions.logger.error(`Product with sheet_id '${item.id}' not found in Stripe. Please re-sync products.`);
-        throw new functions.https.HttpsError('not-found', `Product with ID '${item.id}' could not be found. Please contact support.`);
-      }
       
-      const stripeProduct = products.data[0];
-
-      const prices = await stripe.prices.list({
-          product: stripeProduct.id,
-          active: true,
-          limit: 1, // We assume one active price per product
-      });
-
-      if (prices.data.length === 0) {
-          functions.logger.error(`No active price found for Stripe product ID: ${stripeProduct.id} (sheet_id: ${item.id})`);
-          throw new functions.https.HttpsError('not-found', `A price for '${stripeProduct.name}' could not be found. Please contact support.`);
-      }
-
       line_items.push({
-        price: prices.data[0].id,
+        price: price.id,
         quantity: item.quantity,
       });
 
     } catch (error: any) {
-       functions.logger.error(`Failed to process item with sheet_id ${item.id}:`, error);
-       if (error instanceof HttpsError) throw error; 
-       throw new functions.https.HttpsError('internal', `An error occurred while processing item ${item.id}.`);
+       functions.logger.error(`Failed to create Stripe price for item ${item.id}:`, error);
+       throw new functions.https.HttpsError('internal', `An error occurred while processing item ${item.name}.`);
     }
   }
 
@@ -262,3 +121,12 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     throw new functions.https.HttpsError('internal', `Stripe error: ${error.message}`);
   }
 });
+
+// The sync function is no longer needed for the checkout flow,
+// but it is kept here for potential future administrative use.
+// It is not publicly invokable by default anymore.
+export const syncProductsFromSheet = functions
+  .runWith({ secrets: [stripeSecretKey] })
+  .https.onRequest(async (req, res) => {
+    res.status(403).send('This function is disabled for manual execution.');
+  });

@@ -37,7 +37,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         const savedCart = JSON.parse(savedCartJson);
         // Basic validation to ensure we're loading an array of items
         if (Array.isArray(savedCart)) {
-          setCart(savedCart);
+          // Additional validation for each item
+          const validatedCart = savedCart.filter(item => 
+              item.id && 
+              typeof item.id === 'string' &&
+              item.name &&
+              typeof item.price === 'number' &&
+              typeof item.quantity === 'number'
+          );
+          setCart(validatedCart);
         }
       }
     } catch (error) {
@@ -56,13 +64,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, [cart]);
 
   const addToCart = useCallback((item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
-    // Critical validation: Do not add items without a valid ID.
-    if (!item.id || typeof item.id !== 'string') {
-        console.error("Attempted to add an item with an invalid ID:", item);
+    // Critical validation: Do not add items without valid data.
+    if (!item.id || typeof item.id !== 'string' || typeof item.price !== 'number' || item.price <= 0) {
+        console.error("Attempted to add an item with invalid data:", item);
         toast({
             variant: "destructive",
             title: "Erreur d'ajout",
-            description: "Cet article ne peut pas être ajouté au panier (ID manquant).",
+            description: "Cet article ne peut pas être ajouté au panier (données invalides).",
         });
         return;
     }
