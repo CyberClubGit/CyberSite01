@@ -4,26 +4,29 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // La collection des produits est lisible par tout le monde,
-    // mais ne peut être modifiée que par les fonctions backend.
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'contact@cyber-club.net';
+    }
+
     match /products/{productId} {
       allow read: if true;
-      allow write: if false; // Empêche les modifications côté client
-
-      // La sous-collection des prix est également lisible publiquement.
+      allow write: if false; 
       match /prices/{priceId} {
         allow read: if true;
         allow write: if false;
       }
     }
 
-    // Autorise les utilisateurs à gérer leur propre document de profil
     match /users/{userId} {
-      // Un utilisateur peut créer son propre document de profil.
       allow create: if request.auth != null && request.auth.uid == userId;
-      
-      // Un utilisateur connecté peut lire et mettre à jour son propre profil.
       allow read, update: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    match /orders/{orderId} {
+      allow create: if request.auth != null; // Any authenticated user can create an order
+      allow read: if request.auth.uid == resource.data.userId || isAdmin(); // User can read their own orders, admin can read all
+      allow list: if isAdmin(); // Only admin can list all orders
+      allow update: if isAdmin(); // Only admin can update orders (e.g., change status)
     }
 
   }

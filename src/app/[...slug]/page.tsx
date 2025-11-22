@@ -42,12 +42,21 @@ export async function generateStaticParams() {
 
   // Add profile path
   paths.push({ slug: ['profile'] });
+  
+  // Add admin path
+  paths.push({ slug: ['admin', 'orders'] });
 
   return paths;
 }
 
 export default async function CatchAllPage({ params }: { params: { slug:string[] } }) {
   const slugArray = params.slug || [];
+
+  // Handle admin route specifically
+  if (slugArray.join('/') === 'admin/orders') {
+    const AdminOrdersPage = (await import('../admin/orders/page')).default;
+    return <AdminOrdersPage />;
+  }
   
   const categories = await getCategories();
   const brands = await getBrands();

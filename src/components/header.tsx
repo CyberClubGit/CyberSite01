@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState, useCallback } from 'react';
 import { useTheme } from 'next-themes';
-import { Menu, User, Settings, LogOut } from 'lucide-react';
+import { Menu, User, Settings, LogOut, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -193,6 +193,15 @@ export function Header({ categories, brands }: HeaderProps) {
 
     if (user) {
       return (
+        <>
+        {user.isAdmin && (
+          <Button asChild variant="ghost" size="icon" className="hidden md:inline-flex">
+            <Link href="/admin/orders">
+              <Shield className="h-5 w-5" />
+              <span className="sr-only">Admin</span>
+            </Link>
+          </Button>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -236,6 +245,7 @@ export function Header({ categories, brands }: HeaderProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </>
       );
     }
 
@@ -305,9 +315,9 @@ export function Header({ categories, brands }: HeaderProps) {
           </nav>
         </div>
 
-        <div className="ml-auto flex items-center justify-end space-x-4">
+        <div className="ml-auto flex items-center justify-end space-x-2">
             <CartIcon />
-            <div className="hidden md:flex">
+            <div className="hidden md:flex items-center space-x-2">
               {renderAuthSection()}
             </div>
             <div className="md:hidden">
@@ -354,6 +364,14 @@ export function Header({ categories, brands }: HeaderProps) {
                         {renderNavLinks(true)}
                       </nav>
                        <div className="mt-auto border-t pt-4">
+                        {user?.isAdmin && (
+                          <Button asChild variant="outline" className="w-full justify-start mb-2">
+                            <Link href="/admin/orders" onClick={() => setIsMobileMenuOpen(false)}>
+                              <Shield className="mr-2 h-4 w-4" />
+                              Admin
+                            </Link>
+                          </Button>
+                        )}
                         {renderAuthSection()}
                        </div>
                     </div>

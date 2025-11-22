@@ -1,10 +1,10 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { 
   onAuthStateChanged, 
   signOut as firebaseSignOut,
-  User as FirebaseUser 
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
@@ -18,8 +18,11 @@ export interface UserData {
   lastName?: string;
   nickname?: string;
   emailVerified: boolean;
-  favorites?: string[]; // Add favorites to user data
+  favorites?: string[];
+  isAdmin: boolean; // <-- Add isAdmin flag
 }
+
+const ADMIN_EMAIL = 'contact@cyber-club.net';
 
 export function useAuth() {
   const auth = useFirebaseAuth();
@@ -51,7 +54,8 @@ export function useAuth() {
           displayName: firebaseUser.displayName,
           photoURL: firebaseUser.photoURL,
           emailVerified: firebaseUser.emailVerified,
-          favorites: [], // Default to empty array
+          favorites: [],
+          isAdmin: firebaseUser.email === ADMIN_EMAIL, // <-- Check if user is admin
           ...additionalData,
         };
         

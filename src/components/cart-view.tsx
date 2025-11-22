@@ -9,50 +9,7 @@ import Image from 'next/image';
 import { X, Plus, Minus, Loader2, ShoppingCart, Send } from 'lucide-react';
 import { useAuth, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { collection, addDoc } from "firebase/firestore";
-
-function formatItemsToHtml(items: any[]): string {
-  const itemsHtml = items.map(item => `
-    <tr>
-      <td style="padding: 8px; border-bottom: 1px solid #ddd;">
-        <img src="${item.image}" alt="${item.name}" width="50" style="border-radius: 4px; vertical-align: middle;">
-      </td>
-      <td style="padding: 8px; border-bottom: 1px solid #ddd; vertical-align: middle;">
-        ${item.name}<br>
-        <small style="color: #555;">ID: ${item.id}</small>
-      </td>
-      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center; vertical-align: middle;">${item.quantity}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right; vertical-align: middle;">${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(item.price / 100)}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right; vertical-align: middle;">${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format((item.price * item.quantity) / 100)}</td>
-    </tr>
-  `).join('');
-
-  const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-  return `
-    <p>Une nouvelle commande a été passée.</p>
-    <table style="width: 100%; border-collapse: collapse; font-family: sans-serif;">
-      <thead>
-        <tr>
-          <th style="padding: 8px; border-bottom: 2px solid #333; text-align: left;" colspan="2">Produit</th>
-          <th style="padding: 8px; border-bottom: 2px solid #333; text-align: center;">Quantité</th>
-          <th style="padding: 8px; border-bottom: 2px solid #333; text-align: right;">Prix Unitaire</th>
-          <th style="padding: 8px; border-bottom: 2px solid #333; text-align: right;">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${itemsHtml}
-      </tbody>
-      <tfoot>
-        <tr>
-          <td colspan="4" style="padding: 12px 8px 0; text-align: right; font-weight: bold;">Total de la commande :</td>
-          <td style="padding: 12px 8px 0; text-align: right; font-weight: bold;">${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(total / 100)}</td>
-        </tr>
-      </tfoot>
-    </table>
-  `;
-}
-
+import { collection, addDoc, serverTimestamp } from "firebase/firestore"; 
 
 export function CartView() {
   const { cart, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
@@ -65,7 +22,7 @@ export function CartView() {
   const handleSendOrder = async () => {
     const currentUser = auth.currentUser;
 
-    if (!currentUser || !currentUser.email) {
+    if (!currentUser) {
       setError("Veuillez vous connecter pour envoyer une commande.");
       router.push('/auth/signin');
       return;
@@ -75,29 +32,25 @@ export function CartView() {
     setError(null);
     
     try {
-      const fromUserEmail = currentUser.email;
-      const htmlBody = formatItemsToHtml(cart);
-      const subject = `Nouvelle commande de ${fromUserEmail}`;
-      const recipientEmail = "contact@cyber-club.net";
-
-      // Prepare the email document for the "Trigger Email" extension
-      const mailDoc = {
-        to: recipientEmail,
-        replyTo: fromUserEmail,
-        message: {
-          subject: subject,
-          html: htmlBody,
-        },
+      // Prepare the order document for the "orders" collection
+      const orderDoc = {
+        userId: currentUser.uid,
+        userEmail: currentUser.email,
+        userName: currentUser.displayName,
+        items: cart,
+        totalPrice, // Storing price in cents
+        createdAt: serverTimestamp(),
+        status: 'pending', // Initial status
       };
 
-      // Add a new document to the "mail" collection
-      await addDoc(collection(db, "mail"), mailDoc);
+      // Add a new document to the "orders" collection
+      await addDoc(collection(db, "orders"), orderDoc);
 
       clearCart();
       router.push('/checkout/success');
 
     } catch (err: any) {
-      console.error("Error writing to mail collection:", err);
+      console.error("Error writing to orders collection:", err);
       setError("Erreur lors de la soumission de la commande. Veuillez réessayer.");
     } finally {
         setLoading(false);
