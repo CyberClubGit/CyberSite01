@@ -24,7 +24,7 @@ const db = admin.firestore();
 // Initialize Stripe with secret key - lazily
 let stripe: Stripe;
 
-function ensureStripe() {
+function ensureStripeIsInitialized() {
   if (!stripe) {
     const key = stripeSecretKey.value();
     if (!key) {
@@ -70,7 +70,7 @@ function getFirstImage(galleryStr: string): string | null {
 export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).region("us-central1").https.onRequest(async (req, res) => {
   functions.logger.info("Starting product synchronization from Google Sheet.", {structuredData: true});
   
-  ensureStripe();
+  ensureStripeIsInitialized();
 
   const summary = {
     success: [] as string[],
@@ -128,7 +128,7 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
                 material: product.Material,
                 activity: product.Activity,
                 stl_url: product.Stl,
-                sheet_id: productId,
+                sheet_id: productId, // ** IMPORTANT: This is the link to the Google Sheet ID **
             },
         };
 
@@ -136,15 +136,13 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
           id: productId,
           ...stripeProductData
         }).catch(async (error: any) => {
-          // Si le produit existe déjà (code: 'resource_already_exists'), on le met à jour
           if (error.code === "resource_already_exists") {
             functions.logger.log(`Product ${productId} already exists in Stripe, updating...`);
             return await stripe.products.update(productId, stripeProductData);
           }
-          throw error; // Renvoyer les autres erreurs
+          throw error; 
         });
         
-        // Désactiver les anciens prix avant d'en créer de nouveaux
         const existingPrices = await stripe.prices.list({ product: stripeProduct.id, active: true });
         for (const price of existingPrices.data) {
             await stripe.prices.update(price.id, { active: false });
@@ -152,7 +150,6 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
         
         const pricePromises: Promise<any>[] = [];
 
-        // Créer/mettre à jour le prix pour le modèle 3D
         if (priceModel > 0) {
           pricePromises.push(stripe.prices.create({
             product: stripeProduct.id,
@@ -163,7 +160,6 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
           }));
         }
 
-        // Créer/mettre à jour le prix pour l'impression 3D
         if (pricePrint > 0) {
           pricePromises.push(stripe.prices.create({
             product: stripeProduct.id,
@@ -196,13 +192,12 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
           },
         });
 
-        // Synchroniser les prix dans la sous-collection
         const pricesCollectionRef = productDocRef.collection("prices");
         for (const price of stripePrices) {
           await pricesCollectionRef.doc(price.id).set({
             active: price.active,
             currency: price.currency,
-            description: price.nickname, // Utilise nickname pour la description
+            description: price.nickname,
             type: price.type,
             unit_amount: price.unit_amount,
             metadata: price.metadata,
@@ -234,7 +229,7 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
 
 
 export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretKey] }).region('us-central1').https.onCall(async (data, context) => {
-  ensureStripe();
+  ensureStripeIsInitialized();
 
   if (!Array.isArray(data.items) || data.items.length === 0) {
     throw new functions.https.HttpsError('invalid-argument', 'The function must be called with an array of "items".');
@@ -243,37 +238,43 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
   const line_items = [];
 
   for (const item of data.items) {
-    if (!item.id || !item.quantity) {
-      throw new functions.https.HttpsError('invalid-argument', 'Each item must have an "id" and a "quantity".');
+    if (!item.id || !item.quantity || item.id.includes('#NAME?')) {
+        functions.logger.warn(`Invalid or missing ID for item in cart: ${item.id}. Skipping.`);
+        continue;
     }
     
-    // --- THIS IS THE FIX ---
-    // Search for the Stripe product using the sheet_id stored in metadata.
+    // ** THE FIX IS HERE: Search Stripe product by the sheet_id in metadata **
     const products = await stripe.products.search({
       query: `metadata['sheet_id']:'${item.id}'`,
       limit: 1,
     });
 
     if (products.data.length === 0) {
-        throw new functions.https.HttpsError('not-found', `No Stripe product found for sheet ID: ${item.id}`);
+        functions.logger.error(`No Stripe product found for sheet ID: ${item.id}`);
+        throw new functions.https.HttpsError('not-found', `Product with ID '${item.id}' not found. It may not be synchronized with our payment system.`);
     }
     const stripeProduct = products.data[0];
     
-    // Now that we have the Stripe Product, find its active price.
+    // Now find its active price.
     const prices = await stripe.prices.list({
         product: stripeProduct.id,
         active: true,
-        limit: 1, // Assuming one active price per product for simplicity.
+        limit: 1, 
     });
 
     if (prices.data.length === 0) {
-        throw new functions.https.HttpsError('not-found', `No active price found for Stripe product ID: ${stripeProduct.id}`);
+        functions.logger.error(`No active price found for Stripe product ID: ${stripeProduct.id}`);
+        throw new functions.https.HttpsError('not-found', `A price for '${stripeProduct.name}' could not be found. Please contact support.`);
     }
 
     line_items.push({
       price: prices.data[0].id,
       quantity: item.quantity,
     });
+  }
+
+  if (line_items.length === 0) {
+    throw new functions.https.HttpsError('invalid-argument', 'No valid items were found to create a checkout session.');
   }
 
   const origin = context.rawRequest.headers.origin || 'http://localhost:9002';
@@ -306,3 +307,5 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     throw new functions.https.HttpsError('internal', `Stripe error: ${error.message}`);
   }
 });
+
+    

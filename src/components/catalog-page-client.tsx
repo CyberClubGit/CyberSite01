@@ -18,6 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/hooks/useFavorites';
 import { Heart, ShoppingCart } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 // The data is now coming from Google Sheets again, so we can use a more generic type
 type CatalogItem = {
@@ -45,7 +46,6 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   const [selectedItem, setSelectedItem] = useState<CatalogItem | null>(null);
 
   const { user } = useAuth();
-  // Favorites will use the 'ID' column from the sheet
   const { favorites, toggleFavorite } = useFavorites(user?.uid);
   const { addToCart } = useCart();
 
@@ -56,27 +56,25 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
     );
   };
 
-  const filteredData = useMemo(() => {
+  const finalData: CatalogItem[] = useMemo(() => {
     const brandFiltered = filterItemsByBrandActivity(initialData, brand?.Brand);
-    return brandFiltered.filter(item => {
+    const typeFiltered = brandFiltered.filter(item => {
       const typeMatch = selectedTypes.length === 0 || (item.Type && selectedTypes.includes(item.Type));
       const materialMatch = selectedMaterials.length === 0 || (item.Material && selectedMaterials.includes(item.Material));
       return typeMatch && materialMatch;
     });
-  }, [initialData, brand, selectedTypes, selectedMaterials]);
 
-  const finalData: CatalogItem[] = useMemo(() => {
-    return filteredData.map(item => {
-      // processGalleryLinks from sheets.ts already gives us what we need
+    // Final mapping to a clean CatalogItem interface
+    return typeFiltered.map(item => {
       return {
         ...item,
-        id: item.ID, // Make sure the ID field is explicitly set for the key and favorites
+        id: item.ID, // This is the crucial ID from the Google Sheet
         title: item.title,
         description: item.description,
         galleryUrls: item.galleryUrls || [],
       };
     });
-  }, [filteredData]);
+  }, [initialData, brand, selectedTypes, selectedMaterials]);
   
   const resetFilters = () => {
     setSelectedTypes([]);
@@ -85,11 +83,11 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
 
   const handleAddToCart = (e: React.MouseEvent, item: CatalogItem) => {
     e.stopPropagation();
-    const priceModel = item.Price_Model ? parseFloat(item.Price_Model.replace(',', '.')) : 0;
+    // ID from Sheet is used here
     addToCart({
-      id: item.ID,
+      id: item.id, 
       name: item.title,
-      price: priceModel * 100, // Store price in cents
+      price: (item.Price_Model ? parseFloat(item.Price_Model.replace(',', '.')) : 0) * 100,
       image: item.galleryUrls?.[0] || '',
       quantity: 1,
     });
@@ -166,10 +164,11 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                     {finalData.map((item) => {
                       const isFavorited = favorites.includes(item.id);
                       const displayImageUrl = item.galleryUrls && item.galleryUrls.length > 0 ? item.galleryUrls[0] : null;
+                      const isAddToCartDisabled = !item.id || item.id.includes('#NAME?');
 
                       return (
                         <Card 
-                          key={item.id}
+                          key={item.id || item.title} // Fallback to title if id is bad
                           className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-background/80 backdrop-blur-sm group"
                         >
                            <div 
@@ -195,20 +194,36 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                                             e.stopPropagation();
                                             toggleFavorite(item.id);
                                         }}
+                                        disabled={isAddToCartDisabled}
                                     >
                                         <Heart className={cn("h-5 w-5 transition-all", isFavorited ? "fill-red-500 text-red-500" : "fill-transparent")} />
                                         <span className="sr-only">Ajouter aux favoris</span>
                                     </Button>
                                 )}
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="rounded-full h-8 w-8 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
-                                  onClick={(e) => handleAddToCart(e, item)}
-                                >
-                                  <ShoppingCart className="h-5 w-5" />
-                                  <span className="sr-only">Ajouter au panier</span>
-                                </Button>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      {/* Wrap button in a span to allow tooltip even when disabled */}
+                                      <span tabIndex={isAddToCartDisabled ? 0 : -1}>
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="rounded-full h-8 w-8 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
+                                          onClick={(e) => handleAddToCart(e, item)}
+                                          disabled={isAddToCartDisabled}
+                                        >
+                                          <ShoppingCart className="h-5 w-5" />
+                                          <span className="sr-only">Ajouter au panier</span>
+                                        </Button>
+                                      </span>
+                                    </TooltipTrigger>
+                                    {isAddToCartDisabled && (
+                                      <TooltipContent>
+                                        <p>Cet article n'a pas d'ID valide et ne peut pas être ajouté.</p>
+                                      </TooltipContent>
+                                    )}
+                                  </Tooltip>
+                                </TooltipProvider>
                              </div>
                           </div>
                           <CardHeader onClick={() => setSelectedItem(item)} className="cursor-pointer">
@@ -244,3 +259,5 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
     </>
   );
 }
+
+    
