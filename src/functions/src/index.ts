@@ -76,7 +76,7 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
         functions.logger.error(errorMsg, {item});
         throw new HttpsError('invalid-argument', errorMsg);
     }
-    if (typeof item.price !== 'number' || !Number.isInteger(item.price) || item.price <= 0) {
+     if (typeof item.price !== 'number' || !Number.isInteger(item.price) || item.price < 0) {
         const errorMsg = `Article invalide : '${item.name}'. Le prix doit être un nombre entier positif (en centimes), mais a reçu '${item.price}'.`;
         functions.logger.error(errorMsg, {item});
         throw new HttpsError('invalid-argument', errorMsg);
@@ -291,5 +291,3 @@ export const syncProductsFromSheet = functions.runWith({ secrets: [stripeSecretK
     return { success: true, message: "Synchronization complete.", results: summary };
 });
 // #endregion
-
-    
