@@ -2,27 +2,70 @@
 'use client';
 
 import { useState } from 'react';
-import { useCart, CartItem } from '@/hooks/useCart';
+import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Image from 'next/image';
 import { X, Plus, Minus, Loader2, ShoppingCart, Send } from 'lucide-react';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { useFirebaseApp, useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
+import { collection, addDoc } from "firebase/firestore";
+
+function formatItemsToHtml(items: any[]): string {
+  const itemsHtml = items.map(item => `
+    <tr>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd;">
+        <img src="${item.image}" alt="${item.name}" width="50" style="border-radius: 4px; vertical-align: middle;">
+      </td>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd; vertical-align: middle;">
+        ${item.name}<br>
+        <small style="color: #555;">ID: ${item.id}</small>
+      </td>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center; vertical-align: middle;">${item.quantity}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right; vertical-align: middle;">${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(item.price / 100)}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right; vertical-align: middle;">${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format((item.price * item.quantity) / 100)}</td>
+    </tr>
+  `).join('');
+
+  const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  return `
+    <p>Une nouvelle commande a été passée.</p>
+    <table style="width: 100%; border-collapse: collapse; font-family: sans-serif;">
+      <thead>
+        <tr>
+          <th style="padding: 8px; border-bottom: 2px solid #333; text-align: left;" colspan="2">Produit</th>
+          <th style="padding: 8px; border-bottom: 2px solid #333; text-align: center;">Quantité</th>
+          <th style="padding: 8px; border-bottom: 2px solid #333; text-align: right;">Prix Unitaire</th>
+          <th style="padding: 8px; border-bottom: 2px solid #333; text-align: right;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemsHtml}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4" style="padding: 12px 8px 0; text-align: right; font-weight: bold;">Total de la commande :</td>
+          <td style="padding: 12px 8px 0; text-align: right; font-weight: bold;">${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(total / 100)}</td>
+        </tr>
+      </tfoot>
+    </table>
+  `;
+}
+
 
 export function CartView() {
   const { cart, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
   const auth = useAuth();
+  const db = useFirestore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const firebaseApp = useFirebaseApp();
   const router = useRouter();
 
   const handleSendOrder = async () => {
     const currentUser = auth.currentUser;
 
-    if (!currentUser) {
+    if (!currentUser || !currentUser.email) {
       setError("Veuillez vous connecter pour envoyer une commande.");
       router.push('/auth/signin');
       return;
@@ -30,32 +73,32 @@ export function CartView() {
     
     setLoading(true);
     setError(null);
-
-    const items = cart.map(item => ({ 
-      id: item.id, 
-      name: item.name,
-      price: item.price,
-      image: item.image,
-      quantity: item.quantity 
-    }));
     
     try {
-      const functions = getFunctions(firebaseApp, 'us-central1');
-      const sendOrderEmail = httpsCallable(functions, 'sendOrderEmail');
-      
-      const result: any = await sendOrderEmail({ items });
-      
-      if (result.data.success) {
-        alert("Commande envoyée avec succès !");
-        clearCart();
-      } else {
-        throw new Error(result.data.message || "Une erreur inconnue est survenue.");
-      }
+      const fromUserEmail = currentUser.email;
+      const htmlBody = formatItemsToHtml(cart);
+      const subject = `Nouvelle commande de ${fromUserEmail}`;
+      const recipientEmail = "contact@cyber-club.net";
+
+      // Prepare the email document for the "Trigger Email" extension
+      const mailDoc = {
+        to: recipientEmail,
+        replyTo: fromUserEmail,
+        message: {
+          subject: subject,
+          html: htmlBody,
+        },
+      };
+
+      // Add a new document to the "mail" collection
+      await addDoc(collection(db, "mail"), mailDoc);
+
+      clearCart();
+      router.push('/checkout/success');
 
     } catch (err: any) {
-      console.error("Error sending order email:", err);
-      const errorMessage = err.details?.message || err.message || "Une erreur inconnue est survenue.";
-      setError(errorMessage);
+      console.error("Error writing to mail collection:", err);
+      setError("Erreur lors de la soumission de la commande. Veuillez réessayer.");
     } finally {
         setLoading(false);
     }
