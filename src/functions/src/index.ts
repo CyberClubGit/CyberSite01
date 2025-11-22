@@ -63,10 +63,11 @@ function getFirstImage(galleryStr: string): string | null {
 // #endregion
 
 export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).https.onRequest(async (req, res) => {
+    // Set CORS headers for preflight requests
     res.set('Access-Control-Allow-Origin', '*');
     if (req.method === 'OPTIONS') {
-        res.set('Access-Control-Allow-Methods', 'GET, POST');
-        res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.set('Access-Control-Allow-Methods', 'GET');
+        res.set('Access-Control-Allow-Headers', 'Content-Type');
         res.set('Access-Control-Max-Age', '3600');
         res.status(204).send('');
         return;
@@ -285,5 +286,3 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     throw new functions.https.HttpsError('internal', `Stripe error: ${error.message}`);
   }
 });
-
-    
