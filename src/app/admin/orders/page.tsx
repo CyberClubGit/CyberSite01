@@ -77,17 +77,23 @@ export default function AdminOrdersPage() {
   const db = useFirestore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
+    // This effect determines authorization and triggers redirection.
     if (!authLoading) {
-      if (!user || !user.isAdmin) {
+      if (user && user.isAdmin) {
+        setIsAuthorized(true);
+      } else {
+        setIsAuthorized(false);
         router.push('/');
       }
     }
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (user && user.isAdmin) {
+    // This effect fetches data only if the user is authorized.
+    if (isAuthorized) {
       const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
       
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -104,14 +110,20 @@ export default function AdminOrdersPage() {
 
       return () => unsubscribe();
     }
-  }, [user, db]);
+  }, [isAuthorized, db]);
 
-  if (authLoading || loading) {
+  // Show a loading spinner while checking auth and loading initial data
+  if (authLoading || isAuthorized === null || (isAuthorized && loading)) {
     return (
       <div className="flex items-center justify-center min-h-[80vh]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
+  }
+  
+  // If not authorized, show nothing (as redirection is in progress)
+  if (!isAuthorized) {
+      return null;
   }
 
   return (

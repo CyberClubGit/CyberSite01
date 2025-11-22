@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { CatalogPageClient } from '@/components/catalog-page-client';
 import DefaultPageLayout from '@/components/default-page-layout';
 import { HomePageClient } from '@/components/home-page-client';
+import AdminOrdersPage from '../admin/orders/page';
 
 export async function generateStaticParams() {
   const categories = await getCategories();
@@ -14,7 +15,6 @@ export async function generateStaticParams() {
   // Default paths without brand
   categories.forEach(category => {
     if (category.Url) {
-      // Handle home page specifically if its slug is 'home'
       if (category.Url.toLowerCase() === 'home') {
         paths.push({ slug: ['home'] });
       } else {
@@ -35,7 +35,6 @@ export async function generateStaticParams() {
   });
   
   // Ensure the root path '/' handled by /home is considered
-  // The redirect in page.tsx handles the root, but generateStaticParams needs to know about /home
   if (!paths.some(p => p.slug.length === 1 && p.slug[0] === 'home')) {
      paths.push({ slug: ['home'] });
   }
@@ -54,7 +53,6 @@ export default async function CatchAllPage({ params }: { params: { slug:string[]
 
   // Handle admin route specifically
   if (slugArray.join('/') === 'admin/orders') {
-    const AdminOrdersPage = (await import('../admin/orders/page')).default;
     return <AdminOrdersPage />;
   }
   
@@ -74,6 +72,11 @@ export default async function CatchAllPage({ params }: { params: { slug:string[]
   }
 
   if (!category || !category.Url) {
+    // Before triggering a 404, check if it's the profile page
+    if (slugArray.join('/') === 'profile') {
+        const ProfilePage = (await import('../profile/page')).default;
+        return <ProfilePage />;
+    }
     notFound();
   }
   
