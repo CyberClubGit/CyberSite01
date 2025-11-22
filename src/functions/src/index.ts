@@ -15,7 +15,7 @@ import fetch from "node-fetch";
 import Papa from "papaparse";
 import { defineSecret, setGlobalOptions } from "firebase-functions/params";
 
-// Allow public access for onRequest functions in this region
+// Set global options for the region
 setGlobalOptions({ region: "us-central1" });
 
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
@@ -258,3 +258,5 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     throw new functions.https.HttpsError('internal', `Stripe error: ${error.message}`);
   }
 });
+
+    
