@@ -6,13 +6,12 @@ import { useCart, CartItem } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Image from 'next/image';
-import { X, Plus, Minus, Loader2, ShoppingCart } from 'lucide-react';
+import { X, Plus, Minus, Loader2, ShoppingCart, Send } from 'lucide-react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { useFirebaseApp } from '@/firebase';
+import { useFirebaseApp, useAuth } from '@/firebase';
+import { useRouter } from 'next/navigation';
 
-// This is a new component for the debug box
 const DebugInfoBox = ({ loading, error, dataSent }: { loading: boolean; error: string | null; dataSent: any }) => {
-    // This box will only be rendered in development mode for security.
     if (process.env.NODE_ENV !== 'development') {
         return null;
     }
@@ -45,46 +44,51 @@ const DebugInfoBox = ({ loading, error, dataSent }: { loading: boolean; error: s
 
 
 export function CartView() {
-  const { cart, removeFromCart, updateQuantity, totalPrice } = useCart();
+  const { cart, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dataSent, setDataSent] = useState<any>(null); // State to hold data for debug box
+  const [dataSent, setDataSent] = useState<any>(null);
   const firebaseApp = useFirebaseApp();
+  const router = useRouter();
 
-  const handleCheckout = async () => {
+  const handleSendOrder = async () => {
+    if (!user) {
+      setError("Veuillez vous connecter pour envoyer une commande.");
+      router.push('/auth/signin');
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     setDataSent(null);
 
-    // Prepare items for the backend, ensuring all data is correct
     const items = cart.map(item => ({ 
       id: item.id, 
       name: item.name,
-      price: item.price, // Price should already be in cents (number)
+      price: item.price,
       image: item.image,
       quantity: item.quantity 
     }));
     
-    // Store the data being sent for debugging purposes
     setDataSent(items);
 
     try {
       const functions = getFunctions(firebaseApp, 'us-central1');
-      const createCheckoutSession = httpsCallable(functions, 'createCheckoutSession');
+      const sendOrderEmail = httpsCallable(functions, 'sendOrderEmail');
       
-      const result: any = await createCheckoutSession({ items });
+      const result: any = await sendOrderEmail({ items });
       
-      if (result.data.url) {
-        window.location.href = result.data.url;
+      if (result.data.success) {
+        alert("Commande envoyée avec succès !");
+        clearCart();
       } else {
-        throw new Error("L'URL de paiement n'a pas été reçue du serveur.");
+        throw new Error(result.data.message || "Une erreur inconnue est survenue.");
       }
 
     } catch (err: any) {
-      console.error("Error creating checkout session:", err);
-      
-      // Capture and display the detailed error message from the backend
-      const errorMessage = err.details?.message || err.message || "Une erreur inconnue est survenue. Veuillez réessayer.";
+      console.error("Error sending order email:", err);
+      const errorMessage = err.details?.message || err.message || "Une erreur inconnue est survenue.";
       setError(errorMessage);
     } finally {
         setLoading(false);
@@ -146,14 +150,17 @@ export function CartView() {
           <span>Total</span>
           <span>{formattedTotalPrice}</span>
         </div>
-        <Button className="w-full" size="lg" onClick={handleCheckout} disabled={loading}>
+        <Button className="w-full" size="lg" onClick={handleSendOrder} disabled={loading}>
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Chargement...
+              Envoi en cours...
             </>
           ) : (
-            'Procéder au paiement'
+            <>
+              <Send className="mr-2 h-4 w-4" />
+              Envoyer la commande
+            </>
           )}
         </Button>
         <DebugInfoBox loading={loading} error={error} dataSent={dataSent} />
