@@ -80,11 +80,14 @@ export default async function CatchAllPage({ params }: { params: { slug:string[]
     // Server-side data processing to ensure data integrity
     const processedData = rawCategoryData.map(item => {
       const processedItem = processGalleryLinks(item);
+      
+      // **THE FIX**: Normalize the ID, making it case-insensitive.
+      // It looks for 'ID', 'Id', or 'id' and standardizes it to a single 'ID' property.
+      const normalizedId = item.ID || item.Id || item.id || '';
+
       return {
         ...processedItem,
-        // ** THE FIX **: Ensure ID is correctly named and passed.
-        // The client component expects 'ID' in uppercase.
-        ID: item.ID || '', 
+        ID: normalizedId, 
         title: processedItem.title, // Ensure title is standardized
       };
     });
@@ -109,5 +112,3 @@ export default async function CatchAllPage({ params }: { params: { slug:string[]
   const processedData = rawCategoryData.map(processGalleryLinks);
   return <DefaultPageLayout category={category} brand={brand} initialData={processedData} brands={brands} />;
 }
-
-    
