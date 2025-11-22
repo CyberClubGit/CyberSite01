@@ -20,20 +20,19 @@ import { Heart, ShoppingCart } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
-// The data is now coming from Google Sheets again, so we can use a more generic type
+// L'interface de l'item traité, pour garantir la cohérence
 type CatalogItem = {
-  id: string;
+  ID: string;
   title: string;
   description: string;
   galleryUrls: string[];
-  Type?: string;
-  Material?: string;
-  [key: string]: any; // Allow other properties from the sheet
+  displayImageUrl: string | null;
+  [key: string]: any; // Permet aux autres propriétés du sheet de passer
 };
 
 
 interface CatalogPageClientProps {
-  initialData: any[]; // Data comes from processGalleryLinks
+  initialData: any[]; // Données brutes venant de processGalleryLinks
   category: Category;
   brand?: Brand;
   types: string[];
@@ -55,26 +54,27 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
       prev.includes(value) ? prev.filter(item => item !== value) : [...prev, value]
     );
   };
-
+  
+  // Transformation des données brutes en un format CatalogItem fiable
+  const cleanedData: CatalogItem[] = useMemo(() => {
+    return initialData.map(item => ({
+      ...item, // Garde toutes les propriétés originales
+      ID: item.ID || '', // Assure que ID est toujours une chaîne
+      title: item.title || item.Title || 'Produit sans nom',
+      displayImageUrl: item.galleryUrls && item.galleryUrls.length > 0 ? item.galleryUrls[0] : null,
+    }));
+  }, [initialData]);
+  
   const finalData: CatalogItem[] = useMemo(() => {
-    const brandFiltered = filterItemsByBrandActivity(initialData, brand?.Brand);
-    const typeFiltered = brandFiltered.filter(item => {
+    const brandFiltered = filterItemsByBrandActivity(cleanedData, brand?.Brand);
+    
+    return brandFiltered.filter(item => {
       const typeMatch = selectedTypes.length === 0 || (item.Type && selectedTypes.includes(item.Type));
       const materialMatch = selectedMaterials.length === 0 || (item.Material && selectedMaterials.includes(item.Material));
       return typeMatch && materialMatch;
     });
 
-    // Final mapping to a clean CatalogItem interface
-    return typeFiltered.map(item => {
-      return {
-        ...item,
-        id: item.ID, // This is the crucial ID from the Google Sheet
-        title: item.title,
-        description: item.description,
-        galleryUrls: item.galleryUrls || [],
-      };
-    });
-  }, [initialData, brand, selectedTypes, selectedMaterials]);
+  }, [cleanedData, brand, selectedTypes, selectedMaterials]);
   
   const resetFilters = () => {
     setSelectedTypes([]);
@@ -83,12 +83,12 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
 
   const handleAddToCart = (e: React.MouseEvent, item: CatalogItem) => {
     e.stopPropagation();
-    // ID from Sheet is used here
+    // L'ID du Sheet est utilisé ici et doit être valide
     addToCart({
-      id: item.id, 
+      id: item.ID, 
       name: item.title,
       price: (item.Price_Model ? parseFloat(item.Price_Model.replace(',', '.')) : 0) * 100,
-      image: item.galleryUrls?.[0] || '',
+      image: item.displayImageUrl || '',
       quantity: 1,
     });
   };
@@ -162,22 +162,21 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
               {finalData && finalData.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {finalData.map((item) => {
-                      const isFavorited = favorites.includes(item.id);
-                      const displayImageUrl = item.galleryUrls && item.galleryUrls.length > 0 ? item.galleryUrls[0] : null;
-                      const isAddToCartDisabled = !item.id || item.id.includes('#NAME?');
+                      const isFavorited = favorites.includes(item.ID);
+                      const isAddToCartDisabled = !item.ID || item.ID.includes('#NAME?');
 
                       return (
                         <Card 
-                          key={item.id || item.title} // Fallback to title if id is bad
+                          key={item.ID || item.title} // Utilise l'ID, avec un fallback sur le titre
                           className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-background/80 backdrop-blur-sm group"
                         >
                            <div 
                               className="relative w-full aspect-[3/4] bg-muted cursor-pointer"
                               onClick={() => setSelectedItem(item)}
                            >
-                            {displayImageUrl && (
+                            {item.displayImageUrl && (
                               <Image
-                                src={displayImageUrl}
+                                src={item.displayImageUrl}
                                 alt={item.title}
                                 fill
                                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -192,7 +191,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                                         className="rounded-full h-8 w-8 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            toggleFavorite(item.id);
+                                            toggleFavorite(item.ID);
                                         }}
                                         disabled={isAddToCartDisabled}
                                     >
@@ -203,7 +202,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                                 <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      {/* Wrap button in a span to allow tooltip even when disabled */}
+                                      {/* Le span permet à la tooltip de s'afficher même si le bouton est désactivé */}
                                       <span tabIndex={isAddToCartDisabled ? 0 : -1}>
                                         <Button
                                           size="icon"
