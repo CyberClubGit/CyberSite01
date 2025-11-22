@@ -168,6 +168,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                     {finalData.map((item) => {
                       const isFavorited = favorites.includes(item.ID);
                       const isAddToCartDisabled = !item.ID || item.ID.includes('#NAME?');
+                      const priceInCents = priceToCents(item.Price_Print);
 
                       return (
                         <Card 
@@ -203,30 +204,32 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                                         <span className="sr-only">Ajouter aux favoris</span>
                                     </Button>
                                 )}
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      {/* The span allows the tooltip to be displayed even if the button is disabled */}
-                                      <span tabIndex={isAddToCartDisabled ? 0 : -1}>
-                                        <Button
-                                          size="icon"
-                                          variant="ghost"
-                                          className="rounded-full h-8 w-8 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
-                                          onClick={(e) => handleAddToCart(e, item)}
-                                          disabled={isAddToCartDisabled}
-                                        >
-                                          <ShoppingCart className="h-5 w-5" />
-                                          <span className="sr-only">Ajouter au panier</span>
-                                        </Button>
-                                      </span>
-                                    </TooltipTrigger>
-                                    {isAddToCartDisabled && (
-                                      <TooltipContent>
-                                        <p>Cet article n'a pas d'ID valide et ne peut pas être ajouté.</p>
-                                      </TooltipContent>
-                                    )}
-                                  </Tooltip>
-                                </TooltipProvider>
+                                {priceInCents > 0 && (
+                                    <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                        {/* The span allows the tooltip to be displayed even if the button is disabled */}
+                                        <span tabIndex={isAddToCartDisabled ? 0 : -1}>
+                                            <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="rounded-full h-8 w-8 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
+                                            onClick={(e) => handleAddToCart(e, item)}
+                                            disabled={isAddToCartDisabled}
+                                            >
+                                            <ShoppingCart className="h-5 w-5" />
+                                            <span className="sr-only">Ajouter au panier</span>
+                                            </Button>
+                                        </span>
+                                        </TooltipTrigger>
+                                        {isAddToCartDisabled && (
+                                        <TooltipContent>
+                                            <p>Cet article n'a pas d'ID valide et ne peut pas être ajouté.</p>
+                                        </TooltipContent>
+                                        )}
+                                    </Tooltip>
+                                    </TooltipProvider>
+                                )}
                              </div>
                           </div>
                           <CardHeader onClick={() => setSelectedItem(item)} className="cursor-pointer">
