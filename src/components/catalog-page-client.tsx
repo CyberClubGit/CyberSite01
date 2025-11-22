@@ -20,16 +20,6 @@ import { Heart, ShoppingCart } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
-// Helper to convert sheet price string to cents
-const parsePrice = (priceStr: string | undefined | null): number => {
-    if (!priceStr) return 0;
-    const cleaned = priceStr.replace(',', '.');
-    const price = parseFloat(cleaned);
-    if (isNaN(price)) return 0;
-    return Math.round(price * 100);
-};
-
-
 // The interface of the item processed, to ensure consistency
 type CatalogItem = {
   ID: string;
@@ -43,7 +33,7 @@ type CatalogItem = {
 
 
 interface CatalogPageClientProps {
-  initialData: any[]; // Raw data from processGalleryLinks
+  initialData: CatalogItem[]; 
   category: Category;
   brand?: Brand;
   types: string[];
@@ -66,19 +56,8 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
     );
   };
   
-  // Transformation of raw data into a reliable CatalogItem format
-  const cleanedData: CatalogItem[] = useMemo(() => {
-    return initialData.map(item => ({
-      ...item, // Keep all original properties
-      ID: item.ID || '', // Ensure ID is always a string
-      title: item.title || item.Title || 'Produit sans nom',
-      displayImageUrl: item.galleryUrls && item.galleryUrls.length > 0 ? item.galleryUrls[0] : null,
-      Price_Print: parsePrice(item.Price_Print), // Use the 'Price_Print' column and convert to cents
-    }));
-  }, [initialData]);
-  
   const finalData: CatalogItem[] = useMemo(() => {
-    const brandFiltered = filterItemsByBrandActivity(cleanedData, brand?.Brand);
+    const brandFiltered = filterItemsByBrandActivity(initialData, brand?.Brand);
     
     return brandFiltered.filter(item => {
       const typeMatch = selectedTypes.length === 0 || (item.Type && selectedTypes.includes(item.Type));
@@ -86,7 +65,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
       return typeMatch && materialMatch;
     });
 
-  }, [cleanedData, brand, selectedTypes, selectedMaterials]);
+  }, [initialData, brand, selectedTypes, selectedMaterials]);
   
   const resetFilters = () => {
     setSelectedTypes([]);
@@ -240,6 +219,11 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                           </div>
                           <CardHeader onClick={() => setSelectedItem(item)} className="cursor-pointer">
                             <CardTitle className="font-headline text-lg leading-tight">{item.title}</CardTitle>
+                             {process.env.NODE_ENV === 'development' && (
+                                <div className="mt-2 p-1 bg-destructive/10 text-destructive text-xs rounded font-mono">
+                                    ID: {item.ID || 'NON DÉFINI'}
+                                </div>
+                             )}
                           </CardHeader>
                         </Card>
                       )
