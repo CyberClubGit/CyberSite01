@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
@@ -17,7 +17,7 @@ type SyncResult = {
     results?: any;
 }
 
-export default function SyncPage() {
+function SyncPageComponent() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<SyncStatus>('idle');
   const [result, setResult] = useState<SyncResult | null>(null);
@@ -25,11 +25,13 @@ export default function SyncPage() {
   useEffect(() => {
     const secret = searchParams.get('secret');
 
+    // Security Check: If the secret is not correct, show an error and stop.
     if (secret !== SYNC_SECRET) {
       setStatus('unauthorized');
       return;
     }
 
+    // If the secret is correct, start the sync process.
     const startSync = async () => {
       setStatus('syncing');
       try {
@@ -89,7 +91,7 @@ export default function SyncPage() {
           <div className="flex flex-col items-center gap-4 text-center">
             <XCircle className="h-12 w-12 text-destructive" />
             <p className="text-lg font-semibold text-destructive">Accès non autorisé</p>
-            <p className="text-muted-foreground">La clé secrète est manquante ou incorrecte.</p>
+            <p className="text-muted-foreground">La clé secrète est manquante ou incorrecte. Vérifiez l'URL.</p>
           </div>
         );
       default:
@@ -101,7 +103,7 @@ export default function SyncPage() {
         );
     }
   };
-
+  
   return (
     <div className="container py-12">
       <Card className="max-w-4xl mx-auto">
@@ -117,4 +119,13 @@ export default function SyncPage() {
       </Card>
     </div>
   );
+}
+
+export default function SyncPage() {
+    // We wrap the component in Suspense because useSearchParams() requires it.
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <SyncPageComponent />
+        </Suspense>
+    )
 }
