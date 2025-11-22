@@ -7,7 +7,7 @@ import { toast } from './use-toast';
 export interface CartItem {
   id: string; // This ID MUST be the unique ID from the Google Sheet
   name: string;
-  price: number; // Price in cents
+  price: number; // Price MUST be a number in cents
   image: string;
   quantity: number;
 }
@@ -37,12 +37,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         const savedCart = JSON.parse(savedCartJson);
         // Basic validation to ensure we're loading an array of items
         if (Array.isArray(savedCart)) {
-          // Additional validation for each item
+          // Additional validation for each item to ensure data integrity
           const validatedCart = savedCart.filter(item => 
               item.id && 
               typeof item.id === 'string' &&
               item.name &&
-              typeof item.price === 'number' &&
+              typeof item.price === 'number' && // Price must be a number
               typeof item.quantity === 'number'
           );
           setCart(validatedCart);
@@ -64,10 +64,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, [cart]);
 
   const addToCart = useCallback((item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
-    // Critical validation: Ensure price is a number and convert it if it's a string.
-    const priceInCents = typeof item.price === 'string' ? parseFloat(item.price) * 100 : item.price;
-
-    if (!item.id || typeof item.id !== 'string' || isNaN(priceInCents) || priceInCents < 0) {
+    // **CRITICAL VALIDATION**
+    // Ensure the price is a valid number (integer in cents) before it enters the cart.
+    // The conversion from sheet string to cents should happen *before* calling this function.
+    if (!item.id || typeof item.price !== 'number' || item.price < 0) {
         console.error("Attempted to add an item with invalid data:", item);
         toast({
             variant: "destructive",
@@ -77,13 +77,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
 
-    const itemToAdd = {
-        ...item,
-        price: Math.round(priceInCents) // Ensure it's an integer
-    };
-
     setCart(prevCart => {
-      const existingItemIndex = prevCart.findIndex(cartItem => cartItem.id === itemToAdd.id);
+      const existingItemIndex = prevCart.findIndex(cartItem => cartItem.id === item.id);
       
       if (existingItemIndex > -1) {
         // If item exists, create a new array with the updated item
@@ -91,12 +86,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         const existingItem = newCart[existingItemIndex];
         newCart[existingItemIndex] = { 
             ...existingItem, 
-            quantity: existingItem.quantity + (itemToAdd.quantity || 1) 
+            quantity: existingItem.quantity + (item.quantity || 1) 
         };
         return newCart;
       } else {
         // If item does not exist, add it as a new item to the cart
-        return [...prevCart, { ...itemToAdd, quantity: itemToAdd.quantity || 1 }];
+        return [...prevCart, { ...item, quantity: item.quantity || 1 }];
       }
     });
 

@@ -32,7 +32,7 @@ function ensureStripeIsInitialized() {
     const key = stripeSecretKey.value();
     if (!key) {
       console.error("CRITICAL: STRIPE_SECRET_KEY is not defined.");
-      throw new HttpsError('internal', 'Stripe secret key is not configured on the server.');
+      throw new HttpsError('internal', 'La clé secrète Stripe n\'est pas configurée sur le serveur.');
     }
     stripe = new Stripe(key, {
       apiVersion: "2024-06-20",
@@ -50,45 +50,46 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
 
   // Validate cart data
   if (!Array.isArray(data.items) || data.items.length === 0) {
-    throw new HttpsError('invalid-argument', 'The function must be called with an array of "items".');
+    throw new HttpsError('invalid-argument', 'La fonction doit être appelée avec un tableau "items" non vide.');
   }
 
   const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
 
   for (const item of data.items) {
-    // Validate each item with explicit reasons for failure
+    // **SERVER-SIDE VALIDATION**
+    // This is the last line of defense to ensure data integrity before sending to Stripe.
     if (!item.id || typeof item.id !== 'string') {
-        const errorMsg = `Invalid item found in cart: ID is missing or not a string. Item: ${JSON.stringify(item)}`;
+        const errorMsg = `Article invalide : ID manquant ou invalide. Article: ${JSON.stringify(item)}`;
         functions.logger.error(errorMsg);
         throw new HttpsError('invalid-argument', errorMsg);
     }
     if (!item.name) {
-        const errorMsg = `Invalid item found in cart: Name is missing. Item ID: ${item.id}`;
+        const errorMsg = `Article invalide : Nom manquant. Article ID: ${item.id}`;
         functions.logger.error(errorMsg);
         throw new HttpsError('invalid-argument', errorMsg);
     }
-    if (typeof item.price !== 'number' || item.price <= 0) {
-        const errorMsg = `Invalid item found in cart: '${item.name}'. Price must be a positive number (in cents), but received '${item.price}'.`;
+    // Price MUST be a number (integer in cents) and positive.
+    if (typeof item.price !== 'number' || !Number.isInteger(item.price) || item.price <= 0) {
+        const errorMsg = `Article invalide : '${item.name}'. Le prix doit être un nombre entier positif (en centimes), mais a reçu '${item.price}'.`;
         functions.logger.error(errorMsg);
         throw new HttpsError('invalid-argument', errorMsg);
     }
-    if (typeof item.quantity !== 'number' || item.quantity <= 0) {
-        const errorMsg = `Invalid item found in cart: '${item.name}'. Quantity must be a positive number, but received '${item.quantity}'.`;
+    if (typeof item.quantity !== 'number' || !Number.isInteger(item.quantity) || item.quantity <= 0) {
+        const errorMsg = `Article invalide : '${item.name}'. La quantité doit être un nombre entier positif, mais a reçu '${item.quantity}'.`;
         functions.logger.error(errorMsg);
         throw new HttpsError('invalid-argument', errorMsg);
     }
-
 
     try {
       // Create a temporary product and price in Stripe for this transaction
       const price = await stripe.prices.create({
         currency: 'eur',
-        unit_amount: item.price, // Price is already in cents from the frontend
+        unit_amount: item.price, // Price is expected in cents here
         product_data: {
           name: item.name,
           images: item.image ? [item.image] : [],
           metadata: {
-            sheet_id: item.id
+            sheet_id: item.id // Keep track of the original ID from the sheet
           }
         }
       });
@@ -100,12 +101,12 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
 
     } catch (error: any) {
        functions.logger.error(`Failed to create Stripe price for item ${item.id}:`, error);
-       throw new HttpsError('internal', `An error occurred while processing item ${item.name}.`);
+       throw new HttpsError('internal', `Une erreur est survenue lors du traitement de l'article ${item.name}.`);
     }
   }
 
   if (line_items.length === 0) {
-    throw new HttpsError('failed-precondition', 'No valid items were processed to create a checkout session.');
+    throw new HttpsError('failed-precondition', 'Aucun article valide n\'a été traité pour créer une session de paiement.');
   }
 
   const origin = context.rawRequest.headers.origin || 'http://localhost:9002';
@@ -121,6 +122,7 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
         cancel_url,
     };
     
+    // Add customer email if the user is authenticated
     if (context.auth?.token?.email) {
       sessionParams.customer_email = context.auth.token.email;
     }
@@ -128,22 +130,21 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     const session = await stripe.checkout.sessions.create(sessionParams);
 
     if (!session.url) {
-      throw new HttpsError('internal', 'Could not create a checkout session URL.');
+      throw new HttpsError('internal', 'Impossible de créer une URL de session de paiement.');
     }
 
     return { url: session.url };
 
   } catch (error: any) {
     functions.logger.error('Stripe checkout session creation failed:', error);
-    throw new HttpsError('internal', `Stripe error: ${error.message}`);
+    throw new HttpsError('internal', `Erreur Stripe: ${error.message}`);
   }
 });
 
-// The sync function is no longer needed for the checkout flow,
-// but it is kept here for potential future administrative use.
-// It is not publicly invokable by default anymore.
+// The sync function is kept for administrative purposes but is no longer part of the main checkout flow.
+// It is not publicly invokable.
 export const syncProductsFromSheet = functions
   .runWith({ secrets: [stripeSecretKey] })
   .https.onRequest(async (req, res) => {
-    res.status(403).send('This function is disabled for manual execution.');
+    res.status(403).send('This function is disabled for direct HTTP execution.');
   });

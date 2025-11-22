@@ -40,12 +40,22 @@ interface CatalogPageClientProps {
   materials: string[];
 }
 
-// Utility to convert price string from sheet (e.g., "2" or "2,50") to cents (e.g., 200 or 250)
+/**
+ * Utility to convert a price string from the sheet (e.g., "2,50" or "2") into an integer in cents.
+ * @param priceStr The price string from the Google Sheet.
+ * @returns The price in cents as a number (e.g., 250 or 200). Returns 0 if invalid.
+ */
 function priceToCents(priceStr: string | undefined): number {
   if (!priceStr || typeof priceStr !== 'string') return 0;
+  
+  // Replace comma with a dot for decimal conversion and parse it
   const cleaned = priceStr.replace(',', '.');
   const price = parseFloat(cleaned);
+  
+  // If parsing fails or result is not a number, return 0
   if (isNaN(price)) return 0;
+  
+  // Convert to cents and round to avoid floating point issues
   return Math.round(price * 100);
 }
 
@@ -85,13 +95,14 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   const handleAddToCart = (e: React.MouseEvent, item: CatalogItem) => {
     e.stopPropagation(); // Prevent opening the details dialog
     
-    // Convert price string to cents before adding to cart
+    // **THIS IS THE CRITICAL CONVERSION STEP**
+    // The price from the sheet is converted to cents (number) here.
     const priceInCents = priceToCents(item.Price_Print);
 
     addToCart({
       id: item.ID, 
       name: item.title,
-      price: priceInCents,
+      price: priceInCents, // This is now a number (integer in cents)
       image: item.displayImageUrl || '',
       quantity: 1,
     });

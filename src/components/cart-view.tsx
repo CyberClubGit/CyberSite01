@@ -12,6 +12,7 @@ import { useFirebaseApp } from '@/firebase';
 
 // This is a new component for the debug box
 const DebugInfoBox = ({ loading, error, dataSent }: { loading: boolean; error: string | null; dataSent: any }) => {
+    // This box will only be rendered in development mode for security.
     if (process.env.NODE_ENV !== 'development') {
         return null;
     }
@@ -20,10 +21,10 @@ const DebugInfoBox = ({ loading, error, dataSent }: { loading: boolean; error: s
         <div className="mt-4 p-4 bg-muted/50 border border-dashed rounded-lg text-sm">
             <h4 className="font-bold font-mono">Debug Info</h4>
             <div className="mt-2 space-y-2">
-                <p>Status: {loading ? 'Loading...' : error ? 'Error' : 'Idle'}</p>
+                <p><span className="font-semibold">Status:</span> {loading ? 'Chargement...' : error ? <span className="text-destructive">Erreur</span> : 'Inactif'}</p>
                 {dataSent && (
                     <div>
-                        <p className="font-semibold">Data sent to function:</p>
+                        <p className="font-semibold">Données envoyées à la fonction :</p>
                         <pre className="text-xs bg-background p-2 rounded-md overflow-x-auto">
                             {JSON.stringify(dataSent, null, 2)}
                         </pre>
@@ -31,8 +32,8 @@ const DebugInfoBox = ({ loading, error, dataSent }: { loading: boolean; error: s
                 )}
                 {error && (
                     <div>
-                        <p className="font-semibold text-destructive">Error received:</p>
-                        <pre className="text-xs bg-background p-2 rounded-md text-destructive">
+                        <p className="font-semibold text-destructive">Erreur détaillée reçue :</p>
+                        <pre className="text-xs bg-background p-2 rounded-md text-destructive whitespace-pre-wrap">
                             {error}
                         </pre>
                     </div>
@@ -55,33 +56,35 @@ export function CartView() {
     setError(null);
     setDataSent(null);
 
+    // Prepare items for the backend, ensuring all data is correct
+    const items = cart.map(item => ({ 
+      id: item.id, 
+      name: item.name,
+      price: item.price, // Price should already be in cents (number)
+      image: item.image,
+      quantity: item.quantity 
+    }));
+    
+    // Store the data being sent for debugging purposes
+    setDataSent(items);
+
     try {
       const functions = getFunctions(firebaseApp, 'us-central1');
       const createCheckoutSession = httpsCallable(functions, 'createCheckoutSession');
-      
-      const items = cart.map(item => ({ 
-        id: item.id, 
-        name: item.name,
-        price: item.price, // Price is already in cents
-        image: item.image,
-        quantity: item.quantity 
-      }));
-
-      // Store the data being sent for debugging purposes
-      setDataSent(items);
       
       const result: any = await createCheckoutSession({ items });
       
       if (result.data.url) {
         window.location.href = result.data.url;
       } else {
-        throw new Error("The payment URL was not received from the server.");
+        throw new Error("L'URL de paiement n'a pas été reçue du serveur.");
       }
 
     } catch (err: any) {
       console.error("Error creating checkout session:", err);
-      // More descriptive error handling
-      const errorMessage = err.details?.message || err.message || "An unknown error occurred. Please try again.";
+      
+      // Capture and display the detailed error message from the backend
+      const errorMessage = err.details?.message || err.message || "Une erreur inconnue est survenue. Veuillez réessayer.";
       setError(errorMessage);
     } finally {
         setLoading(false);
