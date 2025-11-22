@@ -64,9 +64,11 @@ function getFirstImage(galleryStr: string): string | null {
 
 export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).https.onRequest(async (req, res) => {
     // Set CORS headers to allow requests from any origin.
-    // This is useful for local development.
+    // This is necessary for the local development page (/dev/sync) to call the deployed function.
     res.set('Access-Control-Allow-Origin', '*');
+
     if (req.method === 'OPTIONS') {
+        // This is a preflight request. Respond with the allowed methods and headers.
         res.set('Access-Control-Allow-Methods', 'GET');
         res.set('Access-Control-Allow-Headers', 'Content-Type');
         res.set('Access-Control-Max-Age', '3600');
@@ -258,7 +260,7 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     const session = await stripe.checkout.sessions.create(sessionParams);
 
     if (!session.url) {
-      throw new functions.https.falsese('internal', 'Could not create a checkout session URL.');
+      throw new functions.https.HttpsError('internal', 'Could not create a checkout session URL.');
     }
 
     return { url: session.url };
