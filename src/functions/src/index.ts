@@ -14,6 +14,8 @@ import Stripe from "stripe";
 import fetch from "node-fetch";
 import Papa from "papaparse";
 import { defineSecret, setGlobalOptions } from "firebase-functions/params";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { setInvoker } from "firebase-functions/v2/alerts";
 
 // Set global options for the region
 setGlobalOptions({ region: "us-central1" });
@@ -36,7 +38,6 @@ function ensureStripeIsInitialized() {
       console.error("CRITICAL: STRIPE_SECRET_KEY is not defined.");
       throw new functions.https.HttpsError('internal', 'Stripe secret key is not configured on the server.');
     }
-    console.info(`Stripe key loaded successfully (last 4 chars: ...${key.slice(-4)}).`);
     stripe = new Stripe(key, {
       apiVersion: "2024-06-20",
     });
@@ -62,19 +63,9 @@ function getFirstImage(galleryStr: string): string | null {
 }
 // #endregion
 
-export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).https.onRequest(async (req, res) => {
-    // Set CORS headers to allow requests from any origin.
-    // This is necessary for the local development page (/dev/sync) to call the deployed function.
-    res.set('Access-Control-Allow-Origin', '*');
-
-    if (req.method === 'OPTIONS') {
-        // This is a preflight request. Respond with the allowed methods and headers.
-        res.set('Access-Control-Allow-Methods', 'GET');
-        res.set('Access-Control-Allow-Headers', 'Content-Type');
-        res.set('Access-Control-Max-Age', '3600');
-        res.status(204).send('');
-        return;
-    }
+export const syncProductsFromSheet = functions
+  .runWith({ secrets: [stripeSecretKey], invoker: 'public' }) // <-- REND LA FONCTION PUBLIQUE
+  .https.onRequest(async (req, res) => {
     
   functions.logger.info("Starting product synchronization from Google Sheet.");
   
@@ -82,7 +73,7 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
     ensureStripeIsInitialized();
   } catch (error: any) {
     functions.logger.error("Stripe initialization failed:", error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).send(`Stripe initialization failed: ${error.message}`);
     return;
   }
 
@@ -163,17 +154,16 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
     }
 
     functions.logger.info("Synchronization finished.", summary);
-    res.status(200).json({
-      success: true,
-      message: `Synchronization complete. Processed ${products.length} rows.`,
-      results: summary,
-    });
+    res.status(200).send(`
+      <h1>Synchronisation Réussie</h1>
+      <pre>${JSON.stringify(summary, null, 2)}</pre>
+    `);
   } catch (error: any) {
     functions.logger.error("Fatal error during synchronization:", error);
-    res.status(500).json({
-      success: false,
-      message: `Synchronization failed: ${error.message}`,
-    });
+    res.status(500).send(`
+      <h1>Erreur Fatale</h1>
+      <p>${error.message}</p>
+    `);
   }
 });
 
@@ -199,7 +189,6 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     }
     
     try {
-      // Step 1: Search for the product in Stripe using the sheet_id metadata
       const products = await stripe.products.search({
         query: `metadata['sheet_id']:'${item.id}'`,
         limit: 1
@@ -212,7 +201,6 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
       
       const stripeProduct = products.data[0];
 
-      // Step 2: List active prices for that product
       const prices = await stripe.prices.list({
           product: stripeProduct.id,
           active: true,
@@ -231,7 +219,7 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
 
     } catch (error: any) {
        functions.logger.error(`Failed to process item with sheet_id ${item.id}:`, error);
-       if (error instanceof functions.https.HttpsError) throw error; // Re-throw specific errors
+       if (error instanceof functions.https.HttpsError) throw error; 
        throw new functions.https.HttpsError('internal', `An error occurred while processing item ${item.id}.`);
     }
   }
