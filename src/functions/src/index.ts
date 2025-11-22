@@ -13,8 +13,10 @@ import * as admin from "firebase-admin";
 import Stripe from "stripe";
 import { defineSecret, setGlobalOptions } from "firebase-functions/params";
 import { HttpsError } from "firebase-functions/v2/https";
-import fetch from "node-fetch";
-import Papa from "papaparse";
+
+// Using require for CJS compatibility
+const fetch = require("node-fetch");
+const Papa = require("papaparse");
 
 // Set global options for the region
 setGlobalOptions({ region: "us-central1" });
@@ -289,3 +291,5 @@ export const syncProductsFromSheet = functions.runWith({ secrets: [stripeSecretK
     return { success: true, message: "Synchronization complete.", results: summary };
 });
 // #endregion
+
+    
