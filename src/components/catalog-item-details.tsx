@@ -13,11 +13,6 @@ import {
   FileText,
   Wrench,
   Cuboid,
-  Package,
-  Ruler,
-  Scale,
-  Cpu,
-  SquareCode,
   Layers,
   ShoppingCart,
   Heart,
@@ -33,7 +28,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/hooks/useFavorites';
 
 // The item type comes from the sheet processing
-type CatalogItem = ReturnType<typeof import('@/lib/sheets').processGalleryLinks>;
+type CatalogItem = {
+  ID: string;
+  title: string;
+  description: string;
+  galleryUrls: string[];
+  displayImageUrl: string | null;
+  Price_Print: number; // Price in cents
+  [key: string]: any;
+};
 
 interface CatalogItemDetailsProps {
   item: CatalogItem;
@@ -139,11 +142,10 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
   };
 
   const handleAddToCart = () => {
-    const priceModel = item.Price_Model ? parseFloat(item.Price_Model.replace(',', '.')) : 0;
     addToCart({
       id: item.ID,
       name: item.title,
-      price: priceModel * 100, // Store price in cents
+      price: item.Price_Print, // Price is already in cents
       image: item.galleryUrls?.[0] || '',
       quantity: 1,
     });
@@ -160,10 +162,6 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
   const techDetails = [
     { icon: Layers, label: 'Material', value: item.Material },
     { icon: Cuboid, label: 'Type', value: item.Type },
-    { icon: Scale, label: 'Weight', value: item.Weight },
-    { icon: Ruler, label: 'Dimensions', value: item.Dimensions },
-    { icon: Cpu, label: 'Software', value: item.Software },
-    { icon: SquareCode, label: 'Gcode', value: item.Gcode_config },
   ].filter(detail => detail.value);
 
   const descriptionAndTechSection = (
@@ -176,7 +174,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
           </TabsTrigger>
           <TabsTrigger value="tech" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
             <Wrench className="mr-2 h-4 w-4" />
-            Détails Techniques
+            Détails
           </TabsTrigger>
         </TabsList>
         <TabsContent value="description" className="mt-4">
@@ -205,8 +203,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     </InteractivePanel>
   );
   
-  const priceModel = item.Price_Model ? parseFloat(item.Price_Model.replace(',', '.')) : 0;
-  const pricePrint = item.Price_Print ? parseFloat(item.Price_Print.replace(',', '.')) : 0;
+  const pricePrint = item.Price_Print;
 
   return (
     <>
@@ -225,9 +222,11 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
                       <Heart className={cn("h-5 w-5", isFavorited ? "fill-red-500 text-red-500" : "text-foreground")} />
                   </Button>
               )}
-              <Button size="icon" variant="ghost" className="rounded-full h-10 w-10 bg-background/50 backdrop-blur-sm" onClick={handleAddToCart}>
-                  <ShoppingCart className="h-5 w-5 text-foreground" />
-              </Button>
+              {pricePrint > 0 &&
+                <Button size="icon" variant="ghost" className="rounded-full h-10 w-10 bg-background/50 backdrop-blur-sm" onClick={handleAddToCart}>
+                    <ShoppingCart className="h-5 w-5 text-foreground" />
+                </Button>
+              }
             </div>
         </div>
 
@@ -265,17 +264,11 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
               </InteractivePanel>
               <div className="flex-shrink-0 flex flex-col gap-4">
                 {descriptionAndTechSection}
-                <div className="grid grid-cols-2 gap-4">
-                    {priceModel > 0 && (
+                <div className="grid grid-cols-1 gap-4">
+                    {pricePrint > 0 && (
                         <Button size="lg" onClick={handleAddToCart}>
                             <ShoppingCart className="mr-2 h-5 w-5"/>
-                            Ajouter Fichier 3D ({(priceModel).toFixed(2)} €)
-                        </Button>
-                    )}
-                    {pricePrint > 0 && (
-                        <Button size="lg" variant="secondary">
-                            <ShoppingCart className="mr-2 h-5 w-5"/>
-                            Impression 3D ({(pricePrint).toFixed(2)} €)
+                            Ajouter au Panier ({(pricePrint / 100).toFixed(2).replace('.', ',')} €)
                         </Button>
                     )}
                 </div>

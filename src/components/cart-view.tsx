@@ -6,12 +6,12 @@ import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Image from 'next/image';
-import { X, Plus, Minus, Loader2 } from 'lucide-react';
+import { X, Plus, Minus, Loader2, ShoppingCart } from 'lucide-react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useFirebaseApp } from '@/firebase';
 
 export function CartView() {
-  const { cart, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
+  const { cart, removeFromCart, updateQuantity, totalPrice } = useCart();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const firebaseApp = useFirebaseApp();
@@ -23,13 +23,20 @@ export function CartView() {
       const functions = getFunctions(firebaseApp, 'us-central1');
       const createCheckoutSession = httpsCallable(functions, 'createCheckoutSession');
       
-      const items = cart.map(item => ({ id: item.id, quantity: item.quantity }));
+      // Prepare the items array with the sheet_id for the backend
+      const items = cart.map(item => ({ 
+        id: item.id, // This is the Google Sheet ID
+        quantity: item.quantity 
+      }));
       
       const result: any = await createCheckoutSession({ items });
-      const checkoutUrl = result.data.url;
       
-      // Redirect to Stripe checkout page
-      window.location.href = checkoutUrl;
+      if (result.data.url) {
+        // Redirect to Stripe checkout page
+        window.location.href = result.data.url;
+      } else {
+        throw new Error("L'URL de paiement n'a pas été reçue.");
+      }
 
     } catch (err: any) {
       console.error("Error creating checkout session:", err);
@@ -123,8 +130,3 @@ export function CartView() {
     </div>
   );
 }
-
-// Dummy icon for when CartView is imported elsewhere
-const ShoppingCart = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.16"/></svg>
-);

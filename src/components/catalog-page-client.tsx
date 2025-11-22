@@ -20,19 +20,30 @@ import { Heart, ShoppingCart } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
-// L'interface de l'item traité, pour garantir la cohérence
+// Helper to convert sheet price string to cents
+const parsePrice = (priceStr: string | undefined | null): number => {
+    if (!priceStr) return 0;
+    const cleaned = priceStr.replace(',', '.');
+    const price = parseFloat(cleaned);
+    if (isNaN(price)) return 0;
+    return Math.round(price * 100);
+};
+
+
+// The interface of the item processed, to ensure consistency
 type CatalogItem = {
   ID: string;
   title: string;
   description: string;
   galleryUrls: string[];
   displayImageUrl: string | null;
-  [key: string]: any; // Permet aux autres propriétés du sheet de passer
+  Price_Print: number; // Price in cents
+  [key: string]: any; // Allow other properties
 };
 
 
 interface CatalogPageClientProps {
-  initialData: any[]; // Données brutes venant de processGalleryLinks
+  initialData: any[]; // Raw data from processGalleryLinks
   category: Category;
   brand?: Brand;
   types: string[];
@@ -55,13 +66,14 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
     );
   };
   
-  // Transformation des données brutes en un format CatalogItem fiable
+  // Transformation of raw data into a reliable CatalogItem format
   const cleanedData: CatalogItem[] = useMemo(() => {
     return initialData.map(item => ({
-      ...item, // Garde toutes les propriétés originales
-      ID: item.ID || '', // Assure que ID est toujours une chaîne
+      ...item, // Keep all original properties
+      ID: item.ID || '', // Ensure ID is always a string
       title: item.title || item.Title || 'Produit sans nom',
       displayImageUrl: item.galleryUrls && item.galleryUrls.length > 0 ? item.galleryUrls[0] : null,
+      Price_Print: parsePrice(item.Price_Print), // Use the 'Price_Print' column and convert to cents
     }));
   }, [initialData]);
   
@@ -82,12 +94,13 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   };
 
   const handleAddToCart = (e: React.MouseEvent, item: CatalogItem) => {
-    e.stopPropagation();
-    // L'ID du Sheet est utilisé ici et doit être valide
+    e.stopPropagation(); // Prevent opening the details dialog
+    
+    // The Sheet ID is used here and must be valid
     addToCart({
       id: item.ID, 
       name: item.title,
-      price: (item.Price_Model ? parseFloat(item.Price_Model.replace(',', '.')) : 0) * 100,
+      price: item.Price_Print, // Price is already in cents
       image: item.displayImageUrl || '',
       quantity: 1,
     });
@@ -167,7 +180,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
 
                       return (
                         <Card 
-                          key={item.ID || item.title} // Utilise l'ID, avec un fallback sur le titre
+                          key={item.ID || item.title} // Use ID, with a fallback to title
                           className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-background/80 backdrop-blur-sm group"
                         >
                            <div 
@@ -202,7 +215,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                                 <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      {/* Le span permet à la tooltip de s'afficher même si le bouton est désactivé */}
+                                      {/* The span allows the tooltip to be displayed even if the button is disabled */}
                                       <span tabIndex={isAddToCartDisabled ? 0 : -1}>
                                         <Button
                                           size="icon"
@@ -258,7 +271,3 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
     </>
   );
 }
-
-    
-
-    
