@@ -7,24 +7,16 @@
  *
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
+import "dotenv/config";
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import { defineSecret, setGlobalOptions } from "firebase-functions/params";
 import { HttpsError } from "firebase-functions/v2/https";
 import * as nodemailer from "nodemailer";
-
-// Set global options for the region
-setGlobalOptions({ region: "us-central1" });
 
 // Safe initialization of Firebase Admin SDK
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
-
-// Define secrets for email credentials
-const emailUserName = defineSecret("EMAIL_USERNAME");
-const emailPassword = defineSecret("EMAIL_PASSWORD");
-
 
 // #region --- New Email Order Function ---
 
@@ -74,43 +66,52 @@ function formatItemsToHtml(items: any[]): string {
 }
 
 
-export const sendOrderEmail = functions.runWith({ secrets: [emailUserName, emailPassword] }).https.onCall(async (data, context) => {
+export const sendOrderEmail = functions.https.onCall(async (data, context) => {
   functions.logger.info("--- Received new order to send by email using Nodemailer ---");
 
-  // 1. Validate cart data
+  // 1. Validate environment variables
+  const emailUserName = process.env.EMAIL_USERNAME;
+  const emailPassword = process.env.EMAIL_PASSWORD;
+
+  if (!emailUserName || !emailPassword) {
+      functions.logger.error("FATAL: EMAIL_USERNAME or EMAIL_PASSWORD is not set in .env file.");
+      throw new HttpsError('internal', 'La configuration du serveur de messagerie est manquante. Contactez l\'administrateur.');
+  }
+
+  // 2. Validate cart data
   if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
     functions.logger.error("Validation failed: 'items' is not a non-empty array.", data);
     throw new HttpsError('invalid-argument', 'La fonction doit être appelée avec un tableau "items" non vide.');
   }
 
-  // 2. Validate user authentication
+  // 3. Validate user authentication
   if (!context.auth) {
       throw new HttpsError('unauthenticated', 'La fonction doit être appelée par un utilisateur authentifié.');
   }
 
-  // 3. Prepare email content
+  // 4. Prepare email content
   const fromUserEmail = context.auth.token.email || 'email.non.fourni@exemple.com';
   const htmlBody = formatItemsToHtml(data.items);
   const subject = `Nouvelle commande de ${fromUserEmail}`;
   const recipientEmail = "contact@cyber-club.net";
 
-  // 4. Configure Nodemailer transporter using Gmail
+  // 5. Configure Nodemailer transporter using Gmail
   const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-          user: emailUserName.value(),
-          pass: emailPassword.value(),
+          user: emailUserName,
+          pass: emailPassword,
       },
   });
 
   const mailOptions = {
-      from: `CYBER CLUB <${emailUserName.value()}>`, // Sender address
+      from: `CYBER CLUB <${emailUserName}>`, // Sender address
       to: recipientEmail, // List of receivers
       subject: subject, // Subject line
       html: htmlBody, // HTML body
   };
 
-  // 5. Send the email
+  // 6. Send the email
   try {
       functions.logger.info(`Attempting to send email to '${recipientEmail}'...`);
       await transporter.sendMail(mailOptions);
@@ -131,9 +132,7 @@ export const sendOrderEmail = functions.runWith({ secrets: [emailUserName, email
 
 
 // This is kept for reference, but can be removed if Stripe integration is abandoned.
-const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=928586250&single=true&output=csv";
-export const syncProductsFromSheet = functions.runWith({ secrets: [stripeSecretKey] }).https.onCall(async (data, context) => {
+export const syncProductsFromSheet = functions.https.onCall(async (data, context) => {
     functions.logger.warn("syncProductsFromSheet was called, but is deprecated.");
     return { success: true, message: "This function is deprecated." };
 });
