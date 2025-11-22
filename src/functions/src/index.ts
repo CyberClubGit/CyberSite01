@@ -14,8 +14,7 @@ import Stripe from "stripe";
 import fetch from "node-fetch";
 import Papa from "papaparse";
 import { defineSecret, setGlobalOptions } from "firebase-functions/params";
-import { onCall, HttpsError } from "firebase-functions/v2/https";
-import { setInvoker } from "firebase-functions/v2/alerts";
+import { HttpsError } from "firebase-functions/v2/https";
 
 // Set global options for the region
 setGlobalOptions({ region: "us-central1" });
@@ -64,7 +63,7 @@ function getFirstImage(galleryStr: string): string | null {
 // #endregion
 
 export const syncProductsFromSheet = functions
-  .runWith({ secrets: [stripeSecretKey], invoker: 'public' }) // <-- REND LA FONCTION PUBLIQUE
+  .runWith({ secrets: [stripeSecretKey], invoker: 'public' }) // <-- LA CORRECTION CLÉ
   .https.onRequest(async (req, res) => {
     
   functions.logger.info("Starting product synchronization from Google Sheet.");
@@ -176,6 +175,11 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     throw new functions.https.HttpsError('internal', error.message);
   }
 
+  // Check for authenticated user
+  // if (!context.auth) {
+  //   throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
+  // }
+
   if (!Array.isArray(data.items) || data.items.length === 0) {
     throw new functions.https.HttpsError('invalid-argument', 'The function must be called with an array of "items".');
   }
@@ -185,7 +189,7 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
   for (const item of data.items) {
     if (!item.id || item.id.includes('#NAME?')) {
         functions.logger.warn(`Invalid or missing sheet_id for item in cart: ${item.id}. Skipping.`);
-        continue;
+        continue; // Skip this item
     }
     
     try {
@@ -204,7 +208,7 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
       const prices = await stripe.prices.list({
           product: stripeProduct.id,
           active: true,
-          limit: 1, 
+          limit: 1, // We assume one active price per product
       });
 
       if (prices.data.length === 0) {
@@ -219,7 +223,7 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
 
     } catch (error: any) {
        functions.logger.error(`Failed to process item with sheet_id ${item.id}:`, error);
-       if (error instanceof functions.https.HttpsError) throw error; 
+       if (error instanceof HttpsError) throw error; 
        throw new functions.https.HttpsError('internal', `An error occurred while processing item ${item.id}.`);
     }
   }
