@@ -35,7 +35,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const savedCartJson = localStorage.getItem(CART_STORAGE_KEY);
       if (savedCartJson) {
         const savedCart = JSON.parse(savedCartJson);
-        // Basic validation
+        // Basic validation to ensure we're loading an array of items
         if (Array.isArray(savedCart)) {
           setCart(savedCart);
         }

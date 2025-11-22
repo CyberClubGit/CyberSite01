@@ -34,7 +34,7 @@ type CatalogItem = {
   description: string;
   galleryUrls: string[];
   displayImageUrl: string | null;
-  Price_Print: number; // Price in cents
+  Price_Print: string; // Price is a string from the sheet
   [key: string]: any;
 };
 
@@ -47,6 +47,24 @@ interface ImageViewerState {
   images: string[];
   selectedIndex: number;
 }
+
+// Utility to convert price string from sheet to cents
+function priceToCents(priceStr: string | undefined): number {
+  if (!priceStr || typeof priceStr !== 'string') return 0;
+  const cleaned = priceStr.replace(',', '.');
+  const price = parseFloat(cleaned);
+  if (isNaN(price)) return 0;
+  return Math.round(price * 100);
+}
+
+// Utility to format cents to a currency string
+function formatPrice(cents: number): string {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(cents / 100);
+}
+
 
 const ImageGallery: React.FC<{ images: string[], onImageClick: (index: number) => void }> = ({ images, onImageClick }) => {
   const [mainImageIndex, setMainImageIndex] = useState(0);
@@ -145,7 +163,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     addToCart({
       id: item.ID,
       name: item.title,
-      price: item.Price_Print, // Price is already in cents
+      price: priceToCents(item.Price_Print),
       image: item.galleryUrls?.[0] || '',
       quantity: 1,
     });
@@ -203,7 +221,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     </InteractivePanel>
   );
   
-  const pricePrint = item.Price_Print;
+  const priceInCents = priceToCents(item.Price_Print);
 
   return (
     <>
@@ -222,7 +240,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
                       <Heart className={cn("h-5 w-5", isFavorited ? "fill-red-500 text-red-500" : "text-foreground")} />
                   </Button>
               )}
-              {pricePrint > 0 &&
+              {priceInCents > 0 &&
                 <Button size="icon" variant="ghost" className="rounded-full h-10 w-10 bg-background/50 backdrop-blur-sm" onClick={handleAddToCart}>
                     <ShoppingCart className="h-5 w-5 text-foreground" />
                 </Button>
@@ -265,10 +283,10 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
               <div className="flex-shrink-0 flex flex-col gap-4">
                 {descriptionAndTechSection}
                 <div className="grid grid-cols-1 gap-4">
-                    {pricePrint > 0 && (
+                    {priceInCents > 0 && (
                         <Button size="lg" onClick={handleAddToCart}>
                             <ShoppingCart className="mr-2 h-5 w-5"/>
-                            Ajouter au Panier ({(pricePrint / 100).toFixed(2).replace('.', ',')} €)
+                            Ajouter au Panier ({formatPrice(priceInCents)})
                         </Button>
                     )}
                 </div>

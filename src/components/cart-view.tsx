@@ -55,7 +55,12 @@ export function CartView() {
     );
   }
   
-  const formattedTotalPrice = (totalPrice / 100).toFixed(2).replace('.', ',');
+  // Format total price from cents to a localized string "2,00 €"
+  const formattedTotalPrice = new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(totalPrice / 100);
+
   const dataToSend = cart.map(item => ({ id: item.id, quantity: item.quantity }));
 
   return (
@@ -74,7 +79,7 @@ export function CartView() {
               <div className="flex-1">
                 <p className="font-semibold">{item.name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {(item.price / 100).toFixed(2).replace('.', ',')} €
+                  {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(item.price / 100)}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -97,7 +102,7 @@ export function CartView() {
         {error && <p className="text-sm text-destructive mb-2">{error}</p>}
         <div className="flex justify-between items-center text-lg font-semibold mb-4">
           <span>Total</span>
-          <span>{formattedTotalPrice} €</span>
+          <span>{formattedTotalPrice}</span>
         </div>
         <Button className="w-full" size="lg" onClick={handleCheckout} disabled={loading}>
           {loading ? (

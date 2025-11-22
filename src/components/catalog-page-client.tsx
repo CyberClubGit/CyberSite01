@@ -40,8 +40,8 @@ interface CatalogPageClientProps {
   materials: string[];
 }
 
-// Utility to convert price string to cents
-function priceToCents(priceStr: string): number {
+// Utility to convert price string from sheet (e.g., "2" or "2,50") to cents (e.g., 200 or 250)
+function priceToCents(priceStr: string | undefined): number {
   if (!priceStr || typeof priceStr !== 'string') return 0;
   const cleaned = priceStr.replace(',', '.');
   const price = parseFloat(cleaned);
@@ -85,10 +85,13 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   const handleAddToCart = (e: React.MouseEvent, item: CatalogItem) => {
     e.stopPropagation(); // Prevent opening the details dialog
     
+    // Convert price string to cents before adding to cart
+    const priceInCents = priceToCents(item.Price_Print);
+
     addToCart({
       id: item.ID, 
       name: item.title,
-      price: priceToCents(item.Price_Print), // Convert price to cents
+      price: priceInCents,
       image: item.displayImageUrl || '',
       quantity: 1,
     });
