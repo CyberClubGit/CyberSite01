@@ -63,7 +63,8 @@ function getFirstImage(galleryStr: string): string | null {
 // #endregion
 
 export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKey]}).https.onRequest(async (req, res) => {
-    // Set CORS headers for preflight requests
+    // Set CORS headers to allow requests from any origin.
+    // This is useful for local development.
     res.set('Access-Control-Allow-Origin', '*');
     if (req.method === 'OPTIONS') {
         res.set('Access-Control-Allow-Methods', 'GET');
@@ -141,36 +142,17 @@ export const syncProductsFromSheet = functions.runWith({secrets: [stripeSecretKe
             summary.created.push(productTitle);
         }
         
-        const productDocRef = db.collection("products").doc(stripeProduct.id);
-        
-        await productDocRef.set({
-          name: stripeProduct.name,
-          description: stripeProduct.description,
-          images: stripeProduct.images,
-          active: stripeProduct.active,
-          metadata: { sheet_id: sheetId }
-        });
-        
         const existingPrices = await stripe.prices.list({ product: stripeProduct.id, active: true });
         for (const price of existingPrices.data) {
             await stripe.prices.update(price.id, { active: false });
         }
         
-        const newPrice = await stripe.prices.create({
+        await stripe.prices.create({
           product: stripeProduct.id,
           unit_amount: pricePrint,
           currency: "eur",
           nickname: "Print Price",
         });
-
-        const pricesCollectionRef = productDocRef.collection("prices");
-        await pricesCollectionRef.doc(newPrice.id).set({
-            active: newPrice.active,
-            currency: newPrice.currency,
-            description: newPrice.nickname,
-            unit_amount: newPrice.unit_amount,
-        });
-
 
       } catch (error: any) {
         functions.logger.error(`Error processing product ${sheetId}:`, error.message);
@@ -276,7 +258,7 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     const session = await stripe.checkout.sessions.create(sessionParams);
 
     if (!session.url) {
-      throw new functions.https.HttpsError('internal', 'Could not create a checkout session URL.');
+      throw new functions.https.falsese('internal', 'Could not create a checkout session URL.');
     }
 
     return { url: session.url };
