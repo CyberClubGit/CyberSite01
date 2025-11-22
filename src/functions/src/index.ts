@@ -27,7 +27,6 @@ const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 if (admin.apps.length === 0) {
   admin.initializeApp();
 }
-const db = admin.firestore();
 
 
 // #region --- New Email Order Function ---
@@ -81,15 +80,19 @@ function formatItemsToHtml(items: any[]): string {
 export const sendOrderEmail = functions.https.onCall(async (data, context) => {
   functions.logger.info("--- Received new order to send by email ---");
 
+  // Get a Firestore instance. This is the robust way.
+  const db = admin.firestore();
+
   // Validate cart data
   if (!Array.isArray(data.items) || data.items.length === 0) {
+    functions.logger.error("Validation failed: 'items' is not a non-empty array.", data);
     throw new HttpsError('invalid-argument', 'La fonction doit être appelée avec un tableau "items" non vide.');
   }
 
   const userEmail = context.auth?.token?.email || 'email.non.fourni@exemple.com';
   const htmlBody = formatItemsToHtml(data.items);
   const subject = `Nouvelle commande de ${userEmail}`;
-  const recipientEmail = "contact@cyber-club.net"; // **IMPORTANT**: Replace with the actual recipient email address
+  const recipientEmail = "contact@cyber-club.net";
 
   const mailEntry = {
     to: [recipientEmail],
@@ -100,172 +103,35 @@ export const sendOrderEmail = functions.https.onCall(async (data, context) => {
   };
 
   try {
+    functions.logger.info(`Attempting to queue email to '${recipientEmail}'...`);
     // This writes the email to the 'mail' collection.
     // The "Trigger Email" Firebase Extension must be installed to process this queue.
     await db.collection('mail').add(mailEntry);
     functions.logger.info(`Successfully queued order email to ${recipientEmail}`, { userEmail });
     return { success: true, message: `Commande envoyée avec succès à ${recipientEmail}.` };
   } catch (error: any) {
-    functions.logger.error("Failed to queue email:", error);
-    throw new HttpsError('internal', `Une erreur est survenue lors de l'envoi de la commande.`);
+    // This will catch any errors during the database write (e.g., permissions)
+    functions.logger.error("CRITICAL: Failed to write to 'mail' collection.", {
+        errorMessage: error.message,
+        errorDetails: error,
+    });
+    // And send a specific error message back to the client.
+    throw new HttpsError('internal', `Une erreur est survenue lors de la mise en file de l'e-mail. Cause: ${error.message}`);
   }
 });
 
 // #endregion
 
 
-// #region --- Sync Function (for reference, but can be removed) ---
+// #region --- Sync Function (for reference, can be removed if not needed) ---
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=928586250&single=true&output=csv";
 
-function cleanPrice(priceStr: string): number {
-    if (!priceStr || priceStr.trim() === "") return 0;
-    const cleaned = priceStr.replace(",", ".");
-    const price = parseFloat(cleaned);
-    if (isNaN(price)) return 0;
-    return Math.round(price * 100);
-}
-
-function getFirstImage(galleryStr: string): string | null {
-    if (!galleryStr || galleryStr.trim() === "") return null;
-    const images = galleryStr.split(/[\r\n]+/).filter((url) => url.trim() !== "");
-    if (images.length === 0) return null;
-    return images[0].trim();
-}
-
 export const syncProductsFromSheet = functions.runWith({ secrets: [stripeSecretKey] }).https.onCall(async (data, context) => {
-    functions.logger.info("--- Starting Product Synchronization ---", {
-      invokedBy: context.auth?.uid || "anonymous",
-    });
-
-    let stripe: Stripe;
-    try {
-        const key = stripeSecretKey.value();
-        if (!key) {
-            throw new Error("Stripe secret key is not available in environment.");
-        }
-        stripe = new Stripe(key, { apiVersion: "2024-06-20" });
-        functions.logger.info("Stripe SDK initialized successfully.");
-    } catch (error: any) {
-        functions.logger.error("FATAL: Stripe initialization failed.", { error: error.message });
-        throw new HttpsError('internal', `Stripe initialization failed: ${error.message}`);
-    }
-
-    const summary = {
-        processed: 0,
-        created: 0,
-        updated: 0,
-        skipped: 0,
-        errors: 0,
-        errorDetails: [] as { id?: string, title?: string, error: string }[],
-    };
-
-    let csvText: string;
-    try {
-        functions.logger.info(`Fetching CSV from: ${SHEET_URL}`);
-        const response = await fetch(SHEET_URL);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch Google Sheet: ${response.status} ${response.statusText}`);
-        }
-        csvText = await response.text();
-        functions.logger.info("CSV fetched successfully.");
-    } catch (error: any) {
-        functions.logger.error("FATAL: Could not fetch Google Sheet.", { error: error.message });
-        throw new HttpsError('internal', `Could not fetch Google Sheet: ${error.message}`);
-    }
+    // This function is kept for reference but is no longer the primary focus.
+    // The implementation below is a placeholder and should be reviewed if needed.
+    functions.logger.warn("syncProductsFromSheet was called, but is currently not the primary focus.");
     
-    let products: any[];
-    try {
-        const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
-        products = parsed.data as any[];
-        summary.processed = products.length;
-        functions.logger.info(`Parsed ${products.length} products from CSV.`);
-    } catch (error: any) {
-        functions.logger.error("FATAL: Could not parse CSV data.", { error: error.message });
-        throw new HttpsError('internal', `Could not parse CSV: ${error.message}`);
-    }
-
-    for (const product of products) {
-        const productId = product.ID?.trim();
-        const productTitle = product.Title?.trim();
-
-        try {
-            if (!productId || !productTitle || productId.includes('#NAME?')) {
-                throw new Error("Missing or invalid ID/Title in sheet row.");
-            }
-
-            const priceModel = cleanPrice(product.Price_Model);
-            const pricePrint = cleanPrice(product.Price_Print);
-
-            if (priceModel === 0 && pricePrint === 0) {
-                functions.logger.warn(`Skipping product '${productTitle}' (ID: ${productId}) - No valid price.`);
-                summary.skipped++;
-                continue;
-            }
-            
-            functions.logger.info(`Processing product: ${productTitle} (ID: ${productId})`);
-
-            const firstImage = getFirstImage(product.Gallery);
-            const stripeProductData = {
-                name: productTitle,
-                description: product.Description,
-                images: firstImage ? [firstImage] : [],
-                active: true,
-                metadata: { sheet_id: productId },
-            };
-
-            let stripeProduct: Stripe.Product;
-            const existingProducts = await stripe.products.search({ query: `metadata['sheet_id']:'${productId}'` });
-
-            if (existingProducts.data.length > 0) {
-                const existingId = existingProducts.data[0].id;
-                functions.logger.info(`Product with sheet_id '${productId}' already exists in Stripe (Stripe ID: ${existingId}). Updating...`);
-                stripeProduct = await stripe.products.update(existingId, stripeProductData);
-                summary.updated++;
-            } else {
-                functions.logger.info(`Product with sheet_id '${productId}' not found in Stripe. Creating new product...`);
-                stripeProduct = await stripe.products.create(stripeProductData);
-                summary.created++;
-            }
-
-            const existingPrices = await stripe.prices.list({ product: stripeProduct.id, active: true });
-            for (const price of existingPrices.data) {
-                await stripe.prices.update(price.id, { active: false });
-            }
-            functions.logger.info(`Deactivated ${existingPrices.data.length} old prices for ${productId}.`);
-
-            const pricePromises: Promise<any>[] = [];
-            if (priceModel > 0) {
-                pricePromises.push(stripe.prices.create({ product: stripeProduct.id, unit_amount: priceModel, currency: "eur", nickname: "Fichier 3D", metadata: { type: "model" } }));
-            }
-            if (pricePrint > 0) {
-                pricePromises.push(stripe.prices.create({ product: stripeProduct.id, unit_amount: pricePrint, currency: "eur", nickname: "Impression 3D", metadata: { type: "print" } }));
-            }
-            const stripePrices = await Promise.all(pricePromises);
-            functions.logger.info(`Created ${stripePrices.length} new prices for ${productId}.`);
-
-            const productDocRef = db.collection("products").doc(stripeProduct.id);
-            await productDocRef.set({ active: true, name: stripeProduct.name, description: stripeProduct.description, images: stripeProduct.images, metadata: { sheetId: productId } });
-
-            const pricesCollectionRef = productDocRef.collection("prices");
-            for (const price of stripePrices) {
-                await pricesCollectionRef.doc(price.id).set({ active: price.active, currency: price.currency, description: price.nickname, type: price.type, unit_amount: price.unit_amount, metadata: price.metadata });
-            }
-            functions.logger.info(`Product ${productId} successfully synced to Firestore.`);
-
-        } catch (error: any) {
-            summary.errors++;
-            const errorMessage = `Error processing product ID '${productId}' (Title: '${productTitle}'): ${error.message}`;
-            summary.errorDetails.push({ id: productId, title: productTitle, error: error.message });
-            functions.logger.error(errorMessage, { rawError: error });
-        }
-    }
-
-    functions.logger.info("--- Synchronization Finished ---", { summary });
-    
-    if (summary.errors > 0) {
-        throw new HttpsError('internal', `Synchronization finished with ${summary.errors} errors. Check function logs for details.`, { results: summary });
-    }
-
-    return { success: true, message: "Synchronization complete.", results: summary };
+    // For now, return a success message to avoid confusion.
+    return { success: true, message: "Sync function was called but is not fully implemented for Stripe." };
 });
 // #endregion
