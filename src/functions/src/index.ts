@@ -32,7 +32,7 @@ function ensureStripeIsInitialized() {
     const key = stripeSecretKey.value();
     if (!key) {
       console.error("CRITICAL: STRIPE_SECRET_KEY is not defined.");
-      throw new functions.https.HttpsError('internal', 'Stripe secret key is not configured on the server.');
+      throw new HttpsError('internal', 'Stripe secret key is not configured on the server.');
     }
     stripe = new Stripe(key, {
       apiVersion: "2024-06-20",
@@ -45,22 +45,39 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     ensureStripeIsInitialized();
   } catch (error: any) {
     functions.logger.error("Stripe initialization failed in createCheckoutSession:", error);
-    throw new functions.https.HttpsError('internal', error.message);
+    throw new HttpsError('internal', error.message);
   }
 
   // Validate cart data
   if (!Array.isArray(data.items) || data.items.length === 0) {
-    throw new functions.https.HttpsError('invalid-argument', 'The function must be called with an array of "items".');
+    throw new HttpsError('invalid-argument', 'The function must be called with an array of "items".');
   }
 
   const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
 
   for (const item of data.items) {
-    // Validate each item
-    if (!item.id || !item.name || typeof item.price !== 'number' || item.price <= 0 || typeof item.quantity !== 'number' || item.quantity <= 0) {
-      functions.logger.error(`Invalid item in cart: ${JSON.stringify(item)}`);
-      throw new functions.https.HttpsError('invalid-argument', `Invalid item found in cart: ${item.name || 'Unknown'}.`);
+    // Validate each item with explicit reasons for failure
+    if (!item.id || typeof item.id !== 'string') {
+        const errorMsg = `Invalid item found in cart: ID is missing or not a string. Item: ${JSON.stringify(item)}`;
+        functions.logger.error(errorMsg);
+        throw new HttpsError('invalid-argument', errorMsg);
     }
+    if (!item.name) {
+        const errorMsg = `Invalid item found in cart: Name is missing. Item ID: ${item.id}`;
+        functions.logger.error(errorMsg);
+        throw new HttpsError('invalid-argument', errorMsg);
+    }
+    if (typeof item.price !== 'number' || item.price <= 0) {
+        const errorMsg = `Invalid item found in cart: '${item.name}'. Price must be a positive number (in cents), but received '${item.price}'.`;
+        functions.logger.error(errorMsg);
+        throw new HttpsError('invalid-argument', errorMsg);
+    }
+    if (typeof item.quantity !== 'number' || item.quantity <= 0) {
+        const errorMsg = `Invalid item found in cart: '${item.name}'. Quantity must be a positive number, but received '${item.quantity}'.`;
+        functions.logger.error(errorMsg);
+        throw new HttpsError('invalid-argument', errorMsg);
+    }
+
 
     try {
       // Create a temporary product and price in Stripe for this transaction
@@ -83,12 +100,12 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
 
     } catch (error: any) {
        functions.logger.error(`Failed to create Stripe price for item ${item.id}:`, error);
-       throw new functions.https.HttpsError('internal', `An error occurred while processing item ${item.name}.`);
+       throw new HttpsError('internal', `An error occurred while processing item ${item.name}.`);
     }
   }
 
   if (line_items.length === 0) {
-    throw new functions.https.HttpsError('invalid-argument', 'No valid items were found to create a checkout session.');
+    throw new HttpsError('failed-precondition', 'No valid items were processed to create a checkout session.');
   }
 
   const origin = context.rawRequest.headers.origin || 'http://localhost:9002';
@@ -111,14 +128,14 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     const session = await stripe.checkout.sessions.create(sessionParams);
 
     if (!session.url) {
-      throw new functions.https.HttpsError('internal', 'Could not create a checkout session URL.');
+      throw new HttpsError('internal', 'Could not create a checkout session URL.');
     }
 
     return { url: session.url };
 
   } catch (error: any) {
     functions.logger.error('Stripe checkout session creation failed:', error);
-    throw new functions.https.HttpsError('internal', `Stripe error: ${error.message}`);
+    throw new HttpsError('internal', `Stripe error: ${error.message}`);
   }
 });
 
