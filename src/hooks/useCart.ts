@@ -65,7 +65,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const addToCart = useCallback((item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
     // **CRITICAL VALIDATION**
-    // Ensure the price is a valid number (integer in cents) before it enters the cart.
+    // The hook now expects the price to be a valid number (integer in cents) before it enters the cart.
     // The conversion from sheet string to cents should happen *before* calling this function.
     if (!item.id || typeof item.price !== 'number' || item.price < 0) {
         console.error("Attempted to add an item with invalid data:", item);
