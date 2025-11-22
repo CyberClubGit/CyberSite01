@@ -1,12 +1,5 @@
+
 "use strict";
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -23,216 +16,134 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.syncProductsFromSheet = void 0;
+exports.syncProductsFromSheet = exports.sendOrderEmail = void 0;
+/**
+ * Import function triggers from their respective submodules:
+ *
+ * import {onCall} from "firebase-functions/v2/https";
+ * import {onDocumentWritten} from "firebase-functions/v2/firestore";
+ *
+ * See a full list of supported triggers at https://firebase.google.com/docs/functions
+ */
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
-const stripe_1 = __importDefault(require("stripe"));
-const node_fetch_1 = __importDefault(require("node-fetch"));
-const papaparse_1 = __importDefault(require("papaparse"));
 const params_1 = require("firebase-functions/params");
-const stripeSecretKey = (0, params_1.defineSecret)("STRIPE_SECRET_KEY");
-// Initialize Firebase Admin SDK
-admin.initializeApp();
-const db = admin.firestore();
-// Initialize Stripe with secret key
-let stripe;
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=928586250&single=true&output=csv";
-// #region Fonctions utilitaires
-/**
- * Nettoie une chaîne de prix et la convertit en centimes.
- * @param {string} priceStr - La chaîne de prix (ex: "22,4" ou "10.00").
- * @return {number} Le prix en centimes, ou 0 si invalide.
- */
-function cleanPrice(priceStr) {
-    if (!priceStr || priceStr.trim() === "")
-        return 0;
-    const cleaned = priceStr.replace(",", ".");
-    const price = parseFloat(cleaned);
-    if (isNaN(price))
-        return 0;
-    return Math.round(price * 100); // Convertir en centimes
+const https_1 = require("firebase-functions/v2/https");
+const nodemailer = __importStar(require("nodemailer"));
+// Set global options for the region
+(0, params_1.setGlobalOptions)({ region: "us-central1" });
+// Safe initialization of Firebase Admin SDK
+if (admin.apps.length === 0) {
+    admin.initializeApp();
 }
+// Define secrets for email credentials
+const emailUserName = (0, params_1.defineSecret)("EMAIL_USERNAME");
+const emailPassword = (0, params_1.defineSecret)("EMAIL_PASSWORD");
+// #region --- New Email Order Function ---
 /**
- * Extrait la première URL d'image d'une chaîne contenant plusieurs URLs.
- * @param {string} galleryStr - La chaîne contenant des URLs séparées par des sauts de ligne.
- * @return {string | null} La première URL valide, ou null.
+ * Formats cart items into an HTML string for an email.
  */
-function getFirstImage(galleryStr) {
-    if (!galleryStr || galleryStr.trim() === "")
-        return null;
-    const images = galleryStr.split(/[\r\n]+/).filter((url) => url.trim() !== "");
-    if (images.length === 0)
-        return null;
-    return images[0].trim();
+function formatItemsToHtml(items) {
+    const itemsHtml = items.map(item => `
+    <tr>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd;">
+        <img src="${item.image}" alt="${item.name}" width="50" style="border-radius: 4px; vertical-align: middle;">
+      </td>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd; vertical-align: middle;">
+        ${item.name}<br>
+        <small style="color: #555;">ID: ${item.id}</small>
+      </td>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center; vertical-align: middle;">${item.quantity}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right; vertical-align: middle;">${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(item.price / 100)}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right; vertical-align: middle;">${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format((item.price * item.quantity) / 100)}</td>
+    </tr>
+  `).join('');
+    const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    return `
+    <p>Une nouvelle commande a été passée.</p>
+    <table style="width: 100%; border-collapse: collapse; font-family: sans-serif;">
+      <thead>
+        <tr>
+          <th style="padding: 8px; border-bottom: 2px solid #333; text-align: left;" colspan="2">Produit</th>
+          <th style="padding: 8px; border-bottom: 2px solid #333; text-align: center;">Quantité</th>
+          <th style="padding: 8px; border-bottom: 2px solid #333; text-align: right;">Prix Unitaire</th>
+          <th style="padding: 8px; border-bottom: 2px solid #333; text-align: right;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemsHtml}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4" style="padding: 12px 8px 0; text-align: right; font-weight: bold;">Total de la commande :</td>
+          <td style="padding: 12px 8px 0; text-align: right; font-weight: bold;">${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(total / 100)}</td>
+        </tr>
+      </tfoot>
+    </table>
+  `;
 }
-// #endregion
-exports.syncProductsFromSheet = functions.runWith({ secrets: [stripeSecretKey] }).region("us-central1").https.onRequest(async (req, res) => {
-    var _a, _b;
-    functions.logger.info("Starting product synchronization from Google Sheet.", { structuredData: true });
-    if (!stripe) {
-        stripe = new stripe_1.default(stripeSecretKey.value(), {
-            apiVersion: "2025-11-17.clover",
-        });
+exports.sendOrderEmail = functions.runWith({ secrets: [emailUserName, emailPassword] }).https.onCall(async (data, context) => {
+    functions.logger.info("--- Received new order to send by email using Nodemailer ---");
+    // 1. Validate cart data
+    if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
+        functions.logger.error("Validation failed: 'items' is not a non-empty array.", data);
+        throw new https_1.HttpsError('invalid-argument', 'La fonction doit être appelée avec un tableau "items" non vide.');
     }
-    const summary = {
-        success: [],
-        skipped: [],
-        errors: [],
+    // 2. Validate user authentication
+    if (!context.auth) {
+        throw new https_1.HttpsError('unauthenticated', 'La fonction doit être appelée par un utilisateur authentifié.');
+    }
+    // 3. Prepare email content
+    const fromUserEmail = context.auth.token.email || 'email.non.fourni@exemple.com';
+    const htmlBody = formatItemsToHtml(data.items);
+    const subject = `Nouvelle commande de ${fromUserEmail}`;
+    const recipientEmail = "contact@cyber-club.net";
+    // 4. Configure Nodemailer transporter using Gmail
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: emailUserName.value(),
+            pass: emailPassword.value(),
+        },
+    });
+    const mailOptions = {
+        from: `CYBER CLUB <${emailUserName.value()}>`, // Sender address
+        to: recipientEmail, // List of receivers
+        subject: subject, // Subject line
+        html: htmlBody, // HTML body
     };
+    // 5. Send the email
     try {
-        // 1. Récupérer le CSV depuis Google Sheets
-        functions.logger.log("Fetching CSV from Google Sheet...");
-        const response = await (0, node_fetch_1.default)(SHEET_URL);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch Google Sheet: ${response.statusText}`);
-        }
-        const csvText = await response.text();
-        functions.logger.log("CSV fetched successfully.");
-        // 2. Parser le CSV
-        const parsed = papaparse_1.default.parse(csvText, { header: true, skipEmptyLines: true });
-        const products = parsed.data;
-        functions.logger.log(`Parsed ${products.length} products from CSV.`);
-        // 3. Traiter chaque produit
-        for (const product of products) {
-            const productId = (_a = product.ID) === null || _a === void 0 ? void 0 : _a.trim();
-            const productTitle = (_b = product.Title) === null || _b === void 0 ? void 0 : _b.trim();
-            // Validation de base
-            if (!productId || !productTitle) {
-                summary.skipped.push(`Product with missing ID or Title: ${JSON.stringify(product)}`);
-                continue;
-            }
-            const priceModel = cleanPrice(product.Price_Model);
-            const pricePrint = cleanPrice(product.Price_Print);
-            if (priceModel === 0 && pricePrint === 0) {
-                summary.skipped.push(`${productTitle} (ID: ${productId}) - No valid price.`);
-                continue;
-            }
-            try {
-                // 4. Créer ou mettre à jour les produits dans Stripe
-                functions.logger.log(`Processing Stripe product: ${productTitle} (ID: ${productId})`);
-                const firstImage = getFirstImage(product.Gallery);
-                const stripeProductData = {
-                    name: productTitle,
-                    description: product.Description,
-                    images: firstImage ? [firstImage] : [],
-                    active: true,
-                    metadata: {
-                        type: product.Type,
-                        style: product.Style,
-                        material: product.Material,
-                        activity: product.Activity,
-                        stl_url: product.Stl,
-                        sheet_id: productId,
-                    },
-                };
-                const stripeProduct = await stripe.products.create(Object.assign({ id: productId }, stripeProductData)).catch(async (error) => {
-                    // Si le produit existe déjà (code: 'resource_already_exists'), on le met à jour
-                    if (error.code === "resource_already_exists") {
-                        functions.logger.log(`Product ${productId} already exists in Stripe, updating...`);
-                        return await stripe.products.update(productId, stripeProductData);
-                    }
-                    throw error; // Renvoyer les autres erreurs
-                });
-                // Désactiver les anciens prix avant d'en créer de nouveaux
-                const existingPrices = await stripe.prices.list({ product: stripeProduct.id, active: true });
-                for (const price of existingPrices.data) {
-                    await stripe.prices.update(price.id, { active: false });
-                }
-                const pricePromises = [];
-                // Créer/mettre à jour le prix pour le modèle 3D
-                if (priceModel > 0) {
-                    pricePromises.push(stripe.prices.create({
-                        product: stripeProduct.id,
-                        unit_amount: priceModel,
-                        currency: "eur",
-                        nickname: "Fichier 3D",
-                        metadata: { type: "model" },
-                    }));
-                }
-                // Créer/mettre à jour le prix pour l'impression 3D
-                if (pricePrint > 0) {
-                    pricePromises.push(stripe.prices.create({
-                        product: stripeProduct.id,
-                        unit_amount: pricePrint,
-                        currency: "eur",
-                        nickname: "Impression 3D",
-                        metadata: { type: "print" },
-                    }));
-                }
-                const stripePrices = await Promise.all(pricePromises);
-                functions.logger.log(`Created ${stripePrices.length} new prices for ${productId} in Stripe.`);
-                // 5. Synchroniser avec Firestore
-                functions.logger.log(`Syncing product ${productId} to Firestore.`);
-                const productDocRef = db.collection("products").doc(stripeProduct.id);
-                await productDocRef.set({
-                    active: true,
-                    name: stripeProduct.name,
-                    description: stripeProduct.description,
-                    images: stripeProduct.images,
-                    type: product.Type,
-                    style: product.Style,
-                    material: product.Material,
-                    activity: product.Activity,
-                    metadata: {
-                        sheetId: productId,
-                        stl_url: product.Stl,
-                    },
-                });
-                // Synchroniser les prix dans la sous-collection
-                const pricesCollectionRef = productDocRef.collection("prices");
-                for (const price of stripePrices) {
-                    await pricesCollectionRef.doc(price.id).set({
-                        active: price.active,
-                        currency: price.currency,
-                        description: price.nickname, // Utilise nickname pour la description
-                        type: price.type,
-                        unit_amount: price.unit_amount,
-                        metadata: price.metadata,
-                    });
-                }
-                functions.logger.log(`Product ${productId} successfully synced to Firestore.`);
-                summary.success.push(productTitle);
-            }
-            catch (error) {
-                functions.logger.error(`Error processing product ${productId}:`, error.message);
-                summary.errors.push({ id: productId, error: error.message });
-            }
-        }
-        functions.logger.info("Synchronization finished.", summary);
-        res.status(200).json({
-            success: true,
-            message: `Synchronization complete. Processed ${products.length} rows.`,
-            results: summary,
-        });
+        functions.logger.info(`Attempting to send email to '${recipientEmail}'...`);
+        await transporter.sendMail(mailOptions);
+        functions.logger.info(`Successfully sent order email to ${recipientEmail}`, { fromUserEmail });
+        return { success: true, message: `Commande envoyée avec succès à ${recipientEmail}.` };
     }
     catch (error) {
-        functions.logger.error("Fatal error during synchronization:", error);
-        res.status(500).json({
-            success: false,
-            message: `Synchronization failed: ${error.message}`,
-            results: summary,
+        functions.logger.error("CRITICAL: Nodemailer failed to send email.", {
+            errorMessage: error.message,
+            errorStack: error.stack,
+            dataReceived: data,
         });
+        // Provide a clear error message back to the client
+        throw new https_1.HttpsError('internal', `Échec de l'envoi de l'e-mail. Cause: ${error.message}`);
     }
 });
+// #endregion
+// This is kept for reference, but can be removed if Stripe integration is abandoned.
+const stripeSecretKey = (0, params_1.defineSecret)("STRIPE_SECRET_KEY");
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1/pub?gid=928586250&single=true&output=csv";
+exports.syncProductsFromSheet = functions.runWith({ secrets: [stripeSecretKey] }).https.onCall(async (data, context) => {
+    functions.logger.warn("syncProductsFromSheet was called, but is deprecated.");
+    return { success: true, message: "This function is deprecated." };
+});
 //# sourceMappingURL=index.js.map
+
