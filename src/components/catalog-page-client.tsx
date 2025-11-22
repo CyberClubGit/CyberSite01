@@ -95,17 +95,16 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   const handleAddToCart = (e: React.MouseEvent, item: CatalogItem) => {
     e.stopPropagation(); // Prevent opening the details dialog
     
-    // **THIS IS THE CRITICAL CONVERSION STEP**
-    // The price from the sheet is converted to cents (number) here.
     const priceInCents = priceToCents(item.Price_Print);
-
-    addToCart({
-      id: item.ID, 
-      name: item.title,
-      price: priceInCents, // This is now a number (integer in cents)
-      image: item.displayImageUrl || '',
-      quantity: 1,
-    });
+    if (priceInCents > 0) {
+      addToCart({
+        id: item.ID, 
+        name: item.title,
+        price: priceInCents, // This is now a number (integer in cents)
+        image: item.displayImageUrl || '',
+        quantity: 1,
+      });
+    }
   };
 
   return (
@@ -177,8 +176,8 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
               {finalData && finalData.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {finalData.map((item) => {
-                      const isFavorited = favorites.includes(item.ID);
-                      const isAddToCartDisabled = !item.ID || item.ID.includes('#NAME?');
+                      const isIdValid = item.ID && !item.ID.includes('#NAME?');
+                      const isFavorited = isIdValid && favorites.includes(item.ID);
                       const priceInCents = priceToCents(item.Price_Print);
 
                       return (
@@ -207,9 +206,9 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                                         className="rounded-full h-8 w-8 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            toggleFavorite(item.ID);
+                                            if(isIdValid) toggleFavorite(item.ID);
                                         }}
-                                        disabled={isAddToCartDisabled}
+                                        disabled={!isIdValid}
                                     >
                                         <Heart className={cn("h-5 w-5 transition-all", isFavorited ? "fill-red-500 text-red-500" : "fill-transparent")} />
                                         <span className="sr-only">Ajouter aux favoris</span>
@@ -217,37 +216,36 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                                 )}
                                 {priceInCents > 0 && (
                                     <TooltipProvider>
-                                    <Tooltip>
+                                      <Tooltip>
                                         <TooltipTrigger asChild>
-                                        {/* The span allows the tooltip to be displayed even if the button is disabled */}
-                                        <span tabIndex={isAddToCartDisabled ? 0 : -1}>
+                                          <span tabIndex={!isIdValid ? 0 : -1}>
                                             <Button
-                                            size="icon"
-                                            variant="ghost"
-                                            className="rounded-full h-8 w-8 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
-                                            onClick={(e) => handleAddToCart(e, item)}
-                                            disabled={isAddToCartDisabled}
+                                              size="icon"
+                                              variant="ghost"
+                                              className="rounded-full h-8 w-8 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
+                                              onClick={(e) => handleAddToCart(e, item)}
+                                              disabled={!isIdValid}
                                             >
-                                            <ShoppingCart className="h-5 w-5" />
-                                            <span className="sr-only">Ajouter au panier</span>
+                                              <ShoppingCart className="h-5 w-5" />
+                                              <span className="sr-only">Ajouter au panier</span>
                                             </Button>
-                                        </span>
+                                          </span>
                                         </TooltipTrigger>
-                                        {isAddToCartDisabled && (
-                                        <TooltipContent>
-                                            <p>Cet article n'a pas d'ID valide et ne peut pas être ajouté.</p>
-                                        </TooltipContent>
+                                        {!isIdValid && (
+                                          <TooltipContent>
+                                            <p>Cet article a un ID invalide et ne peut pas être ajouté.</p>
+                                          </TooltipContent>
                                         )}
-                                    </Tooltip>
+                                      </Tooltip>
                                     </TooltipProvider>
                                 )}
                              </div>
                           </div>
                           <CardHeader onClick={() => setSelectedItem(item)} className="cursor-pointer">
                             <CardTitle className="font-headline text-lg leading-tight">{item.title}</CardTitle>
-                             {process.env.NODE_ENV === 'development' && (
+                             {process.env.NODE_ENV === 'development' && !isIdValid && (
                                 <div className="mt-2 p-1 bg-destructive/10 text-destructive text-xs rounded font-mono">
-                                    ID: {item.ID || 'NON DÉFINI'}
+                                    ID INVALIDE: {item.ID || 'NON DÉFINI'}
                                 </div>
                              )}
                           </CardHeader>

@@ -57,26 +57,25 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
 
   for (const item of data.items) {
     // **SERVER-SIDE VALIDATION**
-    // This is the last line of defense to ensure data integrity before sending to Stripe.
-    if (!item.id || typeof item.id !== 'string') {
-        const errorMsg = `Article invalide : ID manquant ou invalide. Article: ${JSON.stringify(item)}`;
-        functions.logger.error(errorMsg);
+    const invalidIdRegex = /[#?]/;
+    if (!item.id || typeof item.id !== 'string' || invalidIdRegex.test(item.id)) {
+        const errorMsg = `Article invalide : ID manquant ou contenant des caractères non autorisés. ID reçu: '${item.id}'`;
+        functions.logger.error(errorMsg, {item});
         throw new HttpsError('invalid-argument', errorMsg);
     }
     if (!item.name) {
         const errorMsg = `Article invalide : Nom manquant. Article ID: ${item.id}`;
-        functions.logger.error(errorMsg);
+        functions.logger.error(errorMsg, {item});
         throw new HttpsError('invalid-argument', errorMsg);
     }
-    // Price MUST be a number (integer in cents) and positive.
     if (typeof item.price !== 'number' || !Number.isInteger(item.price) || item.price <= 0) {
         const errorMsg = `Article invalide : '${item.name}'. Le prix doit être un nombre entier positif (en centimes), mais a reçu '${item.price}'.`;
-        functions.logger.error(errorMsg);
+        functions.logger.error(errorMsg, {item});
         throw new HttpsError('invalid-argument', errorMsg);
     }
     if (typeof item.quantity !== 'number' || !Number.isInteger(item.quantity) || item.quantity <= 0) {
         const errorMsg = `Article invalide : '${item.name}'. La quantité doit être un nombre entier positif, mais a reçu '${item.quantity}'.`;
-        functions.logger.error(errorMsg);
+        functions.logger.error(errorMsg, {item});
         throw new HttpsError('invalid-argument', errorMsg);
     }
 
@@ -101,6 +100,10 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
 
     } catch (error: any) {
        functions.logger.error(`Failed to create Stripe price for item ${item.id}:`, error);
+       // Check for specific Stripe invalid character error
+       if (error.code === 'parameter_invalid_string' && error.param === 'product_data[metadata][sheet_id]') {
+            throw new HttpsError('invalid-argument', `L'ID de l'article '${item.name}' ('${item.id}') contient des caractères non valides pour Stripe.`);
+       }
        throw new HttpsError('internal', `Une erreur est survenue lors du traitement de l'article ${item.name}.`);
     }
   }
@@ -140,11 +143,3 @@ export const createCheckoutSession = functions.runWith({ secrets: [stripeSecretK
     throw new HttpsError('internal', `Erreur Stripe: ${error.message}`);
   }
 });
-
-// The sync function is kept for administrative purposes but is no longer part of the main checkout flow.
-// It is not publicly invokable.
-export const syncProductsFromSheet = functions
-  .runWith({ secrets: [stripeSecretKey] })
-  .https.onRequest(async (req, res) => {
-    res.status(403).send('This function is disabled for direct HTTP execution.');
-  });
