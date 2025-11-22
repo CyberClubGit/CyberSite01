@@ -31,15 +31,18 @@ const db = admin.firestore();
 let stripe: Stripe;
 
 function ensureStripeIsInitialized() {
+  functions.logger.info("Ensuring Stripe is initialized...");
   if (!stripe) {
     const key = stripeSecretKey.value();
     if (!key) {
-      console.error("CRITICAL: STRIPE_SECRET_KEY is not defined.");
+      functions.logger.error("CRITICAL: STRIPE_SECRET_KEY is not defined in secret manager.");
       throw new HttpsError('internal', 'La clé secrète Stripe n\'est pas configurée sur le serveur.');
     }
+    functions.logger.info(`Stripe key loaded successfully (last 4 chars: ...${key.slice(-4)}).`);
     stripe = new Stripe(key, {
       apiVersion: "2024-06-20",
     });
+    functions.logger.info("Stripe SDK initialized.");
   }
 }
 
@@ -166,20 +169,14 @@ function getFirstImage(galleryStr: string): string | null {
     return images[0].trim();
 }
 
-// Converted to an onCall function for secure client-side invocation
 export const syncProductsFromSheet = functions.runWith({ secrets: [stripeSecretKey] }).https.onCall(async (data, context) => {
-    // Optional: Add authentication check if needed in the future
-    // if (!context.auth) {
-    //     throw new HttpsError('unauthenticated', 'Vous devez être authentifié pour lancer la synchronisation.');
-    // }
-    
-    functions.logger.info("Starting product synchronization from Google Sheet...", { structuredData: true });
-    
+    functions.logger.info("--- Starting Product Synchronization ---");
+
     try {
         ensureStripeIsInitialized();
     } catch (error: any) {
-        functions.logger.error("Stripe initialization failed:", error);
-        throw new HttpsError('internal', error.message);
+        functions.logger.error("FATAL: Stripe initialization failed.", { error: error.message });
+        throw new HttpsError('internal', `Stripe initialization failed: ${error.message}`);
     }
 
     const summary = {
@@ -191,28 +188,38 @@ export const syncProductsFromSheet = functions.runWith({ secrets: [stripeSecretK
         errorDetails: [] as { id?: string, title?: string, error: string }[],
     };
 
+    let csvText: string;
     try {
-        functions.logger.log("Fetching CSV from Google Sheet...");
+        functions.logger.info(`Fetching CSV from: ${SHEET_URL}`);
         const response = await fetch(SHEET_URL);
         if (!response.ok) {
-            throw new Error(`Failed to fetch Google Sheet: ${response.statusText}`);
+            throw new Error(`Failed to fetch Google Sheet: ${response.status} ${response.statusText}`);
         }
-        const csvText = await response.text();
-        functions.logger.log("CSV fetched successfully.");
-
+        csvText = await response.text();
+        functions.logger.info("CSV fetched successfully.");
+    } catch (error: any) {
+        functions.logger.error("FATAL: Could not fetch Google Sheet.", { error: error.message });
+        throw new HttpsError('internal', `Could not fetch Google Sheet: ${error.message}`);
+    }
+    
+    let products: any[];
+    try {
         const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
-        const products = parsed.data as any[];
-        functions.logger.log(`Parsed ${products.length} products from CSV.`);
+        products = parsed.data as any[];
         summary.processed = products.length;
+        functions.logger.info(`Parsed ${products.length} products from CSV.`);
+    } catch (error: any) {
+        functions.logger.error("FATAL: Could not parse CSV data.", { error: error.message });
+        throw new HttpsError('internal', `Could not parse CSV: ${error.message}`);
+    }
 
-        for (const product of products) {
-            const productId = product.ID?.trim();
-            const productTitle = product.Title?.trim();
+    for (const product of products) {
+        const productId = product.ID?.trim();
+        const productTitle = product.Title?.trim();
 
+        try {
             if (!productId || !productTitle || productId.includes('#NAME?')) {
-                summary.skipped++;
-                summary.errorDetails.push({ id: productId, title: productTitle, error: "Missing or invalid ID/Title." });
-                continue;
+                throw new Error("Missing or invalid ID/Title in sheet row.");
             }
 
             const priceModel = cleanPrice(product.Price_Model);
@@ -223,65 +230,62 @@ export const syncProductsFromSheet = functions.runWith({ secrets: [stripeSecretK
                 continue;
             }
 
-            try {
-                const firstImage = getFirstImage(product.Gallery);
-                const stripeProductData = {
-                    name: productTitle,
-                    description: product.Description,
-                    images: firstImage ? [firstImage] : [],
-                    active: true,
-                    metadata: { sheet_id: productId },
-                };
+            const firstImage = getFirstImage(product.Gallery);
+            const stripeProductData = {
+                name: productTitle,
+                description: product.Description,
+                images: firstImage ? [firstImage] : [],
+                active: true,
+                metadata: { sheet_id: productId },
+            };
 
-                let stripeProduct: Stripe.Product;
-                const existingProducts = await stripe.products.search({ query: `metadata['sheet_id']:'${productId}'` });
+            let stripeProduct: Stripe.Product;
+            const existingProducts = await stripe.products.search({ query: `metadata['sheet_id']:'${productId}'` });
 
-                if (existingProducts.data.length > 0) {
-                    stripeProduct = await stripe.products.update(existingProducts.data[0].id, stripeProductData);
-                    summary.updated++;
-                } else {
-                    stripeProduct = await stripe.products.create(stripeProductData);
-                    summary.created++;
-                }
-
-                const existingPrices = await stripe.prices.list({ product: stripeProduct.id, active: true });
-                for (const price of existingPrices.data) {
-                    await stripe.prices.update(price.id, { active: false });
-                }
-
-                const pricePromises: Promise<any>[] = [];
-                if (priceModel > 0) {
-                    pricePromises.push(stripe.prices.create({ product: stripeProduct.id, unit_amount: priceModel, currency: "eur", nickname: "Fichier 3D", metadata: { type: "model" } }));
-                }
-                if (pricePrint > 0) {
-                    pricePromises.push(stripe.prices.create({ product: stripeProduct.id, unit_amount: pricePrint, currency: "eur", nickname: "Impression 3D", metadata: { type: "print" } }));
-                }
-                const stripePrices = await Promise.all(pricePromises);
-
-                const productDocRef = db.collection("products").doc(stripeProduct.id);
-                await productDocRef.set({ active: true, name: stripeProduct.name, description: stripeProduct.description, images: stripeProduct.images, metadata: { sheetId: productId } });
-
-                const pricesCollectionRef = productDocRef.collection("prices");
-                for (const price of stripePrices) {
-                    await pricesCollectionRef.doc(price.id).set({ active: price.active, currency: price.currency, description: price.nickname, type: price.type, unit_amount: price.unit_amount, metadata: price.metadata });
-                }
-
-            } catch (error: any) {
-                summary.errors++;
-                summary.errorDetails.push({ id: productId, title: productTitle, error: error.message });
-                functions.logger.error(`Error processing product ${productId}:`, error.message);
+            if (existingProducts.data.length > 0) {
+                stripeProduct = await stripe.products.update(existingProducts.data[0].id, stripeProductData);
+                summary.updated++;
+            } else {
+                stripeProduct = await stripe.products.create(stripeProductData);
+                summary.created++;
             }
+
+            const existingPrices = await stripe.prices.list({ product: stripeProduct.id, active: true });
+            for (const price of existingPrices.data) {
+                await stripe.prices.update(price.id, { active: false });
+            }
+
+            const pricePromises: Promise<any>[] = [];
+            if (priceModel > 0) {
+                pricePromises.push(stripe.prices.create({ product: stripeProduct.id, unit_amount: priceModel, currency: "eur", nickname: "Fichier 3D", metadata: { type: "model" } }));
+            }
+            if (pricePrint > 0) {
+                pricePromises.push(stripe.prices.create({ product: stripeProduct.id, unit_amount: pricePrint, currency: "eur", nickname: "Impression 3D", metadata: { type: "print" } }));
+            }
+            const stripePrices = await Promise.all(pricePromises);
+
+            const productDocRef = db.collection("products").doc(stripeProduct.id);
+            await productDocRef.set({ active: true, name: stripeProduct.name, description: stripeProduct.description, images: stripeProduct.images, metadata: { sheetId: productId } });
+
+            const pricesCollectionRef = productDocRef.collection("prices");
+            for (const price of stripePrices) {
+                await pricesCollectionRef.doc(price.id).set({ active: price.active, currency: price.currency, description: price.nickname, type: price.type, unit_amount: price.unit_amount, metadata: price.metadata });
+            }
+
+        } catch (error: any) {
+            summary.errors++;
+            const errorMessage = `Error processing product ID '${productId}' (Title: '${productTitle}'): ${error.message}`;
+            summary.errorDetails.push({ id: productId, title: productTitle, error: error.message });
+            functions.logger.error(errorMessage, { rawError: error });
         }
-
-        functions.logger.info("Synchronization finished.", summary);
-        return { success: true, message: "Synchronization complete.", results: summary };
-
-    } catch (error: any) {
-        functions.logger.error("Fatal error during synchronization:", error);
-        summary.errors++;
-        summary.errorDetails.push({ error: `Fatal: ${error.message}` });
-        throw new HttpsError('internal', `Synchronization failed: ${error.message}`, { results: summary });
     }
+
+    functions.logger.info("--- Synchronization Finished ---", { summary });
+    
+    if (summary.errors > 0) {
+        throw new HttpsError('internal', `Synchronization finished with ${summary.errors} errors. Check function logs for details.`, { results: summary });
+    }
+
+    return { success: true, message: "Synchronization complete.", results: summary };
 });
 // #endregion
-
