@@ -4,6 +4,23 @@ Ce document retrace les décisions techniques et les fonctionnalités implément
 
 ---
 
+## Résolution des Erreurs Critiques
+
+### L'Erreur "Fantôme" : `Missing or insufficient permissions` au Chargement
+
+**Problème :** Une erreur `Missing or insufficient permissions` apparaissait systématiquement dans la console au chargement de n'importe quelle page, même pour un visiteur non connecté. L'erreur se produisait avant toute interaction de l'utilisateur.
+
+**Cause Racine :** Le hook `useUser` (qui gère l'état de l'utilisateur) était "trop zélé". Il tentait de lire des informations de profil supplémentaires depuis la base de données Firestore (`/users/{userId}`) pour chaque visiteur, dès l'initialisation de l'application. Pour un visiteur non authentifié, cette lecture était systématiquement bloquée par les règles de sécurité, déclenchant l'erreur. Le problème n'était donc lié ni aux commandes, ni aux favoris, mais à cette lecture prématurée et non autorisée.
+
+**Solution :** La gestion des données utilisateur a été drastiquement simplifiée.
+1.  **Suppression de la Lecture Automatique :** La logique qui lisait automatiquement Firestore depuis le hook `useUser` a été complètement retirée.
+2.  **Source de Vérité Unique :** Le hook `useUser` se contente désormais des informations de base fournies par **Firebase Authentication** (UID, email, etc.) au moment de la connexion.
+3.  **Aucune lecture de Firestore au démarrage :** L'application ne tente plus aucune opération sur la base de données tant qu'un utilisateur n'est pas connecté et n'effectue pas une action explicite (comme passer une commande).
+
+Cette correction a stabilisé l'application en éliminant la cause fondamentale de l'erreur de permission.
+
+---
+
 ## Architecture Fondamentale (Data-Driven)
 
 L'application repose sur une architecture entièrement pilotée par des données externes hébergées sur **Google Sheets**. C'est le principe fondamental du projet.
@@ -18,32 +35,20 @@ L'application repose sur une architecture entièrement pilotée par des données
 
 ---
 
-## Synchronisation des Produits avec Stripe et Firestore
+## Synchronisation des Produits avec Stripe et Firestore (Désactivée)
 
-Pour le catalogue, les données des produits suivent un flux de synchronisation en trois étapes pour garantir la cohérence entre la gestion de l'inventaire, le paiement et l'affichage sur le site.
+**Statut : L'intégration avec Stripe et la synchronisation Firestore pour le catalogue sont actuellement désactivées pour privilégier une architecture 100% basée sur Google Sheets.**
 
-- **Étape 1 : Source de Données (Google Sheets)**
-  - Une feuille de calcul dédiée contient la liste complète des produits avec leurs détails (ID, titre, description, prix, type, images, etc.). C'est le point d'entrée pour la gestion de l'inventaire.
+Pour le catalogue, les données des produits suivaient initialement un flux de synchronisation pour garantir la cohérence entre la gestion de l'inventaire, le paiement et l'affichage. Cette logique est conservée dans le code mais n'est pas active.
 
-- **Étape 2 : Synchronisation vers Stripe (Firebase Functions)**
-  - Une fonction Firebase (`syncProductsFromSheet`) est déclenchée manuellement (via un appel `curl` sécurisé).
-  - Cette fonction lit la feuille de calcul des produits, la parse, et pour chaque ligne :
-    - Elle crée ou met à jour un produit correspondant dans **Stripe**.
-    - Elle crée les prix associés (ex: "Fichier 3D", "Impression 3D") dans Stripe.
-  - Stripe devient ainsi la source de vérité pour tout ce qui concerne les paiements.
-
-- **Étape 3 : Synchronisation vers Firestore**
-  - Après avoir créé ou mis à jour le produit dans Stripe, la même fonction Firebase synchronise ces informations dans la base de données **Firestore**, dans une collection `/products`.
-  - Firestore devient alors la source de vérité pour l'affichage du catalogue sur le site web. Cette approche permet de charger les données rapidement côté client sans exposer directement les clés d'API Stripe.
-
-- **Affichage sur le Site**
-  - La page "Catalogue" de l'application lit les données directement depuis la collection `/products` de Firestore pour afficher la liste des articles. Les règles de sécurité de Firestore sont configurées pour autoriser la lecture publique de cette collection.
+- **Source de Données (Google Sheets)** : Une feuille de calcul dédiée contient la liste complète des produits.
+- **Affichage sur le Site** : La page "Catalogue" de l'application lit désormais les données **directement depuis le Google Sheet** via la fonction `getCategoryData`, et non plus depuis Firestore.
 
 ---
 
 ## Gestion des Utilisateurs et Authentification
 
-Le système gère les membres via Firebase Authentication et stocke les informations de profil dans Firestore.
+Le système gère les membres via Firebase Authentication et stocke les informations de profil dans Firestore lors de la création de compte ou de la soumission d'actions spécifiques (comme passer une commande).
 
 - **Fournisseurs d'Authentification** :
   - Inscription et connexion via **Google**.
@@ -51,15 +56,10 @@ Le système gère les membres via Firebase Authentication et stocke les informat
 
 - **Base de Données des Utilisateurs (Firestore)** :
   - Lors de la première connexion ou inscription d'un utilisateur, un document est créé pour lui dans Firestore à l'emplacement `/users/{userId}`.
-  - Ce document stocke des informations publiques et privées telles que :
-    - `uid`, `email`, `displayName`, `photoURL` (depuis Firebase Auth)
-    - `nickname`, `firstName`, `lastName` (renseignés à l'inscription)
-    - **`favorites`** : Un tableau contenant les IDs des produits que l'utilisateur a marqués comme favoris.
+  - Ce document stocke des informations telles que : `uid`, `email`, `displayName`, `photoURL`, `nickname`, `firstName`, `lastName`.
+  - La lecture de ce document n'est plus automatique au chargement du site.
 
-- **Gestion des Favoris** :
-  - Le hook `useFavorites` permet d'interagir avec le tableau `favorites` de l'utilisateur connecté.
-  - Les utilisateurs peuvent ajouter ou retirer des produits de leurs favoris, et ces changements sont mis à jour en temps réel dans leur document Firestore.
-  - Les règles de sécurité de Firestore garantissent qu'un utilisateur ne peut modifier que son propre document (et donc sa propre liste de favoris).
+- **Suppression des Favoris** : La fonctionnalité de "favoris", qui nécessitait une lecture constante du document utilisateur et était une source d'erreurs de permission, a été entièrement supprimée pour simplifier le système.
 
 ---
 
