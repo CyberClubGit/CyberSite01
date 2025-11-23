@@ -5,29 +5,28 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
-      // Un utilisateur est admin si son email correspond.
+      // An user is an admin if their email matches.
       return request.auth != null && request.auth.token.email == 'contact@cyber-club.net';
     }
 
+    // Rule for the user document itself
     match /users/{userId} {
-      // Un utilisateur authentifié peut lire et écrire sur son propre document
-      // et toutes ses sous-collections (y compris créer des commandes).
-      allow read, write: if request.auth.uid == userId;
-
-      // L'admin peut également lire les profils des utilisateurs.
-      allow get: if isAdmin();
-      
-      // La permission de l'admin pour gérer les commandes est gérée ci-dessous.
+      // The owner or an admin can read and write the user profile.
+      allow read, write: if request.auth.uid == userId || isAdmin();
     }
     
-    // Règle pour la sous-collection des commandes (pour les admins)
+    // Rule for the orders SUB-COLLECTION
     match /users/{userId}/orders/{orderId} {
-        // Un admin peut lire, mettre à jour ou supprimer n'importe quelle commande.
-        allow read, update, delete: if isAdmin();
+        // The user who owns the profile can manage their own orders.
+        // This is the CRUCIAL rule that allows order creation.
+        allow create, read, update, delete: if request.auth.uid == userId;
+        
+        // The admin can also read and update any order (e.g., to change status).
+        allow read, update: if isAdmin();
     }
 
-    // Règle pour la requête `collectionGroup` (pour le panneau d'administration)
-    // Permet à l'admin de lister TOUTES les commandes de TOUS les utilisateurs.
+    // Rule for the collectionGroup query (for the admin panel)
+    // Allows the admin to list ALL orders from ALL users.
     match /{path=**}/orders/{orderId} {
       allow list: if isAdmin();
     }
