@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import type { Brand, Category } from '@/lib/sheets';
 import { filterItemsByBrandActivity } from '@/lib/activity-filter';
 import Image from 'next/image';
@@ -173,13 +173,14 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
             <main>
               {finalData && finalData.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {finalData.map((item) => {
+                    {finalData.map((item, index) => {
                       const isIdValid = item.ID && !item.ID.includes('#NAME?');
                       const priceInCents = priceToCents(item.Price_Print);
+                      const uniqueKey = item.ID && !item.ID.includes('#NAME?') ? item.ID : `${item.title}-${index}`;
 
                       return (
                         <Card 
-                          key={item.ID || item.title} // Use ID, with a fallback to title
+                          key={uniqueKey}
                           className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-background/80 backdrop-blur-sm group"
                         >
                            <div 
