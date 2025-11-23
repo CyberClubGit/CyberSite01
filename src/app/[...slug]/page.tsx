@@ -93,14 +93,14 @@ export default async function CatchAllPage({ params }: { params: { slug:string[]
     const processedData = rawCategoryData.map(item => {
       const processedItem = processGalleryLinks(item);
       
-      // **THE FIX**: Normalize the ID, making it case-insensitive.
-      // It looks for 'ID', 'Id', or 'id' and standardizes it to a single 'ID' property.
+      // **LA CORRECTION**: Normaliser l'ID en étant insensible à la casse.
+      // Cherche `ID`, `Id`, ou `id` et standardise tout dans une propriété `ID`.
       const normalizedId = item.ID || item.Id || item.id || '';
 
       return {
         ...processedItem,
         ID: normalizedId, 
-        title: processedItem.title, // Ensure title is standardized
+        title: processedItem.title, // S'assurer que le titre est standardisé
       };
     });
     
