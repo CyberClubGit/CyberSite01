@@ -23,7 +23,6 @@ export {
   initializeFirebase,
   FirebaseProvider,
   FirebaseClientProvider,
-  useUser,
   useFirebase,
   useFirebaseApp,
   useFirestore,

@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword, signInWithRedirect, getRedirectResult } from 'firebase/auth';
-import { useAuth, googleProvider } from '@/firebase';
+import { useFirebaseAuth, googleProvider } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,7 +15,7 @@ import Link from 'next/link';
 
 export default function SignInPage() {
   const router = useRouter();
-  const auth = useAuth();
+  const auth = useFirebaseAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
