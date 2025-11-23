@@ -21,7 +21,7 @@
         },
         "favorites": {
           "type": "array",
-          "description": "An array of the user's favorite item titles.",
+          "description": "An array of the user's favorite item IDs.",
           "items": {
             "type": "string"
           }

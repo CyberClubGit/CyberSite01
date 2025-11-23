@@ -24,14 +24,11 @@ service cloud.firestore {
     // Orders collection at the root level
     match /orders/{orderId} {
       // A user can create a new order document if the userId in the document matches their own UID.
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       
-      // A user can read an order if the userId in the document matches their UID.
-      // An admin can also read any order.
-      allow read: if (request.auth != null && request.auth.uid == resource.data.userId) || isAdmin();
-      
-      // Only an admin can update the status of an order.
-      allow update: if isAdmin();
+      // An admin can read or update any order.
+      // A user can only read their own orders.
+      allow read, update: if isAdmin() || (request.auth != null && request.auth.uid == resource.data.userId);
       
       // No one can delete orders through the client SDK.
       allow delete: if false;
