@@ -17,7 +17,7 @@ export function useFavorites() {
         // A function to add/remove a product ID from the favorites.
         toggleFavorite,
         
-        // A boolean indicating if the initial favorites list is being loaded.
+        // A boolean indicating if the initial user and favorites data is being loaded.
         loading,
     };
 }

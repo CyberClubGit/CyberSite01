@@ -1,14 +1,14 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 import { 
   onAuthStateChanged, 
   signOut as firebaseSignOut,
   type User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
-import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase/provider';
+import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { useFirebaseAuth, useFirestore } from '@/firebase/provider';
 
 export interface UserData {
   uid: string;
@@ -24,9 +24,6 @@ export interface UserData {
 }
 
 const ADMIN_EMAIL = 'contact@cyber-club.net';
-
-// This context will hold the user data and the toggle function
-import { createContext, useContext, ReactNode } from 'react';
 
 interface UserContextType {
   user: UserData | null;
@@ -44,41 +41,52 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
-        let additionalData: Partial<UserData> = {};
-        try {
-          const userDocRef = doc(db, 'users', firebaseUser.uid);
-          const userDoc = await getDoc(userDocRef);
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        
+        const unsubscribeSnapshot = onSnapshot(userDocRef, (userDoc) => {
+          let additionalData: Partial<UserData> = {};
           if (userDoc.exists()) {
             additionalData = userDoc.data() as Partial<UserData>;
           }
-        } catch (error) {
-          console.warn(
-            'Could not fetch user document from Firestore. This might be due to Firestore security rules.',
-            error
-          );
-        }
-        
-        const userData: UserData = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-          emailVerified: firebaseUser.emailVerified,
-          isAdmin: firebaseUser.email === ADMIN_EMAIL,
-          favorites: [], // Ensure favorites is always an array
-          ...additionalData,
-        };
-        
-        setUser(userData);
+
+          const userData: UserData = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            emailVerified: firebaseUser.emailVerified,
+            isAdmin: firebaseUser.email === ADMIN_EMAIL,
+            favorites: [],
+            ...additionalData,
+          };
+          
+          setUser(userData);
+          setLoading(false);
+        }, (error) => {
+            console.error("Error listening to user document:", error);
+            const userData: UserData = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+              emailVerified: firebaseUser.emailVerified,
+              isAdmin: firebaseUser.email === ADMIN_EMAIL,
+              favorites: [],
+            };
+            setUser(userData);
+            setLoading(false);
+        });
+
+        return () => unsubscribeSnapshot();
       } else {
         setUser(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => unsubscribeAuth();
   }, [auth, db]);
 
   const signOut = async () => {
@@ -99,17 +107,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const userDocRef = doc(db, 'users', user.uid);
     const isCurrentlyFavorite = user.favorites.includes(productId);
 
-    // Optimistic UI update
-    setUser(currentUser => {
-        if (!currentUser) return null;
-        return {
-            ...currentUser,
-            favorites: isCurrentlyFavorite
-                ? currentUser.favorites.filter(id => id !== productId)
-                : [...currentUser.favorites, productId]
-        };
-    });
-
     try {
         if (isCurrentlyFavorite) {
             await updateDoc(userDocRef, {
@@ -122,16 +119,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
     } catch (error) {
         console.error("Error updating favorites in Firestore:", error);
-        // Revert optimistic update on error
-         setUser(currentUser => {
-            if (!currentUser) return null;
-            return {
-                ...currentUser,
-                favorites: isCurrentlyFavorite
-                    ? [...currentUser.favorites, productId]
-                    : currentUser.favorites.filter(id => id !== productId)
-            };
-        });
     }
   }, [user, db]);
 
