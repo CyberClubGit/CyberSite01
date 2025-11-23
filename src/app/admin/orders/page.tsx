@@ -40,8 +40,11 @@ const StatusSelector = ({ order }: { order: Order }) => {
     const [isUpdating, setIsUpdating] = useState(false);
 
     const handleStatusChange = async (newStatus: Order['status']) => {
+        if (!order.userId || !order.id) {
+            console.error("Order or User ID is missing, cannot update status.");
+            return;
+        }
         setIsUpdating(true);
-        // **LA CORRECTION**: Le chemin doit maintenant inclure l'ID de l'utilisateur.
         const orderRef = doc(db, 'users', order.userId, 'orders', order.id);
         try {
             await updateDoc(orderRef, { status: newStatus });
@@ -87,16 +90,14 @@ export default function AdminOrdersPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (user && user.isAdmin) {
-      // **LA CORRECTION**: On utilise une requête `collectionGroup` pour récupérer
-      // toutes les commandes, peu importe sous quel utilisateur elles se trouvent.
+    if (user && user.isAdmin && db) {
       const ordersQuery = query(collectionGroup(db, 'orders'), orderBy('createdAt', 'desc'));
       
       const unsubscribe = onSnapshot(ordersQuery, (querySnapshot) => {
         const ordersData: Order[] = [];
         querySnapshot.forEach((doc) => {
           const orderData = doc.data() as Omit<Order, 'id' | 'userId'>;
-          const parentPath = doc.ref.parent.parent; // This gives the /users/{userId} document reference
+          const parentPath = doc.ref.parent.parent; 
           const userId = parentPath ? parentPath.id : 'unknown';
 
           ordersData.push({ 
@@ -108,7 +109,7 @@ export default function AdminOrdersPage() {
         setOrders(ordersData);
         setDataLoading(false);
       }, (error) => {
-        console.error("Error fetching orders:", error);
+        console.error("Error fetching orders with collectionGroup:", error);
         setDataLoading(false);
       });
 
