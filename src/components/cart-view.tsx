@@ -34,7 +34,7 @@ export function CartView() {
     setError(null);
     
     try {
-      // Reverting to a top-level 'orders' collection with corrected security rules.
+      // Switched to a top-level 'orders' collection.
       const orderPayload = {
         userId: user.uid, // Explicitly include userId for security rules
         userEmail: user.email,
