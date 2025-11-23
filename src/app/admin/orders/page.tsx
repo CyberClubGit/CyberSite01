@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -45,7 +44,7 @@ const StatusSelector = ({ order }: { order: Order }) => {
             return;
         }
         setIsUpdating(true);
-        // **CHANGEMENT MAJEUR**: Le chemin pointe vers la collection 'orders' à la racine.
+        // **NOUVELLE ARCHITECTURE**: Le chemin pointe vers la collection 'orders' à la racine.
         const orderRef = doc(db, 'orders', order.id);
         try {
             await updateDoc(orderRef, { status: newStatus });
@@ -92,13 +91,12 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     if (user && user.isAdmin && db) {
-      // **CHANGEMENT MAJEUR**: On écoute la collection 'orders' à la racine.
+      // **NOUVELLE ARCHITECTURE**: On écoute la collection 'orders' à la racine.
       const ordersQuery = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
       
       const unsubscribe = onSnapshot(ordersQuery, (querySnapshot) => {
         const ordersData: Order[] = [];
         querySnapshot.forEach((doc) => {
-          // L'ID utilisateur est maintenant un champ dans le document.
           ordersData.push({ 
             id: doc.id,
             ...(doc.data() as Omit<Order, 'id'>)

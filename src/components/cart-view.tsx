@@ -58,7 +58,7 @@ export function CartView() {
       status: 'pending', // Initial status
     };
 
-    // **CHANGEMENT MAJEUR** : On écrit dans la collection 'orders' à la racine.
+    // **NOUVELLE ARCHITECTURE** : On écrit dans la collection 'orders' à la racine.
     const orderCollectionRef = collection(db, "orders");
     
     addDoc(orderCollectionRef, orderPayload)
@@ -77,7 +77,7 @@ export function CartView() {
         errorEmitter.emit('permission-error', permissionError);
       })
       .finally(() => {
-        // Note: loading state is now handled by the error emitter listener
+        // The loading state is managed by the success or error handlers.
       });
   };
 
