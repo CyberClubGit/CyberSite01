@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { VideoBackground } from './video-background';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CatalogItemDetails } from './catalog-item-details';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/firebase';
 import { useFavorites } from '@/hooks/useFavorites';
 import { Heart, ShoppingCart } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';

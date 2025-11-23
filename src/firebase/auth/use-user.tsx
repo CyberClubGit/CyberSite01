@@ -1,34 +1,80 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
-import { useFirebaseApp } from '@/firebase/provider';
+import { useState, useEffect } from 'react';
+import { 
+  onAuthStateChanged, 
+  signOut as firebaseSignOut,
+  type User as FirebaseUser,
+} from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase/provider';
+
+export interface UserData {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  firstName?: string;
+  lastName?: string;
+  nickname?: string;
+  emailVerified: boolean;
+  favorites?: string[];
+  isAdmin: boolean;
+}
+
+const ADMIN_EMAIL = 'contact@cyber-club.net';
 
 export function useUser() {
-  const app = useFirebaseApp();
-  const auth = getAuth(app);
-  const [user, setUser] = useState<User | null>(null);
+  const auth = useFirebaseAuth();
+  const db = useFirestore();
+  const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // onAuthStateChanged can return a user object on initialization,
-    // so we can use that to set the user state.
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        let additionalData: Partial<UserData> = {};
+        try {
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            additionalData = userDoc.data() as UserData;
+          }
+        } catch (error) {
+          console.warn(
+            'Could not fetch user document from Firestore. This might be due to Firestore security rules.',
+            error
+          );
+        }
+        
+        const userData: UserData = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
+          emailVerified: firebaseUser.emailVerified,
+          isAdmin: firebaseUser.email === ADMIN_EMAIL, // Check if user is admin
+          ...additionalData,
+        };
+        
+        setUser(userData);
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [auth]);
+  }, [auth, db]);
 
-  // To avoid a flash of unauthenticated content, we can check for the
-  // initial user from the auth object.
-  useEffect(() => {
-    if (auth.currentUser) {
-      setUser(auth.currentUser);
-      setLoading(false);
+  const signOut = async () => {
+    try {
+      await firebaseSignOut(auth);
+      setUser(null);
+    } catch (error) {
+      console.error('Sign out error:', error);
     }
-  }, [auth.currentUser]);
+  };
 
-  return { user, loading };
+  return { user, loading, signOut };
 }

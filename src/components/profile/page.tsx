@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useAuth, type UserData } from '@/firebase';
+import { useAuth, type UserData } from '@/firebase/auth/use-user';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -210,5 +210,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    

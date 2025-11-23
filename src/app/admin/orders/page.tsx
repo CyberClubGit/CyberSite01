@@ -3,8 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
-import { useFirestore } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { collection, query, onSnapshot, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -109,7 +108,7 @@ export default function AdminOrdersPage() {
   }, [user, db]);
 
   // Show a loading spinner while checking auth and loading initial data
-  if (authLoading || !user || !user.isAdmin) {
+  if (authLoading || (user && !user.isAdmin)) {
     return (
       <div className="flex items-center justify-center min-h-[80vh]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />

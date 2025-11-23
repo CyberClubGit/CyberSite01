@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 import { ScrambleTitle } from './ScrambleTitle';
 import { InteractivePanel } from './interactive-panel';
 import { useCart } from '@/hooks/useCart';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/firebase';
 import { useFavorites } from '@/hooks/useFavorites';
 
 // The item type comes from the sheet processing

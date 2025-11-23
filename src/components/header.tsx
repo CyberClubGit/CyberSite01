@@ -33,7 +33,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Brand, Category } from '@/lib/sheets';
 import { usePathname, useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/firebase';
 import { CartIcon } from './cart-icon';
 
 
