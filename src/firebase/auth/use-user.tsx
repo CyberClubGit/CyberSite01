@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { 
   onAuthStateChanged, 
   signOut as firebaseSignOut,
@@ -15,11 +15,12 @@ export interface UserData {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
+  emailVerified: boolean;
+  isAdmin: boolean;
+  // Firestore specific fields are now optional as they might not be loaded initially
   firstName?: string;
   lastName?: string;
   nickname?: string;
-  emailVerified: boolean;
-  isAdmin: boolean;
 }
 
 const ADMIN_EMAIL = 'contact@cyber-club.net';
@@ -41,41 +42,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        
-        const unsubscribeSnapshot = onSnapshot(userDocRef, (userDoc) => {
-          let additionalData: Partial<UserData> = {};
-          if (userDoc.exists()) {
-            additionalData = userDoc.data() as Partial<UserData>;
-          }
-
-          const userData: UserData = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL,
-            emailVerified: firebaseUser.emailVerified,
-            isAdmin: firebaseUser.email === ADMIN_EMAIL,
-            ...additionalData,
-          };
-          
-          setUser(userData);
-          setLoading(false);
-        }, (error) => {
-            console.error("Error listening to user document:", error);
-            const userData: UserData = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              displayName: firebaseUser.displayName,
-              photoURL: firebaseUser.photoURL,
-              emailVerified: firebaseUser.emailVerified,
-              isAdmin: firebaseUser.email === ADMIN_EMAIL,
-            };
-            setUser(userData);
-            setLoading(false);
-        });
-
-        return () => unsubscribeSnapshot();
+        // We will no longer fetch from Firestore here automatically.
+        // We will only use the data from the auth object itself.
+        const userData: UserData = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
+          emailVerified: firebaseUser.emailVerified,
+          isAdmin: firebaseUser.email === ADMIN_EMAIL,
+        };
+        setUser(userData);
+        setLoading(false);
       } else {
         setUser(null);
         setLoading(false);

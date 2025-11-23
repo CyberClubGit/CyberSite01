@@ -56,7 +56,7 @@ const ProfileView = ({ user, onSignOut }: { user: UserData; onSignOut: () => voi
 
       <div className="w-full space-y-4 text-center">
         <div className="text-2xl font-bold font-headline">{user.displayName}</div>
-        {user.nickname && <div className="text-lg text-muted-foreground">@{user.nickname}</div>}
+        {(user as any).nickname && <div className="text-lg text-muted-foreground">@{(user as any).nickname}</div>}
          <div className="flex items-center justify-center gap-2 text-muted-foreground">
             <Mail className="h-4 w-4" />
             <span>{user.email}</span>
