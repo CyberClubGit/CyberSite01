@@ -5,7 +5,7 @@ import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Image from 'next/image';
-import { X, Plus, Minus, Loader2, ShoppingCart, Send } from 'lucide-react';
+import { X, Plus, Minus, Loader2, ShoppingCart, Send, AlertTriangle } from 'lucide-react';
 import { useAuth, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { collection, addDoc, serverTimestamp } from "firebase/firestore"; 
@@ -15,18 +15,18 @@ export function CartView() {
   const { user } = useAuth();
   const db = useFirestore();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<any | null>(null);
   const router = useRouter();
 
   const handleSendOrder = async () => {
     if (!user) {
-      setError("Veuillez vous connecter pour envoyer une commande.");
+      setError({ code: 'auth/not-logged-in', message: "Veuillez vous connecter pour envoyer une commande." });
       router.push('/auth/signin');
       return;
     }
     
     if (cart.length === 0) {
-      setError("Votre panier est vide.");
+      setError({ code: 'cart/empty-cart', message: "Votre panier est vide." });
       return;
     }
     
@@ -36,7 +36,7 @@ export function CartView() {
     try {
       // Prepare the order document for the user's "orders" sub-collection
       const orderPayload = {
-        // We no longer need userId here as it's part of the path
+        // userId is no longer needed in payload, as it's part of the path
         userEmail: user.email,
         userName: user.displayName,
         items: cart,
@@ -54,8 +54,8 @@ export function CartView() {
       router.push('/checkout/success');
 
     } catch (err: any) {
-      console.error("Error writing to orders collection:", err);
-      setError("Erreur lors de la soumission de la commande. Veuillez réessayer.");
+      console.error("DEBUG: Error writing to Firestore:", err);
+      setError(err); // Store the full error object
     } finally {
         setLoading(false);
     }
@@ -130,9 +130,12 @@ export function CartView() {
           )}
         </Button>
         {error && (
-            <div className="mt-4 p-4 bg-destructive/10 text-destructive text-sm rounded-lg">
-                <p className="font-bold">Erreur lors de l'envoi</p>
-                <p>{error}</p>
+            <div className="mt-4 p-4 bg-destructive/10 text-destructive text-sm rounded-lg font-mono">
+                <p className="font-bold font-sans flex items-center gap-2"><AlertTriangle size={16}/> DEBUG: Erreur de Soumission</p>
+                <div className="mt-2 text-xs space-y-1">
+                    <p><strong>Raison:</strong> {error.code || 'INCONNUE'}</p>
+                    <p><strong>Message:</strong> {error.message || 'Aucun message détaillé.'}</p>
+                </div>
             </div>
         )}
       </div>
