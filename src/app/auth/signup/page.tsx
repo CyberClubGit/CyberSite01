@@ -37,6 +37,7 @@ export default function SignUpPage() {
   };
   
   const createFirestoreUserDocument = async (user: any) => {
+    if (!db) return;
     const userRef = doc(db, 'users', user.uid);
     const docSnap = await getDoc(userRef);
 
@@ -47,23 +48,21 @@ export default function SignUpPage() {
         });
     } else {
         // Create new user document
-        const firstName = user.displayName?.split(' ')[0] || '';
-        const lastName = user.displayName?.split(' ').slice(1).join(' ') || '';
+        const displayName = user.displayName || `${formData.firstName} ${formData.lastName}`.trim();
+        const firstName = user.displayName?.split(' ')[0] || formData.firstName;
+        const lastName = user.displayName?.split(' ').slice(1).join(' ') || formData.lastName;
         
         await setDoc(userRef, {
             uid: user.uid,
             email: user.email,
             firstName: firstName,
             lastName: lastName,
-            nickname: user.displayName || '',
-            displayName: user.displayName,
+            nickname: formData.nickname || displayName,
+            displayName: displayName,
             photoURL: user.photoURL,
             createdAt: Timestamp.now(),
             lastLogin: Timestamp.now(),
             emailVerified: user.emailVerified,
-            membershipTier: 'bronze',
-            loyaltyPoints: 0,
-            totalPointsEarned: 0,
         });
     }
   };
@@ -86,11 +85,11 @@ export default function SignUpPage() {
       }
     };
     checkRedirect();
-  }, [auth, router]);
+  }, [auth, db, router]);
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth) return;
+    if (!auth || !db) return;
     setError('');
     setLoading(true);
 
@@ -102,25 +101,15 @@ export default function SignUpPage() {
       );
 
       const user = userCredential.user;
-
+      
+      const displayName = `${formData.firstName} ${formData.lastName}`.trim();
       await updateProfile(user, {
-        displayName: `${formData.firstName} ${formData.lastName}`.trim(),
+        displayName: displayName,
       });
       
-      await setDoc(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        nickname: formData.nickname,
-        displayName: `${formData.firstName} ${formData.lastName}`.trim(),
-        photoURL: null,
-        createdAt: Timestamp.now(),
-        lastLogin: Timestamp.now(),
-        emailVerified: false,
-        membershipTier: 'bronze',
-        loyaltyPoints: 0,
-        totalPointsEarned: 0,
+      await createFirestoreUserDocument({
+        ...user,
+        displayName: displayName
       });
 
       router.push('/');

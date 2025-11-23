@@ -1,31 +1,42 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
+      // Assuming 'contact@cyber-club.net' is the admin's email.
       return request.auth != null && request.auth.token.email == 'contact@cyber-club.net';
     }
 
-    // Règle pour les profils utilisateurs
-    // Un utilisateur peut créer/lire/modifier son propre profil.
+    // Rule for the user profiles collection
+    // This is the most critical rule to fix the signup issue.
     match /users/{userId} {
-      allow read, write: if request.auth.uid == userId || isAdmin();
+      // A user can create their own profile document.
+      // The request.auth.uid must match the document's userId.
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // A logged-in user can read and update their own profile.
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      
+      // Admin can read and write any user profile.
+      allow read, write: if isAdmin();
     }
     
-    // Règle pour la collection des commandes, à la racine.
+    // Rule for the root 'orders' collection.
     match /orders/{orderId} {
-        // N'importe quel utilisateur authentifié peut créer une commande,
-        // à condition que le 'userId' dans le document corresponde à son propre ID.
+        // Any authenticated user can create an order,
+        // as long as the 'userId' in the document matches their own ID.
         allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
         
-        // L'utilisateur peut lire ses propres commandes.
-        allow read: if resource.data.userId == request.auth.uid;
+        // A user can read their own orders.
+        // The admin can also read any order.
+        allow read: if (request.auth.uid == resource.data.userId) || isAdmin();
         
-        // Seul l'administrateur peut lister, lire et mettre à jour le statut de TOUTES les commandes.
-        allow list, read, update: if isAdmin();
+        // Only the admin can list all orders or update an order's status.
+        allow list, update: if isAdmin();
 
-        // Personne ne peut supprimer une commande (sécurité).
+        // No one can delete an order (for safety).
         allow delete: if false;
     }
   }
