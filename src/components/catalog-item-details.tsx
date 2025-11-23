@@ -15,7 +15,6 @@ import {
   Cuboid,
   Layers,
   ShoppingCart,
-  Heart,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from './ui/button';
@@ -25,7 +24,6 @@ import { ScrambleTitle } from './ScrambleTitle';
 import { InteractivePanel } from './interactive-panel';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/firebase';
-import { useFavorites } from '@/hooks/useFavorites';
 
 // The item type comes from the sheet processing
 type CatalogItem = {
@@ -144,7 +142,6 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
   const [imageViewer, setImageViewer] = useState<ImageViewerState>({ isOpen: false, images: [], selectedIndex: 0 });
   
   const { user } = useAuth();
-  const { favorites, toggleFavorite } = useFavorites();
   
   const openImageViewer = (images: string[], index: number) => {
     setImageViewer({ isOpen: true, images, selectedIndex: index });
@@ -169,7 +166,6 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     });
   };
 
-  const isFavorited = favorites.includes(item.ID);
   const hasGallery = item.galleryUrls && item.galleryUrls.length > 0;
   const stlUrl = item.stlUrl;
 
@@ -235,11 +231,6 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
                 />
             </div>
             <div className="flex gap-2 p-2">
-              {user && (
-                  <Button size="icon" variant="ghost" className="rounded-full h-10 w-10 bg-background/50 backdrop-blur-sm" onClick={() => toggleFavorite(item.ID)}>
-                      <Heart className={cn("h-5 w-5", isFavorited ? "fill-red-500 text-red-500" : "text-foreground")} />
-                  </Button>
-              )}
               {priceInCents > 0 &&
                 <Button size="icon" variant="ghost" className="rounded-full h-10 w-10 bg-background/50 backdrop-blur-sm" onClick={handleAddToCart}>
                     <ShoppingCart className="h-5 w-5 text-foreground" />

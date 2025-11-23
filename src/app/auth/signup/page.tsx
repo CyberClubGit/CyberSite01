@@ -64,13 +64,13 @@ export default function SignUpPage() {
             membershipTier: 'bronze',
             loyaltyPoints: 0,
             totalPointsEarned: 0,
-            favorites: [],
         });
     }
   };
 
   useEffect(() => {
     const checkRedirect = async () => {
+      if (!auth) return;
       try {
         const result = await getRedirectResult(auth);
         if (result) {
@@ -90,6 +90,7 @@ export default function SignUpPage() {
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!auth) return;
     setError('');
     setLoading(true);
 
@@ -120,7 +121,6 @@ export default function SignUpPage() {
         membershipTier: 'bronze',
         loyaltyPoints: 0,
         totalPointsEarned: 0,
-        favorites: [],
       });
 
       router.push('/');
@@ -132,6 +132,7 @@ export default function SignUpPage() {
   };
 
   const handleGoogleSignUp = async () => {
+    if (!auth) return;
     setError('');
     setLoading(true);
     await signInWithRedirect(auth, googleProvider);

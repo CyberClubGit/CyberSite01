@@ -15,8 +15,7 @@ import { VideoBackground } from './video-background';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CatalogItemDetails } from './catalog-item-details';
 import { useAuth } from '@/firebase';
-import { useFavorites } from '@/hooks/useFavorites';
-import { Heart, ShoppingCart } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
@@ -66,7 +65,6 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   const [selectedItem, setSelectedItem] = useState<CatalogItem | null>(null);
 
   const { user } = useAuth();
-  const { favorites, toggleFavorite } = useFavorites();
   const { addToCart } = useCart();
 
   const handleFilterChange = (filterType: 'type' | 'material', value: string) => {
@@ -177,7 +175,6 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {finalData.map((item) => {
                       const isIdValid = item.ID && !item.ID.includes('#NAME?');
-                      const isFavorited = user && isIdValid && favorites.includes(item.ID);
                       const priceInCents = priceToCents(item.Price_Print);
 
                       return (
@@ -199,21 +196,6 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                               />
                             )}
                              <div className="absolute top-2 right-2 flex flex-col gap-2">
-                                {user && (
-                                    <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        className="rounded-full h-8 w-8 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if(isIdValid) toggleFavorite(item.ID);
-                                        }}
-                                        disabled={!isIdValid}
-                                    >
-                                        <Heart className={cn("h-5 w-5 transition-all", isFavorited ? "fill-red-500 text-red-500" : "fill-transparent")} />
-                                        <span className="sr-only">Ajouter aux favoris</span>
-                                    </Button>
-                                )}
                                 {priceInCents > 0 && (
                                     <TooltipProvider>
                                       <Tooltip>

@@ -7,7 +7,7 @@ import {
   signOut as firebaseSignOut,
   type User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { useFirebaseAuth, useFirestore } from '@/firebase/provider';
 
 export interface UserData {
@@ -19,7 +19,6 @@ export interface UserData {
   lastName?: string;
   nickname?: string;
   emailVerified: boolean;
-  favorites: string[];
   isAdmin: boolean;
 }
 
@@ -29,7 +28,6 @@ interface UserContextType {
   user: UserData | null;
   loading: boolean;
   signOut: () => Promise<void>;
-  toggleFavorite: (productId: string) => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -58,7 +56,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
             photoURL: firebaseUser.photoURL,
             emailVerified: firebaseUser.emailVerified,
             isAdmin: firebaseUser.email === ADMIN_EMAIL,
-            favorites: [],
             ...additionalData,
           };
           
@@ -73,7 +70,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
               photoURL: firebaseUser.photoURL,
               emailVerified: firebaseUser.emailVerified,
               isAdmin: firebaseUser.email === ADMIN_EMAIL,
-              favorites: [],
             };
             setUser(userData);
             setLoading(false);
@@ -98,32 +94,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const toggleFavorite = useCallback(async (productId: string) => {
-    if (!user) {
-        console.error("Cannot toggle favorite: User is not logged in.");
-        return;
-    }
-
-    const userDocRef = doc(db, 'users', user.uid);
-    const isCurrentlyFavorite = user.favorites.includes(productId);
-
-    try {
-        if (isCurrentlyFavorite) {
-            await updateDoc(userDocRef, {
-                favorites: arrayRemove(productId)
-            });
-        } else {
-            await updateDoc(userDocRef, {
-                favorites: arrayUnion(productId)
-            });
-        }
-    } catch (error) {
-        console.error("Error updating favorites in Firestore:", error);
-    }
-  }, [user, db]);
-
   return (
-    <UserContext.Provider value={{ user, loading, signOut, toggleFavorite }}>
+    <UserContext.Provider value={{ user, loading, signOut }}>
       {children}
     </UserContext.Provider>
   );
