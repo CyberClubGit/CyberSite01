@@ -34,8 +34,9 @@ export function CartView() {
     setError(null);
     
     try {
-      // **LA CORRECTION**: On écrit la commande dans la sous-collection de l'utilisateur.
+      // Écrit la commande dans la sous-collection de l'utilisateur.
       const orderPayload = {
+        userId: user.uid, // Ajout de l'ID utilisateur
         userEmail: user.email,
         userName: user.displayName,
         items: cart,

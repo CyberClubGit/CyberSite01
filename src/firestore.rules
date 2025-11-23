@@ -5,34 +5,35 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
+      // Un utilisateur est admin si son email est celui-ci
       return request.auth != null && request.auth.token.email == 'contact@cyber-club.net';
     }
 
-    // Products are public and can only be written by an admin
-    match /products/{productId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // User profiles can be created by any authenticated user.
-    // They can only be read or updated by their owner or an admin.
     match /users/{userId} {
+      // N'importe quel utilisateur authentifié peut créer son propre document de profil
       allow create: if request.auth != null;
+      
+      // Un utilisateur ne peut lire ou mettre à jour que son propre profil. L'admin peut tout lire/modifier.
       allow read, update: if request.auth != null && (request.auth.uid == userId || isAdmin());
       
-      // **LA CORRECTION**: Règles pour la sous-collection des commandes.
-      // Un utilisateur peut créer/lire ses propres commandes.
-      // L'administrateur a accès à tout via la règle `collectionGroup` ci-dessous.
+      // Règle pour la sous-collection des commandes.
       match /orders/{orderId} {
-        allow read, create: if request.auth.uid == userId;
-        allow update, delete: if isAdmin(); // Seul l'admin peut modifier/supprimer une commande
+        // Un utilisateur authentifié peut créer une commande pour lui-même.
+        allow create: if request.auth.uid == userId;
+
+        // Seul le propriétaire ou un admin peut lire une commande.
+        allow read: if request.auth.uid == userId || isAdmin();
+        
+        // Seul un admin peut mettre à jour (changer le statut) ou supprimer une commande.
+        allow update, delete: if isAdmin();
       }
     }
 
-    // **LA CORRECTION**: Règle pour le `collectionGroup`.
-    // Permet à l'admin de lister toutes les commandes de tous les utilisateurs.
+    // Règle pour la requête `collectionGroup`.
+    // Permet à l'admin de lister TOUTES les commandes de TOUS les utilisateurs.
+    // C'est ce qui alimente le panneau d'administration.
     match /{path=**}/orders/{orderId} {
-      allow list, read, update: if isAdmin();
+      allow list, get, read, update: if isAdmin();
     }
   }
 }

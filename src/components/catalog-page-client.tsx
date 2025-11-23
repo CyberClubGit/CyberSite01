@@ -14,7 +14,6 @@ import { cn } from '@/lib/utils';
 import { VideoBackground } from './video-background';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CatalogItemDetails } from './catalog-item-details';
-import { useAuth } from '@/firebase';
 import { ShoppingCart } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
@@ -64,7 +63,6 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [selectedItem, setSelectedItem] = useState<CatalogItem | null>(null);
 
-  const { user } = useAuth();
   const { addToCart } = useCart();
 
   const handleFilterChange = (filterType: 'type' | 'material', value: string) => {
@@ -175,8 +173,6 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {finalData.map((item, index) => {
                       const isIdValid = item.ID && !item.ID.includes('#NAME?');
-                      // **THE FIX**: Always use the index as part of the key to guarantee uniqueness.
-                      // If a valid ID exists, use it for stability. Otherwise, fall back to a purely index-based key.
                       const uniqueKey = isIdValid ? `${item.ID}-${index}` : `item-${index}`;
 
                       return (
