@@ -214,6 +214,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                                             <span className="sr-only">Ajouter au panier</span>
                                           </Button>
                                         </TooltipTrigger>
+                                        {isItemValid ? null : <TooltipContent><p>ID Invalide</p></TooltipContent>}
                                       </Tooltip>
                                     </TooltipProvider>
                                 )}
