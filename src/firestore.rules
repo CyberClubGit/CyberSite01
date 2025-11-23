@@ -10,30 +10,29 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Un utilisateur authentifié peut créer son propre document de profil si l'ID correspond.
+      // Un utilisateur peut créer son propre document de profil
       allow create: if request.auth != null && request.auth.uid == userId;
       
-      // Un utilisateur ne peut lire ou mettre à jour que son propre profil. L'admin peut tout lire/modifier.
+      // Seul le propriétaire du profil ou un admin peut lire/mettre à jour le profil
       allow read, update: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      
-      // Règle pour la sous-collection des commandes.
-      // C'est la permission clé qui autorise l'écriture dans la sous-collection.
-      match /orders/{orderId} {
-        // L'utilisateur doit être le propriétaire du document parent "user" pour y créer une commande.
-        allow create: if request.auth.uid == userId;
 
-        // Seul le propriétaire ou un admin peut lire une commande spécifique.
-        allow read: if request.auth.uid == userId || isAdmin();
+      // Règle pour la sous-collection des commandes
+      match /orders/{orderId} {
+        // Un utilisateur authentifié peut créer une commande pour lui-même
+        allow create: if request.auth != null && request.auth.uid == userId;
+
+        // Seul le propriétaire ou un admin peut lire une commande
+        allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
         
-        // Seul un admin peut mettre à jour ou supprimer une commande.
+        // Seul un admin peut mettre à jour ou supprimer une commande
         allow update, delete: if isAdmin();
       }
     }
 
-    // Règle pour la requête `collectionGroup` (pour le panneau d'administration).
+    // Règle pour la requête `collectionGroup` (pour le panneau d'administration)
     // Permet à l'admin de lister TOUTES les commandes de TOUS les utilisateurs.
     match /{path=**}/orders/{orderId} {
-      allow list, get, read, update: if isAdmin();
+      allow list: if isAdmin();
     }
   }
 }
