@@ -49,7 +49,7 @@ export function CartView() {
     setError(null);
     
     const orderPayload = {
-      userId: user.uid, // Ajout de l'ID utilisateur
+      userId: user.uid,
       userEmail: user.email,
       userName: user.displayName,
       items: cart,
@@ -58,8 +58,8 @@ export function CartView() {
       status: 'pending', // Initial status
     };
 
-    // Le chemin pointe maintenant vers /users/{userId}/orders/
-    const orderCollectionRef = collection(db, "users", user.uid, "orders");
+    // **CHANGEMENT MAJEUR** : On écrit dans la collection 'orders' à la racine.
+    const orderCollectionRef = collection(db, "orders");
     
     addDoc(orderCollectionRef, orderPayload)
       .then(() => {

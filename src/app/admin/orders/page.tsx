@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore } from '@/firebase';
-import { collectionGroup, query, onSnapshot, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -40,12 +40,13 @@ const StatusSelector = ({ order }: { order: Order }) => {
     const [isUpdating, setIsUpdating] = useState(false);
 
     const handleStatusChange = async (newStatus: Order['status']) => {
-        if (!order.userId || !order.id) {
-            console.error("Order or User ID is missing, cannot update status.");
+        if (!order.id) {
+            console.error("Order ID is missing, cannot update status.");
             return;
         }
         setIsUpdating(true);
-        const orderRef = doc(db, 'users', order.userId, 'orders', order.id);
+        // **CHANGEMENT MAJEUR**: Le chemin pointe vers la collection 'orders' à la racine.
+        const orderRef = doc(db, 'orders', order.id);
         try {
             await updateDoc(orderRef, { status: newStatus });
         } catch (error) {
@@ -91,25 +92,22 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     if (user && user.isAdmin && db) {
-      const ordersQuery = query(collectionGroup(db, 'orders'), orderBy('createdAt', 'desc'));
+      // **CHANGEMENT MAJEUR**: On écoute la collection 'orders' à la racine.
+      const ordersQuery = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
       
       const unsubscribe = onSnapshot(ordersQuery, (querySnapshot) => {
         const ordersData: Order[] = [];
         querySnapshot.forEach((doc) => {
-          const orderData = doc.data() as Omit<Order, 'id' | 'userId'>;
-          const parentPath = doc.ref.parent.parent; 
-          const userId = parentPath ? parentPath.id : 'unknown';
-
+          // L'ID utilisateur est maintenant un champ dans le document.
           ordersData.push({ 
             id: doc.id,
-            userId: userId, 
-            ...orderData 
+            ...(doc.data() as Omit<Order, 'id'>)
           });
         });
         setOrders(ordersData);
         setDataLoading(false);
       }, (error) => {
-        console.error("Error fetching orders with collectionGroup:", error);
+        console.error("Error fetching orders:", error);
         setDataLoading(false);
       });
 
