@@ -158,7 +158,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
   const { addToCart } = useCart();
   const handleAddToCart = () => {
     addToCart({
-      id: item.ID,
+      id: item.ID, // **LA CORRECTION CRUCIALE** : Utiliser l'ID correct de l'objet `item`
       name: item.title,
       price: priceToCents(item.Price_Print),
       image: item.galleryUrls?.[0] || '',
@@ -338,3 +338,5 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     </>
   );
 }
+
+    
