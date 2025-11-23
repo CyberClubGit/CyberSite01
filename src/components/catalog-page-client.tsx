@@ -175,8 +175,9 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {finalData.map((item, index) => {
                       const isIdValid = item.ID && !item.ID.includes('#NAME?');
-                      const priceInCents = priceToCents(item.Price_Print);
-                      const uniqueKey = (item.ID && isIdValid) ? item.ID : `item-${index}-${item.title}`;
+                      // **THE FIX**: Always use the index as part of the key to guarantee uniqueness.
+                      // If a valid ID exists, use it for stability. Otherwise, fall back to a purely index-based key.
+                      const uniqueKey = isIdValid ? `${item.ID}-${index}` : `item-${index}`;
 
                       return (
                         <Card 
@@ -197,7 +198,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                               />
                             )}
                              <div className="absolute top-2 right-2 flex flex-col gap-2">
-                                {priceInCents > 0 && (
+                                {priceToCents(item.Price_Print) > 0 && (
                                     <TooltipProvider>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
