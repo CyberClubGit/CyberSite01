@@ -176,7 +176,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                     {finalData.map((item, index) => {
                       const isIdValid = item.ID && !item.ID.includes('#NAME?');
                       const priceInCents = priceToCents(item.Price_Print);
-                      const uniqueKey = item.ID && !item.ID.includes('#NAME?') ? item.ID : `${item.title}-${index}`;
+                      const uniqueKey = (item.ID && isIdValid) ? item.ID : `item-${index}-${item.title}`;
 
                       return (
                         <Card 
