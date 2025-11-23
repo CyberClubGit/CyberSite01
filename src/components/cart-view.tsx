@@ -34,9 +34,9 @@ export function CartView() {
     setError(null);
     
     try {
-      // Prepare the order document for the user's "orders" sub-collection
+      // Reverting to a top-level 'orders' collection with corrected security rules.
       const orderPayload = {
-        // userId is no longer needed in payload, as it's part of the path
+        userId: user.uid, // Explicitly include userId for security rules
         userEmail: user.email,
         userName: user.displayName,
         items: cart,
@@ -45,8 +45,8 @@ export function CartView() {
         status: 'pending', // Initial status
       };
 
-      // Add a new document to the user's "orders" sub-collection
-      const orderCollectionRef = collection(db, "users", user.uid, "orders");
+      // Add a new document to the top-level "orders" collection
+      const orderCollectionRef = collection(db, "orders");
       await addDoc(orderCollectionRef, orderPayload);
 
       // On success, clear the cart and redirect

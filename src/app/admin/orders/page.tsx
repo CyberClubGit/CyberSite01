@@ -16,6 +16,7 @@ import { type CartItem } from '@/hooks/useCart';
 
 interface Order {
   id: string;
+  userId: string; // The UID of the user who made the order
   userEmail: string;
   userName: string;
   items: CartItem[];
@@ -40,8 +41,8 @@ const StatusSelector = ({ orderId, currentStatus }: { orderId: string; currentSt
 
     const handleStatusChange = async (newStatus: Order['status']) => {
         setIsUpdating(true);
-        // The path to the order document is now different
-        const orderRef = doc(db, 'orders', orderId); // This might need adjustment based on the new structure
+        // The path to the order document is now in the top-level 'orders' collection
+        const orderRef = doc(db, 'orders', orderId);
         try {
             await updateDoc(orderRef, { status: newStatus });
         } catch (error) {
@@ -87,8 +88,8 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     if (user && user.isAdmin) {
-      // Use a collectionGroup query to get all orders from all users
-      const ordersQuery = query(collectionGroup(db, 'orders'), orderBy('createdAt', 'desc'));
+      // Query the top-level 'orders' collection directly
+      const ordersQuery = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
       
       const unsubscribe = onSnapshot(ordersQuery, (querySnapshot) => {
         const ordersData: Order[] = [];
@@ -98,7 +99,7 @@ export default function AdminOrdersPage() {
         setOrders(ordersData);
         setDataLoading(false);
       }, (error) => {
-        console.error("Error fetching orders with collectionGroup:", error);
+        console.error("Error fetching orders:", error);
         setDataLoading(false);
       });
 
