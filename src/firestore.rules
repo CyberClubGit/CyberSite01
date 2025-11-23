@@ -5,28 +5,25 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
-      // Un utilisateur est admin si son email est celui-ci
+      // Un utilisateur est admin si son email correspond.
       return request.auth != null && request.auth.token.email == 'contact@cyber-club.net';
     }
 
     match /users/{userId} {
-      // L'utilisateur authentifié peut lire et écrire sur son propre document et ses sous-collections.
+      // Un utilisateur authentifié peut lire et écrire sur son propre document
+      // et toutes ses sous-collections (y compris créer des commandes).
       allow read, write: if request.auth.uid == userId;
-      
-      // L'admin peut lire les profils des autres pour l'affichage des commandes.
+
+      // L'admin peut également lire les profils des utilisateurs.
       allow get: if isAdmin();
-
-      // Règle pour la sous-collection des commandes
-      match /orders/{orderId} {
-        // Un utilisateur authentifié peut créer une commande pour lui-même
-        allow create: if request.auth.uid == userId;
-
-        // Seul le propriétaire ou un admin peut lire une commande
-        allow read: if request.auth.uid == userId || isAdmin();
-        
-        // Seul un admin peut mettre à jour ou supprimer une commande
-        allow update, delete: if isAdmin();
-      }
+      
+      // La permission de l'admin pour gérer les commandes est gérée ci-dessous.
+    }
+    
+    // Règle pour la sous-collection des commandes (pour les admins)
+    match /users/{userId}/orders/{orderId} {
+        // Un admin peut lire, mettre à jour ou supprimer n'importe quelle commande.
+        allow read, update, delete: if isAdmin();
     }
 
     // Règle pour la requête `collectionGroup` (pour le panneau d'administration)
