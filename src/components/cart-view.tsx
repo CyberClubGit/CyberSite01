@@ -34,9 +34,9 @@ export function CartView() {
     setError(null);
     
     try {
-      // Prepare the order document for the "orders" collection
+      // Prepare the order document for the user's "orders" sub-collection
       const orderPayload = {
-        userId: user.uid,
+        // We no longer need userId here as it's part of the path
         userEmail: user.email,
         userName: user.displayName,
         items: cart,
@@ -45,8 +45,9 @@ export function CartView() {
         status: 'pending', // Initial status
       };
 
-      // Add a new document to the "orders" collection
-      await addDoc(collection(db, "orders"), orderPayload);
+      // Add a new document to the user's "orders" sub-collection
+      const orderCollectionRef = collection(db, "users", user.uid, "orders");
+      await addDoc(orderCollectionRef, orderPayload);
 
       // On success, clear the cart and redirect
       clearCart();

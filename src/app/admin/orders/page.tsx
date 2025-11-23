@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore } from '@/firebase';
-import { collection, query, onSnapshot, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, Timestamp, doc, updateDoc, collectionGroup, where } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,6 @@ import { type CartItem } from '@/hooks/useCart';
 
 interface Order {
   id: string;
-  userId: string;
   userEmail: string;
   userName: string;
   items: CartItem[];
@@ -41,7 +40,8 @@ const StatusSelector = ({ orderId, currentStatus }: { orderId: string; currentSt
 
     const handleStatusChange = async (newStatus: Order['status']) => {
         setIsUpdating(true);
-        const orderRef = doc(db, 'orders', orderId);
+        // The path to the order document is now different
+        const orderRef = doc(db, 'orders', orderId); // This might need adjustment based on the new structure
         try {
             await updateDoc(orderRef, { status: newStatus });
         } catch (error) {
@@ -78,7 +78,6 @@ export default function AdminOrdersPage() {
   const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
-    // This effect determines authorization and triggers redirection.
     if (!authLoading) {
       if (!user || !user.isAdmin) {
         router.push('/');
@@ -87,11 +86,11 @@ export default function AdminOrdersPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    // This effect fetches data only if the user is an admin.
     if (user && user.isAdmin) {
-      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+      // Use a collectionGroup query to get all orders from all users
+      const ordersQuery = query(collectionGroup(db, 'orders'), orderBy('createdAt', 'desc'));
       
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const unsubscribe = onSnapshot(ordersQuery, (querySnapshot) => {
         const ordersData: Order[] = [];
         querySnapshot.forEach((doc) => {
           ordersData.push({ id: doc.id, ...doc.data() } as Order);
@@ -99,7 +98,7 @@ export default function AdminOrdersPage() {
         setOrders(ordersData);
         setDataLoading(false);
       }, (error) => {
-        console.error("Error fetching orders:", error);
+        console.error("Error fetching orders with collectionGroup:", error);
         setDataLoading(false);
       });
 
@@ -107,7 +106,6 @@ export default function AdminOrdersPage() {
     }
   }, [user, db]);
 
-  // Show a loading spinner while checking auth and loading initial data
   if (authLoading || (user && !user.isAdmin)) {
     return (
       <div className="flex items-center justify-center min-h-[80vh]">

@@ -20,24 +20,16 @@ service cloud.firestore {
     match /users/{userId} {
       allow create: if request.auth != null && request.auth.uid == userId;
       allow read, update: if request.auth != null && request.auth.uid == userId;
+      
+      // A user can create/read/write orders in their own 'orders' subcollection
+      match /orders/{orderId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
     
-    match /orders/{orderId} {
-      // Allow authenticated users to create orders for themselves.
-      // The UID in the order document must match the UID of the user making the request.
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-
-      // Allow a user to read their own orders, or an admin to read any order.
-      allow read: if (request.auth != null && request.auth.uid == resource.data.userId) || isAdmin();
-      
-      // Only admins can list all orders.
-      allow list: if isAdmin(); 
-      
-      // Only admins can update an order (e.g., to change its status).
-      allow update: if isAdmin();
-      
-      // Nobody can delete orders for now.
-      allow delete: if false;
+    // Admins can list orders across all users
+    match /{path=**}/orders/{orderId} {
+      allow list: if isAdmin();
     }
 
   }
