@@ -10,19 +10,19 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Un utilisateur peut créer son propre document de profil
-      allow create: if request.auth != null && request.auth.uid == userId;
+      // L'utilisateur authentifié peut lire et écrire sur son propre document et ses sous-collections.
+      allow read, write: if request.auth.uid == userId;
       
-      // Seul le propriétaire du profil ou un admin peut lire/mettre à jour le profil
-      allow read, update: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      // L'admin peut lire les profils des autres pour l'affichage des commandes.
+      allow get: if isAdmin();
 
       // Règle pour la sous-collection des commandes
       match /orders/{orderId} {
         // Un utilisateur authentifié peut créer une commande pour lui-même
-        allow create: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth.uid == userId;
 
         // Seul le propriétaire ou un admin peut lire une commande
-        allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+        allow read: if request.auth.uid == userId || isAdmin();
         
         // Seul un admin peut mettre à jour ou supprimer une commande
         allow update, delete: if isAdmin();
