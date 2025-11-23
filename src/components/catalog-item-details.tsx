@@ -27,7 +27,6 @@ import { useAuth } from '@/firebase';
 
 // The item type comes from the sheet processing
 type CatalogItem = {
-  ID: string; // L'ID est maintenant GARANTI d'être présent et correct grâce à la normalisation.
   title: string;
   description: string;
   galleryUrls: string[];
@@ -157,9 +156,8 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
 
   const { addToCart } = useCart();
   const handleAddToCart = () => {
-    // Utilise l'ID normalisé qui est maintenant garanti d'être correct.
     addToCart({
-      id: item.ID, 
+      id: item.title, // USE TITLE AS ID
       name: item.title,
       price: priceToCents(item.Price_Print),
       image: item.galleryUrls?.[0] || '',

@@ -20,7 +20,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 
 // The interface of the item processed, to ensure consistency
 type CatalogItem = {
-  ID: string;
   title: string;
   description: string;
   galleryUrls: string[];
@@ -94,9 +93,9 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
     const priceInCents = priceToCents(item.Price_Print);
     if (priceInCents > 0) {
       addToCart({
-        id: item.ID, 
+        id: item.title, // USE TITLE AS ID
         name: item.title,
-        price: priceInCents, // This is now a number (integer in cents)
+        price: priceInCents,
         image: item.displayImageUrl || '',
         quantity: 1,
       });
@@ -171,13 +170,10 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
             <main>
               {finalData && finalData.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {finalData.map((item, index) => {
-                      const isIdValid = item.ID && !item.ID.includes('#NAME?');
-                      const uniqueKey = isIdValid ? `${item.ID}-${index}` : `item-${index}`;
-
+                    {finalData.map((item) => {
                       return (
                         <Card 
-                          key={uniqueKey}
+                          key={item.title} // USE TITLE AS KEY
                           className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-background/80 backdrop-blur-sm group"
                         >
                            <div 
@@ -198,24 +194,16 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                                     <TooltipProvider>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
-                                          <span tabIndex={!isIdValid ? 0 : -1}>
-                                            <Button
-                                              size="icon"
-                                              variant="ghost"
-                                              className="rounded-full h-8 w-8 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
-                                              onClick={(e) => handleAddToCart(e, item)}
-                                              disabled={!isIdValid}
-                                            >
-                                              <ShoppingCart className="h-5 w-5" />
-                                              <span className="sr-only">Ajouter au panier</span>
-                                            </Button>
-                                          </span>
+                                          <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="rounded-full h-8 w-8 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
+                                            onClick={(e) => handleAddToCart(e, item)}
+                                          >
+                                            <ShoppingCart className="h-5 w-5" />
+                                            <span className="sr-only">Ajouter au panier</span>
+                                          </Button>
                                         </TooltipTrigger>
-                                        {!isIdValid && (
-                                          <TooltipContent>
-                                            <p>Cet article a un ID invalide et ne peut pas être ajouté.</p>
-                                          </TooltipContent>
-                                        )}
                                       </Tooltip>
                                     </TooltipProvider>
                                 )}
@@ -223,11 +211,6 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                           </div>
                           <CardHeader onClick={() => setSelectedItem(item)} className="cursor-pointer">
                             <CardTitle className="font-headline text-lg leading-tight">{item.title}</CardTitle>
-                             {process.env.NODE_ENV === 'development' && !isIdValid && (
-                                <div className="mt-2 p-1 bg-destructive/10 text-destructive text-xs rounded font-mono">
-                                    ID INVALIDE: {item.ID || 'NON DÉFINI'}
-                                </div>
-                             )}
                           </CardHeader>
                         </Card>
                       )
