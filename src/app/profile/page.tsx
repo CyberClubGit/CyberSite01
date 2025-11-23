@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Mail, User, Heart, CreditCard, Box, ChevronRight, Loader2 } from 'lucide-react';
+import { Mail, User, Heart, CreditCard, Box, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFavorites } from '@/hooks/useFavorites';
 import Link from 'next/link';
@@ -72,8 +72,8 @@ const ProfileView = ({ user, onSignOut }: { user: UserData; onSignOut: () => voi
   </Card>
 );
 
-const FavoritesView = ({ userId }: { userId: string }) => {
-    const { favorites, loading: favoritesLoading } = useFavorites(userId);
+const FavoritesView = () => {
+    const { favorites, loading: favoritesLoading } = useFavorites();
 
     if (favoritesLoading) {
         return (
@@ -192,7 +192,7 @@ export default function ProfilePage() {
             {/* Right Content */}
             <main className="w-full md:w-3/4 lg:w-4/5">
                 {activeView === 'profil' && <ProfileView user={user} onSignOut={signOut} />}
-                {activeView === 'favoris' && <FavoritesView userId={user.uid} />}
+                {activeView === 'favoris' && <FavoritesView />}
                 {activeView === 'paiement' && (
                     <ComingSoonView 
                         title="Moyen de paiement"

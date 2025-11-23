@@ -144,8 +144,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
   const [imageViewer, setImageViewer] = useState<ImageViewerState>({ isOpen: false, images: [], selectedIndex: 0 });
   
   const { user } = useAuth();
-  const { favorites, toggleFavorite } = useFavorites(user?.uid);
-  const { addToCart } = useCart();
+  const { favorites, toggleFavorite } = useFavorites();
   
   const openImageViewer = (images: string[], index: number) => {
     setImageViewer({ isOpen: true, images, selectedIndex: index });
@@ -159,6 +158,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     setImageViewer(prev => ({ ...prev, selectedIndex: (prev.selectedIndex - 1 + prev.images.length) % prev.images.length }));
   };
 
+  const { addToCart } = useCart();
   const handleAddToCart = () => {
     addToCart({
       id: item.ID,

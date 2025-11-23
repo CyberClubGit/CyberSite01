@@ -1,12 +1,13 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   onAuthStateChanged, 
   signOut as firebaseSignOut,
   type User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase/provider';
 
 export interface UserData {
@@ -18,13 +19,25 @@ export interface UserData {
   lastName?: string;
   nickname?: string;
   emailVerified: boolean;
-  favorites?: string[];
+  favorites: string[];
   isAdmin: boolean;
 }
 
 const ADMIN_EMAIL = 'contact@cyber-club.net';
 
-export function useUser() {
+// This context will hold the user data and the toggle function
+import { createContext, useContext, ReactNode } from 'react';
+
+interface UserContextType {
+  user: UserData | null;
+  loading: boolean;
+  signOut: () => Promise<void>;
+  toggleFavorite: (productId: string) => Promise<void>;
+}
+
+const UserContext = createContext<UserContextType | undefined>(undefined);
+
+export function UserProvider({ children }: { children: ReactNode }) {
   const auth = useFirebaseAuth();
   const db = useFirestore();
   const [user, setUser] = useState<UserData | null>(null);
@@ -38,7 +51,7 @@ export function useUser() {
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userDoc = await getDoc(userDocRef);
           if (userDoc.exists()) {
-            additionalData = userDoc.data() as UserData;
+            additionalData = userDoc.data() as Partial<UserData>;
           }
         } catch (error) {
           console.warn(
@@ -53,7 +66,8 @@ export function useUser() {
           displayName: firebaseUser.displayName,
           photoURL: firebaseUser.photoURL,
           emailVerified: firebaseUser.emailVerified,
-          isAdmin: firebaseUser.email === ADMIN_EMAIL, // Check if user is admin
+          isAdmin: firebaseUser.email === ADMIN_EMAIL,
+          favorites: [], // Ensure favorites is always an array
           ...additionalData,
         };
         
@@ -76,5 +90,62 @@ export function useUser() {
     }
   };
 
-  return { user, loading, signOut };
+  const toggleFavorite = useCallback(async (productId: string) => {
+    if (!user) {
+        console.error("Cannot toggle favorite: User is not logged in.");
+        return;
+    }
+
+    const userDocRef = doc(db, 'users', user.uid);
+    const isCurrentlyFavorite = user.favorites.includes(productId);
+
+    // Optimistic UI update
+    setUser(currentUser => {
+        if (!currentUser) return null;
+        return {
+            ...currentUser,
+            favorites: isCurrentlyFavorite
+                ? currentUser.favorites.filter(id => id !== productId)
+                : [...currentUser.favorites, productId]
+        };
+    });
+
+    try {
+        if (isCurrentlyFavorite) {
+            await updateDoc(userDocRef, {
+                favorites: arrayRemove(productId)
+            });
+        } else {
+            await updateDoc(userDocRef, {
+                favorites: arrayUnion(productId)
+            });
+        }
+    } catch (error) {
+        console.error("Error updating favorites in Firestore:", error);
+        // Revert optimistic update on error
+         setUser(currentUser => {
+            if (!currentUser) return null;
+            return {
+                ...currentUser,
+                favorites: isCurrentlyFavorite
+                    ? [...currentUser.favorites, productId]
+                    : currentUser.favorites.filter(id => id !== productId)
+            };
+        });
+    }
+  }, [user, db]);
+
+  return (
+    <UserContext.Provider value={{ user, loading, signOut, toggleFavorite }}>
+      {children}
+    </UserContext.Provider>
+  );
+}
+
+export function useUser() {
+    const context = useContext(UserContext);
+    if (context === undefined) {
+        throw new Error('useUser must be used within a UserProvider');
+    }
+    return context;
 }

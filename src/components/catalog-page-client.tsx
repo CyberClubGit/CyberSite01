@@ -66,7 +66,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   const [selectedItem, setSelectedItem] = useState<CatalogItem | null>(null);
 
   const { user } = useAuth();
-  const { favorites, toggleFavorite } = useFavorites(user?.uid);
+  const { favorites, toggleFavorite } = useFavorites();
   const { addToCart } = useCart();
 
   const handleFilterChange = (filterType: 'type' | 'material', value: string) => {
@@ -177,7 +177,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {finalData.map((item) => {
                       const isIdValid = item.ID && !item.ID.includes('#NAME?');
-                      const isFavorited = isIdValid && favorites.includes(item.ID);
+                      const isFavorited = user && isIdValid && favorites.includes(item.ID);
                       const priceInCents = priceToCents(item.Price_Print);
 
                       return (
