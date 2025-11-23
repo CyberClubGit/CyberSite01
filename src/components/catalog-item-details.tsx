@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -27,6 +28,7 @@ import { useAuth } from '@/firebase';
 
 // The item type comes from the sheet processing
 type CatalogItem = {
+  id: string; // The normalized, non-optional ID
   title: string;
   description: string;
   galleryUrls: string[];
@@ -146,8 +148,8 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
   
   // CRITICAL: Validate the item data upon component mount or when item changes.
   useEffect(() => {
-    // A valid item MUST have a non-placeholder title.
-    if (item && item.title && !item.title.includes('Chargement')) {
+    // A valid item MUST have a non-placeholder, valid ID.
+    if (item && item.id && !item.id.includes('#NAME?') && !item.id.includes('Chargement')) {
       setValidatedItem(item);
     } else {
       setValidatedItem(null); // Explicitly nullify if item is not valid
@@ -163,7 +165,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     }
     
     addToCart({
-      id: validatedItem.title, // USE THE VALIDATED TITLE AS ID
+      id: validatedItem.id, // USE THE VALIDATED, NORMALIZED ID
       name: validatedItem.title,
       price: priceToCents(validatedItem.Price_Print),
       image: validatedItem.galleryUrls?.[0] || '',
@@ -365,4 +367,3 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     </>
   );
 }
-    

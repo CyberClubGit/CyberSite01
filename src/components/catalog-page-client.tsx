@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, Fragment } from 'react';
@@ -19,6 +20,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 
 // The interface of the item processed, to ensure consistency
 type CatalogItem = {
+  id: string; // The normalized, non-optional ID
   title: string;
   description: string;
   galleryUrls: string[];
@@ -89,8 +91,8 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   const handleAddToCart = (e: React.MouseEvent, item: CatalogItem) => {
     e.stopPropagation(); // Prevent opening the details dialog
     
-    // Ensure the item and its title are valid before adding to cart.
-    if (!item || !item.title || item.title.includes('Chargement')) {
+    // Ensure the item and its ID are valid before adding to cart.
+    if (!item || !item.id || item.id.includes('#NAME?')) {
       console.error("Attempted to add an invalid item to cart:", item);
       return; // Block adding invalid item
     }
@@ -98,7 +100,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
     const priceInCents = priceToCents(item.Price_Print);
     if (priceInCents > 0) {
       addToCart({
-        id: item.title, // USE TITLE AS ID
+        id: item.id, // USE NORMALIZED ID
         name: item.title,
         price: priceInCents,
         image: item.displayImageUrl || '',
@@ -176,11 +178,11 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
               {finalData && finalData.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {finalData.map((item) => {
-                      const isItemValid = item.title && !item.title.includes('Chargement');
+                      const isItemValid = item.id && !item.id.includes('#NAME?');
                       const priceInCents = priceToCents(item.Price_Print);
                       return (
                         <Card 
-                          key={item.title} // USE TITLE AS KEY
+                          key={item.id} // USE NORMALIZED ID AS KEY
                           className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-background/80 backdrop-blur-sm group"
                         >
                            <div 
@@ -250,4 +252,3 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
     </>
   );
 }
-    

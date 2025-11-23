@@ -93,9 +93,17 @@ export default async function CatchAllPage({ params }: { params: { slug:string[]
     const processedData = rawCategoryData.map(item => {
       const processedItem = processGalleryLinks(item);
       
+      // CRITICAL: ID NORMALIZATION
+      // Look for 'ID', 'Id', or 'id' and consolidate into a single 'id' field.
+      // Fallback to title if no valid ID is found.
+      let validId = (item.ID || item.Id || item.id || '').trim();
+      if (!validId || validId === '#NAME?') {
+        validId = processedItem.title;
+      }
+      
       return {
         ...processedItem,
-        // The title is already standardized by processGalleryLinks
+        id: validId, // Standardized ID field
       };
     });
     
