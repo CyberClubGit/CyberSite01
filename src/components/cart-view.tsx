@@ -9,6 +9,8 @@ import { X, Plus, Minus, Loader2, ShoppingCart, Send, AlertTriangle } from 'luci
 import { useAuth, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { collection, addDoc, serverTimestamp } from "firebase/firestore"; 
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export function CartView() {
   const { cart, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
@@ -17,6 +19,19 @@ export function CartView() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<any | null>(null);
   const router = useRouter();
+
+  // Listen for permission errors from the global emitter
+  useEffect(() => {
+    const handlePermissionError = (e: FirestorePermissionError) => {
+      setError(e);
+      setLoading(false);
+    };
+    errorEmitter.on('permission-error', handlePermissionError);
+    return () => {
+      errorEmitter.off('permission-error', handlePermissionError);
+    };
+  }, []);
+
 
   const handleSendOrder = async () => {
     if (!user) {
@@ -33,32 +48,37 @@ export function CartView() {
     setLoading(true);
     setError(null);
     
-    try {
-      // Écrit la commande dans la sous-collection de l'utilisateur.
-      const orderPayload = {
-        userId: user.uid, // Ajout de l'ID utilisateur
-        userEmail: user.email,
-        userName: user.displayName,
-        items: cart,
-        totalPrice, // Price is in cents
-        createdAt: serverTimestamp(),
-        status: 'pending', // Initial status
-      };
+    const orderPayload = {
+      userId: user.uid, // Ajout de l'ID utilisateur
+      userEmail: user.email,
+      userName: user.displayName,
+      items: cart,
+      totalPrice, // Price is in cents
+      createdAt: serverTimestamp(),
+      status: 'pending', // Initial status
+    };
 
-      // Le chemin pointe maintenant vers /users/{userId}/orders/
-      const orderCollectionRef = collection(db, "users", user.uid, "orders");
-      await addDoc(orderCollectionRef, orderPayload);
-
-      // On success, clear the cart and redirect
-      clearCart();
-      router.push('/checkout/success');
-
-    } catch (err: any) {
-      console.error("DEBUG: Error writing to Firestore:", err);
-      setError(err); // Store the full error object
-    } finally {
-        setLoading(false);
-    }
+    // Le chemin pointe maintenant vers /users/{userId}/orders/
+    const orderCollectionRef = collection(db, "users", user.uid, "orders");
+    
+    addDoc(orderCollectionRef, orderPayload)
+      .then(() => {
+        // On success, clear the cart and redirect
+        clearCart();
+        router.push('/checkout/success');
+      })
+      .catch((serverError) => {
+        console.error("DEBUG: Raw error from Firestore:", serverError);
+        const permissionError = new FirestorePermissionError({
+          path: orderCollectionRef.path,
+          operation: 'create',
+          requestResourceData: orderPayload,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        // Note: loading state is now handled by the error emitter listener
+      });
   };
 
   if (cart.length === 0) {
@@ -130,13 +150,25 @@ export function CartView() {
           )}
         </Button>
         {error && (
-            <div className="mt-4 p-4 bg-destructive/10 text-destructive text-sm rounded-lg font-mono">
-                <p className="font-bold font-sans flex items-center gap-2"><AlertTriangle size={16}/> DEBUG: Erreur de Soumission</p>
-                <div className="mt-2 text-xs space-y-1">
-                    <p><strong>Raison:</strong> {error.code || 'INCONNUE'}</p>
-                    <p><strong>Message:</strong> {error.message || 'Aucun message détaillé.'}</p>
-                </div>
-            </div>
+          <div className="mt-4 p-4 bg-destructive/10 text-destructive text-sm rounded-lg font-mono">
+            <p className="font-bold font-sans flex items-center gap-2"><AlertTriangle size={16} /> DEBUG: Erreur de Permission Firestore</p>
+            {error.__isFirestorePermissionError ? (
+              <div className="mt-2 text-xs space-y-1 whitespace-pre-wrap">
+                <p><strong>Raison:</strong> Permission refusée lors de l'opération.</p>
+                <p><strong>Opération:</strong> {error.context.operation}</p>
+                <p><strong>Chemin:</strong> {error.context.path}</p>
+                <strong>Données envoyées:</strong>
+                <pre className="p-2 bg-black/10 rounded text-xs overflow-auto">
+                  {JSON.stringify(error.context.requestResourceData, null, 2)}
+                </pre>
+              </div>
+            ) : (
+               <div className="mt-2 text-xs space-y-1">
+                  <p><strong>Raison:</strong> {error.code || 'INCONNUE'}</p>
+                  <p><strong>Message:</strong> {error.message || 'Aucun message détaillé.'}</p>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
