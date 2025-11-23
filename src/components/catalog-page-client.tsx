@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, Fragment } from 'react';
@@ -90,6 +89,12 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   const handleAddToCart = (e: React.MouseEvent, item: CatalogItem) => {
     e.stopPropagation(); // Prevent opening the details dialog
     
+    // Ensure the item and its title are valid before adding to cart.
+    if (!item || !item.title || item.title.includes('Chargement')) {
+      console.error("Attempted to add an invalid item to cart:", item);
+      return; // Block adding invalid item
+    }
+
     const priceInCents = priceToCents(item.Price_Print);
     if (priceInCents > 0) {
       addToCart({
@@ -171,14 +176,16 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
               {finalData && finalData.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {finalData.map((item) => {
+                      const isItemValid = item.title && !item.title.includes('Chargement');
+                      const priceInCents = priceToCents(item.Price_Print);
                       return (
                         <Card 
                           key={item.title} // USE TITLE AS KEY
                           className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-background/80 backdrop-blur-sm group"
                         >
                            <div 
-                              className="relative w-full aspect-[3/4] bg-muted cursor-pointer"
-                              onClick={() => setSelectedItem(item)}
+                              className={cn("relative w-full aspect-[3/4] bg-muted", isItemValid && "cursor-pointer")}
+                              onClick={() => isItemValid && setSelectedItem(item)}
                            >
                             {item.displayImageUrl && (
                               <Image
@@ -190,7 +197,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                               />
                             )}
                              <div className="absolute top-2 right-2 flex flex-col gap-2">
-                                {priceToCents(item.Price_Print) > 0 && (
+                                {priceInCents > 0 && (
                                     <TooltipProvider>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
@@ -199,6 +206,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                                             variant="ghost"
                                             className="rounded-full h-8 w-8 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
                                             onClick={(e) => handleAddToCart(e, item)}
+                                            disabled={!isItemValid}
                                           >
                                             <ShoppingCart className="h-5 w-5" />
                                             <span className="sr-only">Ajouter au panier</span>
@@ -209,7 +217,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
                                 )}
                              </div>
                           </div>
-                          <CardHeader onClick={() => setSelectedItem(item)} className="cursor-pointer">
+                          <CardHeader onClick={() => isItemValid && setSelectedItem(item)} className={cn(isItemValid && "cursor-pointer")}>
                             <CardTitle className="font-headline text-lg leading-tight">{item.title}</CardTitle>
                           </CardHeader>
                         </Card>
@@ -229,16 +237,17 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
       <Dialog open={!!selectedItem} onOpenChange={(isOpen) => !isOpen && setSelectedItem(null)}>
         <DialogContent className="max-w-6xl w-full h-[90vh] p-4 border-0 bg-background/30 backdrop-blur-sm flex flex-col overflow-hidden">
           <DialogHeader className="sr-only">
-            <DialogTitle>{selectedItem?.title || 'Item Details'}</DialogTitle>
+            <DialogTitle>{selectedItem?.title || 'Chargement en cours...'}</DialogTitle>
             <DialogDescription>
               Detailed view of the selected catalog item.
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0">
-            {selectedItem && <CatalogItemDetails item={selectedItem} />}
+            {selectedItem ? <CatalogItemDetails item={selectedItem} /> : <div>Chargement...</div>}
           </div>
         </DialogContent>
       </Dialog>
     </>
   );
 }
+    

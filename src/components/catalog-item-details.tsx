@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ViewerPanel } from './viewer-panel';
 import { ScrollArea } from './ui/scroll-area';
 import Image from 'next/image';
@@ -15,6 +14,7 @@ import {
   Cuboid,
   Layers,
   ShoppingCart,
+  Loader2,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from './ui/button';
@@ -139,9 +139,38 @@ const TechDetailItem: React.FC<{ icon: React.ElementType; label: string; value: 
 
 export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
   const [imageViewer, setImageViewer] = useState<ImageViewerState>({ isOpen: false, images: [], selectedIndex: 0 });
+  const [validatedItem, setValidatedItem] = useState<CatalogItem | null>(null);
   
   const { user } = useAuth();
+  const { addToCart } = useCart();
   
+  // CRITICAL: Validate the item data upon component mount or when item changes.
+  useEffect(() => {
+    // A valid item MUST have a non-placeholder title.
+    if (item && item.title && !item.title.includes('Chargement')) {
+      setValidatedItem(item);
+    } else {
+      setValidatedItem(null); // Explicitly nullify if item is not valid
+    }
+  }, [item]);
+
+
+  const handleAddToCart = () => {
+    // Double-check if the item is validated before adding to cart
+    if (!validatedItem) {
+        console.error("Tentative d'ajout au panier d'un article non valide.");
+        return;
+    }
+    
+    addToCart({
+      id: validatedItem.title, // USE THE VALIDATED TITLE AS ID
+      name: validatedItem.title,
+      price: priceToCents(validatedItem.Price_Print),
+      image: validatedItem.galleryUrls?.[0] || '',
+      quantity: 1,
+    });
+  };
+
   const openImageViewer = (images: string[], index: number) => {
     setImageViewer({ isOpen: true, images, selectedIndex: index });
   };
@@ -154,27 +183,25 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     setImageViewer(prev => ({ ...prev, selectedIndex: (prev.selectedIndex - 1 + prev.images.length) % prev.images.length }));
   };
 
-  const { addToCart } = useCart();
-  const handleAddToCart = () => {
-    addToCart({
-      id: item.title, // USE TITLE AS ID
-      name: item.title,
-      price: priceToCents(item.Price_Print),
-      image: item.galleryUrls?.[0] || '',
-      quantity: 1,
-    });
-  };
 
-  const hasGallery = item.galleryUrls && item.galleryUrls.length > 0;
-  const stlUrl = item.stlUrl;
+  if (!validatedItem) {
+    return (
+        <div className="flex items-center justify-center h-full">
+            <Loader2 className="w-8 h-8 animate-spin" />
+        </div>
+    );
+  }
+
+  const hasGallery = validatedItem.galleryUrls && validatedItem.galleryUrls.length > 0;
+  const stlUrl = validatedItem.stlUrl;
 
   const galleryTabs = [
-    { name: 'Galerie', icon: Images, content: hasGallery ? <ImageGallery images={item.galleryUrls} onImageClick={(index) => openImageViewer(item.galleryUrls, index)} /> : null, available: hasGallery },
+    { name: 'Galerie', icon: Images, content: hasGallery ? <ImageGallery images={validatedItem.galleryUrls} onImageClick={(index) => openImageViewer(validatedItem.galleryUrls, index)} /> : null, available: hasGallery },
   ].filter(tab => tab.available);
 
   const techDetails = [
-    { icon: Layers, label: 'Material', value: item.Material },
-    { icon: Cuboid, label: 'Type', value: item.Type },
+    { icon: Layers, label: 'Material', value: validatedItem.Material },
+    { icon: Cuboid, label: 'Type', value: validatedItem.Type },
   ].filter(detail => detail.value);
 
   const descriptionAndTechSection = (
@@ -193,7 +220,7 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
         <TabsContent value="description" className="mt-4">
           <ScrollArea className="h-24 pr-4">
             <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-              {item.description || "No description available."}
+              {validatedItem.description || "No description available."}
             </p>
           </ScrollArea>
         </TabsContent>
@@ -216,7 +243,8 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     </InteractivePanel>
   );
   
-  const priceInCents = priceToCents(item.Price_Print);
+  const priceInCents = priceToCents(validatedItem.Price_Print);
+  const isAddToCartDisabled = !validatedItem || priceInCents <= 0;
 
   return (
     <>
@@ -224,17 +252,15 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
         <div className="relative w-fit -mb-px z-10 flex justify-between items-start w-full">
             <div className="relative -mb-px rounded-t-lg border-x border-t p-3 pr-6 transition-colors duration-200 border-border/80 bg-background/80 backdrop-blur-sm text-foreground shadow-sm">
                 <ScrambleTitle
-                    text={item.title}
+                    text={validatedItem.title}
                     as="h2"
                     className="text-2xl font-headline font-bold text-primary flex-shrink-0"
                 />
             </div>
             <div className="flex gap-2 p-2">
-              {priceInCents > 0 &&
-                <Button size="icon" variant="ghost" className="rounded-full h-10 w-10 bg-background/50 backdrop-blur-sm" onClick={handleAddToCart}>
-                    <ShoppingCart className="h-5 w-5 text-foreground" />
-                </Button>
-              }
+              <Button size="icon" variant="ghost" className="rounded-full h-10 w-10 bg-background/50 backdrop-blur-sm" onClick={handleAddToCart} disabled={isAddToCartDisabled}>
+                  <ShoppingCart className="h-5 w-5 text-foreground" />
+              </Button>
             </div>
         </div>
 
@@ -273,12 +299,14 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
               <div className="flex-shrink-0 flex flex-col gap-4">
                 {descriptionAndTechSection}
                 <div className="grid grid-cols-1 gap-4">
-                    {priceInCents > 0 && (
-                        <Button size="lg" onClick={handleAddToCart}>
-                            <ShoppingCart className="mr-2 h-5 w-5"/>
-                            Ajouter au Panier ({formatPrice(priceInCents)})
-                        </Button>
-                    )}
+                    <Button size="lg" onClick={handleAddToCart} disabled={isAddToCartDisabled}>
+                        {isAddToCartDisabled ? 'Article non disponible' : (
+                            <>
+                                <ShoppingCart className="mr-2 h-5 w-5"/>
+                                Ajouter au Panier ({formatPrice(priceInCents)})
+                            </>
+                        )}
+                    </Button>
                 </div>
               </div>
             </div>
@@ -337,3 +365,4 @@ export function CatalogItemDetails({ item }: CatalogItemDetailsProps) {
     </>
   );
 }
+    
