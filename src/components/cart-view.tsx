@@ -34,9 +34,8 @@ export function CartView() {
     setError(null);
     
     try {
-      // Switched to a top-level 'orders' collection.
+      // **LA CORRECTION**: On écrit la commande dans la sous-collection de l'utilisateur.
       const orderPayload = {
-        userId: user.uid, // Explicitly include userId for security rules
         userEmail: user.email,
         userName: user.displayName,
         items: cart,
@@ -45,8 +44,8 @@ export function CartView() {
         status: 'pending', // Initial status
       };
 
-      // Add a new document to the top-level "orders" collection
-      const orderCollectionRef = collection(db, "orders");
+      // Le chemin pointe maintenant vers /users/{userId}/orders/
+      const orderCollectionRef = collection(db, "users", user.uid, "orders");
       await addDoc(orderCollectionRef, orderPayload);
 
       // On success, clear the cart and redirect

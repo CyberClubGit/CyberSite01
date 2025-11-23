@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore } from '@/firebase';
-import { collection, query, onSnapshot, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
+import { collectionGroup, query, onSnapshot, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +15,7 @@ import { fr } from 'date-fns/locale';
 import { type CartItem } from '@/hooks/useCart';
 
 interface Order {
-  id: string;
+  id: string; // The ID of the order document itself
   userId: string; // The UID of the user who made the order
   userEmail: string;
   userName: string;
@@ -35,14 +35,14 @@ const OrderStatusBadge = ({ status }: { status: Order['status'] }) => {
   return <Badge className={statusStyles[status]}>{status}</Badge>;
 };
 
-const StatusSelector = ({ orderId, currentStatus }: { orderId: string; currentStatus: Order['status'] }) => {
+const StatusSelector = ({ order }: { order: Order }) => {
     const db = useFirestore();
     const [isUpdating, setIsUpdating] = useState(false);
 
     const handleStatusChange = async (newStatus: Order['status']) => {
         setIsUpdating(true);
-        // The path to the order document is now in the top-level 'orders' collection
-        const orderRef = doc(db, 'orders', orderId);
+        // **LA CORRECTION**: Le chemin doit maintenant inclure l'ID de l'utilisateur.
+        const orderRef = doc(db, 'users', order.userId, 'orders', order.id);
         try {
             await updateDoc(orderRef, { status: newStatus });
         } catch (error) {
@@ -54,7 +54,7 @@ const StatusSelector = ({ orderId, currentStatus }: { orderId: string; currentSt
 
     return (
         <div className="flex items-center gap-2">
-            <Select onValueChange={handleStatusChange} defaultValue={currentStatus} disabled={isUpdating}>
+            <Select onValueChange={handleStatusChange} defaultValue={order.status} disabled={isUpdating}>
                 <SelectTrigger className="w-[120px] h-8 text-xs">
                     <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -88,13 +88,22 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     if (user && user.isAdmin) {
-      // Query the top-level 'orders' collection directly
-      const ordersQuery = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+      // **LA CORRECTION**: On utilise une requête `collectionGroup` pour récupérer
+      // toutes les commandes, peu importe sous quel utilisateur elles se trouvent.
+      const ordersQuery = query(collectionGroup(db, 'orders'), orderBy('createdAt', 'desc'));
       
       const unsubscribe = onSnapshot(ordersQuery, (querySnapshot) => {
         const ordersData: Order[] = [];
         querySnapshot.forEach((doc) => {
-          ordersData.push({ id: doc.id, ...doc.data() } as Order);
+          const orderData = doc.data() as Omit<Order, 'id' | 'userId'>;
+          const parentPath = doc.ref.parent.parent; // This gives the /users/{userId} document reference
+          const userId = parentPath ? parentPath.id : 'unknown';
+
+          ordersData.push({ 
+            id: doc.id,
+            userId: userId, 
+            ...orderData 
+          });
         });
         setOrders(ordersData);
         setDataLoading(false);
@@ -179,7 +188,7 @@ export default function AdminOrdersPage() {
                     {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(order.totalPrice / 100)}
                   </TableCell>
                   <TableCell className="text-center">
-                    <StatusSelector orderId={order.id} currentStatus={order.status} />
+                    <StatusSelector order={order} />
                   </TableCell>
                 </TableRow>
               ))}
