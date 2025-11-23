@@ -4,27 +4,26 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
-      // Un utilisateur est admin si son email correspond à l'email défini.
       return request.auth != null && request.auth.token.email == 'contact@cyber-club.net';
     }
 
     // Règle pour les profils utilisateurs
-    // Les utilisateurs peuvent gérer leur propre profil. L'admin peut tout gérer.
+    // Un utilisateur peut créer/lire/modifier son propre profil.
     match /users/{userId} {
       allow read, write: if request.auth.uid == userId || isAdmin();
     }
     
-    // **NOUVELLE ARCHITECTURE** : Collection 'orders' à la racine
+    // Règle pour la collection des commandes, à la racine.
     match /orders/{orderId} {
-        // Un utilisateur connecté peut créer une commande si le 'userId' dans le document
-        // correspond à son propre ID d'authentification.
+        // N'importe quel utilisateur authentifié peut créer une commande,
+        // à condition que le 'userId' dans le document corresponde à son propre ID.
         allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
         
-        // L'utilisateur peut lire ses propres commandes. L'admin peut tout lire.
-        allow read: if request.auth.uid == resource.data.userId || isAdmin();
+        // L'utilisateur peut lire ses propres commandes.
+        allow read: if resource.data.userId == request.auth.uid;
         
-        // Seul l'administrateur peut mettre à jour le statut des commandes.
-        allow update: if isAdmin();
+        // Seul l'administrateur peut lister, lire et mettre à jour le statut de TOUTES les commandes.
+        allow list, read, update: if isAdmin();
 
         // Personne ne peut supprimer une commande (sécurité).
         allow delete: if false;

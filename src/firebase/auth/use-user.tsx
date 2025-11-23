@@ -7,9 +7,11 @@ import {
   signOut as firebaseSignOut,
   type User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { useFirebaseAuth, useFirestore } from '@/firebase/provider';
+import { useFirebaseAuth } from '@/firebase/provider';
 
+// This is the definitive UserData interface for the entire application.
+// It contains ONLY information from Firebase Authentication.
+// No data from Firestore is included here.
 export interface UserData {
   uid: string;
   email: string | null;
@@ -17,10 +19,6 @@ export interface UserData {
   photoURL: string | null;
   emailVerified: boolean;
   isAdmin: boolean;
-  // Firestore specific fields are now optional as they might not be loaded initially
-  firstName?: string;
-  lastName?: string;
-  nickname?: string;
 }
 
 const ADMIN_EMAIL = 'contact@cyber-club.net';
@@ -35,15 +33,15 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const auth = useFirebaseAuth();
-  const db = useFirestore();
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // This is the single source of truth for user authentication status.
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
-        // We will no longer fetch from Firestore here automatically.
-        // We will only use the data from the auth object itself.
+        // If a user is logged in, create a clean UserData object
+        // using ONLY data from the auth object.
         const userData: UserData = {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
@@ -53,27 +51,30 @@ export function UserProvider({ children }: { children: ReactNode }) {
           isAdmin: firebaseUser.email === ADMIN_EMAIL,
         };
         setUser(userData);
-        setLoading(false);
       } else {
+        // If no user is logged in, set the user to null.
         setUser(null);
-        setLoading(false);
       }
+      setLoading(false);
     });
 
+    // Cleanup the listener on component unmount
     return () => unsubscribeAuth();
-  }, [auth, db]);
+  }, [auth]);
 
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
-      setUser(null);
+      // setUser(null) will be handled by the onAuthStateChanged listener
     } catch (error) {
       console.error('Sign out error:', error);
     }
   };
 
+  const value = { user, loading, signOut };
+
   return (
-    <UserContext.Provider value={{ user, loading, signOut }}>
+    <UserContext.Provider value={value}>
       {children}
     </UserContext.Provider>
   );

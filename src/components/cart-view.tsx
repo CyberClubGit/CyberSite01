@@ -10,13 +10,13 @@ import { useAuth, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { collection, addDoc, serverTimestamp } from "firebase/firestore"; 
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export function CartView() {
   const { cart, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth(); // Utilise le hook useAuth simplifié
   const db = useFirestore();
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<any | null>(null);
   const router = useRouter();
 
@@ -24,14 +24,13 @@ export function CartView() {
   useEffect(() => {
     const handlePermissionError = (e: FirestorePermissionError) => {
       setError(e);
-      setLoading(false);
+      setIsSubmitting(false);
     };
     errorEmitter.on('permission-error', handlePermissionError);
     return () => {
       errorEmitter.off('permission-error', handlePermissionError);
     };
   }, []);
-
 
   const handleSendOrder = async () => {
     if (!user) {
@@ -45,7 +44,7 @@ export function CartView() {
       return;
     }
     
-    setLoading(true);
+    setIsSubmitting(true);
     setError(null);
     
     const orderPayload = {
@@ -55,15 +54,13 @@ export function CartView() {
       items: cart,
       totalPrice, // Price is in cents
       createdAt: serverTimestamp(),
-      status: 'pending', // Initial status
+      status: 'pending',
     };
 
-    // **NOUVELLE ARCHITECTURE** : On écrit dans la collection 'orders' à la racine.
     const orderCollectionRef = collection(db, "orders");
     
     addDoc(orderCollectionRef, orderPayload)
       .then(() => {
-        // On success, clear the cart and redirect
         clearCart();
         router.push('/checkout/success');
       })
@@ -73,7 +70,7 @@ export function CartView() {
           path: orderCollectionRef.path,
           operation: 'create',
           requestResourceData: orderPayload,
-        });
+        } as SecurityRuleContext);
         errorEmitter.emit('permission-error', permissionError);
       })
       .finally(() => {
@@ -136,8 +133,8 @@ export function CartView() {
           <span>Total</span>
           <span>{formattedTotalPrice}</span>
         </div>
-        <Button className="w-full" size="lg" onClick={handleSendOrder} disabled={loading}>
-          {loading ? (
+        <Button className="w-full" size="lg" onClick={handleSendOrder} disabled={authLoading || isSubmitting}>
+          {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Envoi en cours...
