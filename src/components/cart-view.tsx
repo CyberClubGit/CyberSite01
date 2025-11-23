@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -13,18 +12,21 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export function CartView() {
   const { cart, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
-  const auth = useAuth();
+  const { user } = useAuth();
   const db = useFirestore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSendOrder = async () => {
-    const currentUser = auth.currentUser;
-
-    if (!currentUser) {
+    if (!user) {
       setError("Veuillez vous connecter pour envoyer une commande.");
       router.push('/auth/signin');
+      return;
+    }
+    
+    if (cart.length === 0) {
+      setError("Votre panier est vide.");
       return;
     }
     
@@ -33,19 +35,20 @@ export function CartView() {
     
     try {
       // Prepare the order document for the "orders" collection
-      const orderDoc = {
-        userId: currentUser.uid,
-        userEmail: currentUser.email,
-        userName: currentUser.displayName,
+      const orderPayload = {
+        userId: user.uid,
+        userEmail: user.email,
+        userName: user.displayName,
         items: cart,
-        totalPrice, // Storing price in cents
+        totalPrice, // Price is in cents
         createdAt: serverTimestamp(),
         status: 'pending', // Initial status
       };
 
       // Add a new document to the "orders" collection
-      await addDoc(collection(db, "orders"), orderDoc);
+      await addDoc(collection(db, "orders"), orderPayload);
 
+      // On success, clear the cart and redirect
       clearCart();
       router.push('/checkout/success');
 

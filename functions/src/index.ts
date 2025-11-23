@@ -1,4 +1,3 @@
-// This file is now intentionally left empty.
-// The sendOrderEmail function has been removed in favor of writing directly 
-// to a Firestore collection, which will be processed by the "Trigger Email" extension.
-// This simplifies the architecture and removes a point of failure.
+// This file is intentionally left empty.
+// All server-side logic has been removed in favor of direct client-to-Firestore operations
+// for submitting orders, which simplifies the architecture and removes a point of failure.
