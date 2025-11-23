@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { 
   onAuthStateChanged, 
   signOut as firebaseSignOut,
+  type User as FirebaseUser,
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
@@ -19,7 +20,7 @@ export interface UserData {
   nickname?: string;
   emailVerified: boolean;
   favorites?: string[];
-  isAdmin: boolean; // <-- Add isAdmin flag
+  isAdmin: boolean;
 }
 
 const ADMIN_EMAIL = 'contact@cyber-club.net';
@@ -31,7 +32,7 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         let additionalData: Partial<UserData> = {};
         try {
@@ -42,8 +43,7 @@ export function useAuth() {
           }
         } catch (error) {
           console.warn(
-            'Could not fetch user document from Firestore. ' +
-            'This might be due to Firestore security rules.',
+            'Could not fetch user document from Firestore. This might be due to Firestore security rules.',
             error
           );
         }
@@ -54,8 +54,7 @@ export function useAuth() {
           displayName: firebaseUser.displayName,
           photoURL: firebaseUser.photoURL,
           emailVerified: firebaseUser.emailVerified,
-          favorites: [],
-          isAdmin: firebaseUser.email === ADMIN_EMAIL, // <-- Check if user is admin
+          isAdmin: firebaseUser.email === ADMIN_EMAIL, // Check if user is admin
           ...additionalData,
         };
         

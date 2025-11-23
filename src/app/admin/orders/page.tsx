@@ -76,24 +76,20 @@ export default function AdminOrdersPage() {
   const router = useRouter();
   const db = useFirestore();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
     // This effect determines authorization and triggers redirection.
     if (!authLoading) {
-      if (user && user.isAdmin) {
-        setIsAuthorized(true);
-      } else {
-        setIsAuthorized(false);
+      if (!user || !user.isAdmin) {
         router.push('/');
       }
     }
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    // This effect fetches data only if the user is authorized.
-    if (isAuthorized) {
+    // This effect fetches data only if the user is an admin.
+    if (user && user.isAdmin) {
       const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
       
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -102,18 +98,18 @@ export default function AdminOrdersPage() {
           ordersData.push({ id: doc.id, ...doc.data() } as Order);
         });
         setOrders(ordersData);
-        setLoading(false);
+        setDataLoading(false);
       }, (error) => {
         console.error("Error fetching orders:", error);
-        setLoading(false);
+        setDataLoading(false);
       });
 
       return () => unsubscribe();
     }
-  }, [isAuthorized, db]);
+  }, [user, db]);
 
   // Show a loading spinner while checking auth and loading initial data
-  if (authLoading || isAuthorized === null || (isAuthorized && loading)) {
+  if (authLoading || !user || !user.isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-[80vh]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -121,9 +117,13 @@ export default function AdminOrdersPage() {
     );
   }
   
-  // If not authorized, show nothing (as redirection is in progress)
-  if (!isAuthorized) {
-      return null;
+  if (dataLoading) {
+     return (
+      <div className="flex items-center justify-center min-h-[80vh]">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        <p className="ml-4">Chargement des commandes...</p>
+      </div>
+    );
   }
 
   return (
