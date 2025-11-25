@@ -104,12 +104,15 @@ export default function DefaultPageLayout({ category, brand, initialData, brands
                             className={cn(isProjectsPage && 'cursor-pointer', isToolsPage && 'cursor-pointer')}
                         />
                     );
+                    
+                    // CRITICAL FIX: Handle case-insensitivity for the 'App URL' column.
+                    const appUrl = item['App URL'] || item['App Url'] || item['app_url'] || item['Url app'];
 
-                    if (isToolsPage && item['Url app']) {
+                    if (isToolsPage && appUrl) {
                         return (
                             <a 
                                 key={index} 
-                                href={item['Url app']} 
+                                href={appUrl} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="no-underline"
