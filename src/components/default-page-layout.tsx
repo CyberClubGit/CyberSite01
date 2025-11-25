@@ -101,7 +101,6 @@ export default function DefaultPageLayout({ category, brand, initialData, brands
                         <ToolCard
                           key={item.title || index}
                           item={item}
-                          style={{}} // Style is handled inside ToolCard
                         />
                       );
                     }

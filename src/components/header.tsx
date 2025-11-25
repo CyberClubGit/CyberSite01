@@ -55,8 +55,9 @@ export function Header({ categories, brands }: HeaderProps) {
   const getCurrentCategorySlug = useCallback(() => {
     const pathParts = pathname.split('/').filter(p => p);
     if (pathParts.length === 0) return 'home';
-    if (pathParts.length === 1 && (pathParts[0] === 'home' || pathParts[0] === 'profile')) return pathParts[0];
 
+    const specialPages = ['home', 'profile', 'tools'];
+    if (pathParts.length === 1 && specialPages.includes(pathParts[0])) return pathParts[0];
 
     const catSlugs = categories.map(c => c.Url?.toLowerCase());
 
@@ -98,7 +99,7 @@ export function Header({ categories, brands }: HeaderProps) {
     const currentCategorySlug = getCurrentCategorySlug() || 'home';
     
     let newPath;
-    if (brand.Brand === 'Cyber Club' || !brand.Activity) {
+    if (brand.Brand === 'Cyber Club' || !brand.Activity || currentCategorySlug === 'tools') {
       newPath = `/${currentCategorySlug}`;
     } else {
       newPath = `/${brand.Activity.toLowerCase()}/${currentCategorySlug}`;
@@ -117,8 +118,17 @@ export function Header({ categories, brands }: HeaderProps) {
     if (!isMounted || brands.length === 0) return;
     
     const pathParts = pathname.split('/').filter(p => p);
-    const potentialBrandActivity = pathParts[0];
-    const brandFromUrl = brands.find(b => b.Activity && b.Activity.toLowerCase() === potentialBrandActivity?.toLowerCase());
+    const firstPart = pathParts[0];
+    const isToolPage = firstPart === 'tools';
+
+    if (isToolPage) {
+        setSelectedBrand('Cyber Club');
+        localStorage.setItem('brandSelected', 'Cyber Club');
+        applyBrandColor(brands.find(b => b.Brand === 'Cyber Club'), resolvedTheme);
+        return;
+    }
+
+    const brandFromUrl = brands.find(b => b.Activity && b.Activity.toLowerCase() === firstPart?.toLowerCase());
 
     const currentBrandName = brandFromUrl ? brandFromUrl.Brand : 'Cyber Club';
 
@@ -147,7 +157,7 @@ export function Header({ categories, brands }: HeaderProps) {
 
   const getLinkHref = (categoryUrl: string) => {
     const brand = brands.find(b => b.Brand === selectedBrand);
-    if (brand && brand.Brand !== 'Cyber Club' && brand.Activity) {
+    if (brand && brand.Brand !== 'Cyber Club' && brand.Activity && categoryUrl !== 'tools') {
       return `/${brand.Activity.toLowerCase()}/${categoryUrl}`;
     }
     return `/${categoryUrl}`;

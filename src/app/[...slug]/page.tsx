@@ -27,7 +27,8 @@ export async function generateStaticParams() {
   brands.forEach(brand => {
     if (brand.Activity && brand.Brand !== 'Cyber Club') {
       categories.forEach(category => {
-        if (category.Url && category.Url.toLowerCase() !== 'home') { // Avoid /brand/home routes
+        // Exclude /brand/tools route
+        if (category.Url && category.Url.toLowerCase() !== 'home' && category.Url.toLowerCase() !== 'tools') {
           paths.push({ slug: [brand.Activity.toLowerCase(), category.Url.toLowerCase()] });
         }
       });
@@ -69,6 +70,11 @@ export default async function CatchAllPage({ params }: { params: { slug:string[]
 
   if (potentialBrandSlug) {
       brand = brands.find(b => b.Activity && b.Activity.toLowerCase() === potentialBrandSlug.toLowerCase());
+  }
+
+  // If the page is "Tools", we don't apply brand filtering in the routing logic
+  if (lastSlugPart.toLowerCase() === 'tools') {
+      brand = undefined;
   }
 
   if (!category || !category.Url) {
