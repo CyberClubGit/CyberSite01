@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { type Brand, type Category, getBrands } from '@/lib/sheets';
 import { filterItemsByBrandActivity, getActivityForBrand } from '@/lib/activity-filter';
 import { processGalleryLinks } from '@/lib/sheets';
@@ -46,6 +47,7 @@ export default function DefaultPageLayout({ category, brand, initialData, brands
   }
 
   const isProjectsPage = category.Url.toLowerCase() === 'projects';
+  const isToolsPage = category.Url.toLowerCase() === 'tools';
   
   const filteredData = filterItemsByBrandActivity(initialData, brand?.Brand);
 
@@ -87,15 +89,38 @@ export default function DefaultPageLayout({ category, brand, initialData, brands
 
               {finalData && finalData.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                  {finalData.map((item, index) => (
-                      <ProjectCard
-                        key={index}
-                        item={item}
-                        onClick={() => isProjectsPage && setSelectedProject(item)}
-                        style={getCardStyle(item.Activity)}
-                        className={isProjectsPage ? 'cursor-pointer' : ''}
-                      />
-                  ))}
+                  {finalData.map((item, index) => {
+                    const cardContent = (
+                        <ProjectCard
+                            key={item.title}
+                            item={item}
+                            onClick={() => {
+                                if (isProjectsPage) {
+                                    setSelectedProject(item);
+                                }
+                                // For tools page, the link wrapper will handle the click.
+                            }}
+                            style={getCardStyle(item.Activity)}
+                            className={cn(isProjectsPage && 'cursor-pointer', isToolsPage && 'cursor-pointer')}
+                        />
+                    );
+
+                    if (isToolsPage && item['Url app']) {
+                        return (
+                            <a 
+                                key={index} 
+                                href={item['Url app']} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="no-underline"
+                            >
+                                {cardContent}
+                            </a>
+                        );
+                    }
+                    
+                    return cardContent;
+                  })}
                 </div>
               ) : (
                 <div className="mt-12 text-center text-muted-foreground">
