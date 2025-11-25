@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -12,7 +11,7 @@ import { VideoBackground } from './video-background';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from './ui/skeleton';
 import { ProjectCard } from './ProjectCard';
-import { ToolCard } from './ToolCard'; // Import the new component
+import { ToolCard } from './ToolCard';
 import { useActivityColors } from '@/lib/color-utils';
 
 // Dynamically import ProjectExplorer only on the client side
@@ -91,7 +90,6 @@ export default function DefaultPageLayout({ category, brand, initialData, brands
               {finalData && finalData.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                   {finalData.map((item, index) => {
-                    
                     if (isToolsPage) {
                       return (
                         <ToolCard
@@ -102,6 +100,7 @@ export default function DefaultPageLayout({ category, brand, initialData, brands
                       );
                     }
                     
+                    // Default to ProjectCard for all other categories
                     return (
                        <ProjectCard
                             key={item.title || index}
