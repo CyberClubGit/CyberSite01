@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -88,14 +89,19 @@ export default function DefaultPageLayout({ category, brand, initialData, brands
               </div>
 
               {finalData && finalData.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                <div className={cn(
+                  "grid gap-8",
+                  isToolsPage 
+                    ? "grid-cols-1 md:grid-cols-2" 
+                    : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+                )}>
                   {finalData.map((item, index) => {
                     if (isToolsPage) {
                       return (
                         <ToolCard
                           key={item.title || index}
                           item={item}
-                          style={{}} // Style is now handled inside ToolCard
+                          style={{}} // Style is handled inside ToolCard
                         />
                       );
                     }
