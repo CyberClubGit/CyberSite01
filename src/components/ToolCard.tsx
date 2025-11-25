@@ -1,11 +1,7 @@
-
 'use client';
 
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
-import { useParallax } from '@/hooks/useParallax';
-import { useRef } from 'react';
-import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 
 type ProcessedItem = {
@@ -22,85 +18,67 @@ interface ToolCardProps {
 }
 
 export function ToolCard({ item, style, className }: ToolCardProps) {
-  const cardRef = useRef<HTMLAnchorElement>(null);
-  const { cardStyle, glowStyle, handleMouseEnter, handleMouseLeave } = useParallax(cardRef);
-  
   // CRITICAL FIX: Handle case-insensitivity for the 'App URL' column.
   const appUrl = item['App URL'] || item['App Url'] || item['app_url'] || item['Url app'];
 
   if (!appUrl) {
-    // If no URL, render a non-interactive card.
+    // If no URL, render a non-interactive, disabled-looking card.
     return (
         <div
         className={cn(
-            "relative transition-transform duration-300 ease-out group card-3d-wrapper opacity-50 cursor-not-allowed",
+            "relative bg-card rounded-lg flex flex-col h-full overflow-hidden border border-border/20 opacity-60 cursor-not-allowed",
             className
         )}
-        style={{ ...cardStyle }}
+        style={style}
         >
-        <div 
-            className="absolute -inset-1 rounded-xl blur-lg transition-all duration-300 opacity-50"
-            style={{ ...style, ...glowStyle }}
-        ></div>
-        <div className="relative bg-transparent rounded-lg flex flex-col h-full overflow-hidden border border-border/20 card-3d-content">
-            <div className="p-4 bg-card/50 backdrop-blur-md">
-            <h3 className="font-headline text-xl font-bold leading-tight">{item.title}</h3>
+        <div className="p-4 bg-card/50">
+            <h3 className="font-headline text-xl font-bold leading-tight text-muted-foreground">{item.title}</h3>
             <p className="text-xs text-muted-foreground mt-1">Lien non disponible</p>
-            </div>
-            {item.displayImageUrl && (
-            <div className="relative w-full aspect-square">
+        </div>
+        {item.displayImageUrl && (
+            <div className="relative w-full aspect-square mt-auto bg-muted">
                 <Image
                 src={item.displayImageUrl}
                 alt={item.title}
                 fill
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                className="object-cover transition-transform duration-500"
+                className="object-cover"
                 />
             </div>
-            )}
-        </div>
+        )}
         </div>
     );
   }
 
   return (
     <a
-      ref={cardRef}
       href={appUrl}
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "relative transition-transform duration-300 ease-out group card-3d-wrapper block", // 'block' is important for <a> to take full space
+        "relative bg-card rounded-lg flex flex-col h-full overflow-hidden border border-border/20 transition-all duration-300 hover:border-primary/80 hover:shadow-lg hover:-translate-y-1 group",
         className
       )}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      style={{ ...cardStyle }}
+      style={style}
     >
-      {/* Element for the gradient glow */}
-      <div 
-        className="absolute -inset-1 rounded-xl blur-lg transition-all duration-300 opacity-50 group-hover:opacity-85"
-        style={{ ...style, ...glowStyle }}
-      ></div>
-      
-      {/* The actual card content with frosted glass effect */}
-      <div className="relative bg-transparent rounded-lg flex flex-col h-full overflow-hidden border border-border/20 card-3d-content">
-        <div className="p-4 bg-card/50 backdrop-blur-md flex justify-between items-start">
-          <h3 className="font-headline text-xl font-bold leading-tight">{item.title}</h3>
-          <ExternalLink className="w-4 h-4 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity" />
+      <div className="p-4 bg-card/50 flex justify-between items-start">
+        <div>
+            <h3 className="font-headline text-xl font-bold leading-tight group-hover:text-primary">{item.title}</h3>
+            {item.Description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.Description}</p>}
         </div>
-        {item.displayImageUrl && (
-          <div className="relative w-full aspect-square">
-            <Image
-              src={item.displayImageUrl}
-              alt={item.title}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover transition-transform duration-500"
-            />
-          </div>
-        )}
+        <ExternalLink className="w-5 h-5 text-muted-foreground flex-shrink-0 ml-2 transition-transform group-hover:scale-110" />
       </div>
+      {item.displayImageUrl && (
+        <div className="relative w-full aspect-square mt-auto bg-muted">
+            <Image
+            src={item.displayImageUrl}
+            alt={item.title}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover"
+            />
+        </div>
+      )}
     </a>
   );
 }
