@@ -5,6 +5,7 @@ import { CatalogPageClient } from '@/components/catalog-page-client';
 import DefaultPageLayout from '@/components/default-page-layout';
 import { HomePageClient } from '@/components/home-page-client';
 import AdminOrdersPage from '../admin/orders/page';
+import { ResearchPageClient } from '@/components/research-page-client';
 
 export async function generateStaticParams() {
   const categories = await getCategories();
@@ -126,6 +127,11 @@ export default async function CatchAllPage({ params }: { params: { slug:string[]
         materials={materials}
       />
     );
+  }
+
+  // Specific layout for the Research page
+  if (category.Url.toLowerCase() === 'research') {
+    return <ResearchPageClient category={category} brand={brand} initialData={processedData} />;
   }
   
   // For all other pages (including Projects, Tools, etc.)
