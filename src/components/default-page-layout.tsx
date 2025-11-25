@@ -12,6 +12,7 @@ import { VideoBackground } from './video-background';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from './ui/skeleton';
 import { ProjectCard } from './ProjectCard';
+import { ToolCard } from './ToolCard'; // Import the new component
 import { useActivityColors } from '@/lib/color-utils';
 
 // Dynamically import ProjectExplorer only on the client side
@@ -90,39 +91,30 @@ export default function DefaultPageLayout({ category, brand, initialData, brands
               {finalData && finalData.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                   {finalData.map((item, index) => {
-                    const cardContent = (
-                        <ProjectCard
-                            key={item.title}
+                    
+                    if (isToolsPage) {
+                      return (
+                        <ToolCard
+                          key={item.title || index}
+                          item={item}
+                          style={getCardStyle(item.Activity)}
+                        />
+                      );
+                    }
+                    
+                    return (
+                       <ProjectCard
+                            key={item.title || index}
                             item={item}
                             onClick={() => {
                                 if (isProjectsPage) {
                                     setSelectedProject(item);
                                 }
-                                // For tools page, the link wrapper will handle the click.
                             }}
                             style={getCardStyle(item.Activity)}
-                            className={cn(isProjectsPage && 'cursor-pointer', isToolsPage && 'cursor-pointer')}
+                            className={cn(isProjectsPage && 'cursor-pointer')}
                         />
                     );
-                    
-                    // CRITICAL FIX: Handle case-insensitivity for the 'App URL' column.
-                    const appUrl = item['App URL'] || item['App Url'] || item['app_url'] || item['Url app'];
-
-                    if (isToolsPage && appUrl) {
-                        return (
-                            <a 
-                                key={index} 
-                                href={appUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="no-underline"
-                            >
-                                {cardContent}
-                            </a>
-                        );
-                    }
-                    
-                    return cardContent;
                   })}
                 </div>
               ) : (
