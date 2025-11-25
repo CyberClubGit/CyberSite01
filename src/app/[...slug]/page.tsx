@@ -90,36 +90,36 @@ export default async function CatchAllPage({ params }: { params: { slug:string[]
   if (category.Url.toLowerCase() === 'home') {
     return <HomePageClient category={category} brand={brand} />;
   }
+  
+  // Get raw data for the current category
+  const rawCategoryData = await getCategoryData(category.Url);
 
+  // Process data for all pages (this includes link conversion and normalization)
+  const processedData = rawCategoryData.map(item => {
+    const processedItem = processGalleryLinks(item);
+    
+    // CRITICAL: ID NORMALIZATION
+    // This logic is now applied to all data, ensuring consistency.
+    let validId = (item.ID || item.Id || item.id || '').trim();
+    if (!validId || validId === '#NAME?') {
+      validId = processedItem.title;
+    }
+    
+    return {
+      ...processedItem,
+      id: validId, // Standardized ID field
+    };
+  });
+  
   // Specific layout for the Catalog page - Data source from Google Sheets
   if (category.Url.toLowerCase() === 'catalog') {
-    const rawCategoryData = await getCategoryData(category.Url);
-    
-    // Server-side data processing to ensure data integrity
-    const processedData = rawCategoryData.map(item => {
-      const processedItem = processGalleryLinks(item);
-      
-      // CRITICAL: ID NORMALIZATION
-      // Look for 'ID', 'Id', or 'id' and consolidate into a single 'id' field.
-      // Fallback to title if no valid ID is found.
-      let validId = (item.ID || item.Id || item.id || '').trim();
-      if (!validId || validId === '#NAME?') {
-        validId = processedItem.title;
-      }
-      
-      return {
-        ...processedItem,
-        id: validId, // Standardized ID field
-      };
-    });
-    
-    // Extract filters from the raw sheet data
+    // Extract filters from the raw sheet data (which is fine)
     const types = [...new Set(rawCategoryData.map(p => p.Type).filter(Boolean) as string[])];
     const materials = [...new Set(rawCategoryData.map(p => p.Material).filter(Boolean) as string[])];
     
     return (
       <CatalogPageClient 
-        initialData={processedData}
+        initialData={processedData} // Pass the fully processed data
         category={category}
         brand={brand}
         types={types}
@@ -128,8 +128,6 @@ export default async function CatchAllPage({ params }: { params: { slug:string[]
     );
   }
   
-  // For all other pages (including Projects)
-  const rawCategoryData = await getCategoryData(category.Url);
-  const processedData = rawCategoryData.map(processGalleryLinks);
+  // For all other pages (including Projects, Tools, etc.)
   return <DefaultPageLayout category={category} brand={brand} initialData={processedData} brands={brands} />;
 }

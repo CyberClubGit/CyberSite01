@@ -1,4 +1,5 @@
 
+
 import { unstable_cache } from 'next/cache';
 import { robustCsvParse, rowsToObjects } from './sheets-parser';
 import { 
@@ -186,6 +187,7 @@ export function processGalleryLinks<T extends Record<string, any>>(item: T): T &
   threeDRenderUrls: string[];
   packagingUrls: string[];
   coverUrl: string | null;
+  displayImageUrl: string | null; // This will be the definitive image for display
   stlUrl: string | null;
   pdfUrl: string | null;
   reelUrl: string | null;
@@ -193,41 +195,38 @@ export function processGalleryLinks<T extends Record<string, any>>(item: T): T &
   title: string;
   description: string;
 } {
+  const galleryUrls = item.Gallery ? extractAndConvertGalleryLinks(item.Gallery) : [];
+  const coverUrl = item.Cover ? convertGoogleDriveLinkToDirect(item.Cover) : null;
+  
+  // LOGIC DE SELECTION D'IMAGE DE COUVERTURE ROBUSTE
+  let displayImageUrl = null;
+  if (coverUrl) {
+    displayImageUrl = coverUrl; // Priorité 1: L'image de la colonne 'Cover'
+  } else if (galleryUrls.length > 0) {
+    displayImageUrl = galleryUrls[0]; // Priorité 2: La première image de la 'Gallery'
+  } else if (item['Url Logo Png']) {
+    displayImageUrl = convertGoogleDriveLinkToDirect(item['Url Logo Png']); // Priorité 3: Le logo
+  }
+
   return {
     ...item,
     
-    // Extraire et convertir les liens Gallery (multiples)
-    galleryUrls: item.Gallery 
-      ? extractAndConvertGalleryLinks(item.Gallery)
-      : [],
-    threeDRenderUrls: item['3D Renders']
-      ? extractAndConvertGalleryLinks(item['3D Renders'])
-      : [],
-    packagingUrls: item.Packaging
-      ? extractAndConvertGalleryLinks(item.Packaging)
-      : [],
+    // Processed Links
+    galleryUrls,
+    threeDRenderUrls: item['3D Renders'] ? extractAndConvertGalleryLinks(item['3D Renders']) : [],
+    packagingUrls: item.Packaging ? extractAndConvertGalleryLinks(item.Packaging) : [],
     
-    // Convertir les liens individuels
-    coverUrl: item.Cover 
-      ? convertGoogleDriveLinkToDirect(item.Cover)
-      : null,
+    // Definitive URLs
+    coverUrl,
+    displayImageUrl, // Utiliser cette URL pour l'affichage
     
-    stlUrl: item.Stl // <-- CORRECTION: We pass the raw URL to the component
-      ? item.Stl.trim()
-      : null,
+    // Single-purpose URLs
+    stlUrl: item.Stl ? item.Stl.trim() : null,
+    pdfUrl: item.Pdf ? item.Pdf.trim() : null,
+    reelUrl: item.Reel ? item.Reel.trim() : null,
+    videoUrl: item.Video ? convertGoogleDriveLinkToDirect(item.Video) : null,
       
-    pdfUrl: item.Pdf
-      ? item.Pdf // Keep original for proxying
-      : null,
-      
-    reelUrl: item.Reel
-      ? item.Reel // Keep original
-      : null,
-      
-    videoUrl: item.Video
-      ? convertGoogleDriveLinkToDirect(item.Video)
-      : null,
-      
+    // Normalized Text fields
     title: item.Title || item.Name || item.Item || 'Untitled',
     description: item.Description || item.Content || '',
   };
