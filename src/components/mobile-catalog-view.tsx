@@ -60,8 +60,8 @@ export function MobileCatalogView({ initialData, onSelectItem }: MobileCatalogVi
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto">
         {view === 'discover' && currentItem && (
-          <div className="relative w-full h-full flex flex-col items-center justify-center p-4 overflow-hidden">
-            <Card className="w-full max-w-sm h-[70vh] flex flex-col shadow-lg" onClick={() => onSelectItem(currentItem)}>
+          <div className="relative h-full flex flex-col items-center justify-center p-4">
+            <Card className="w-full max-w-sm flex-1 mb-28 flex flex-col shadow-lg" onClick={() => onSelectItem(currentItem)}>
               <CardContent className="relative flex-1 p-0 rounded-lg overflow-hidden">
                 {currentItem.displayImageUrl ? (
                   <Image
