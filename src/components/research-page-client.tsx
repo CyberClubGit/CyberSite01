@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import type { Brand, Category } from '@/lib/sheets';
 import { filterItemsByBrandActivity } from '@/lib/activity-filter';
 import { VideoBackground } from './video-background';
@@ -80,6 +79,7 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
   const [appUrl, setAppUrl] = useState<string | null>(null);
 
   const { resolvedTheme } = useTheme();
+  const activeItemRef = useRef<HTMLLIElement>(null);
 
   const finalData = useMemo(() => {
     const brandFiltered = filterItemsByBrandActivity(initialData, brand?.Brand);
@@ -91,30 +91,44 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
     }));
   }, [initialData, brand]);
 
-  const { activeCategoryName, nodeMap, itemNodesForCurrentCategory } = useMemo(() => {
-    const nodeMap = new Map<string, Node>();
-    // This is a simplified way to get nodes. In a real scenario, this would come from the simulation.
-    // For now, we just create a map for lookup.
-    finalData.forEach(item => {
-      const activities = item.Activity?.split(',').map(c => c.trim()) || [];
-      activities.forEach(activity => {
-          nodeMap.set(`${item.id}-${activity}`, {
-              id: `${item.id}-${activity}`,
-              type: 'item',
-              label: item.title,
-              // Other properties are not needed for this logic
-          } as Node);
+  const { activeCategoryName, nodeMap, itemNodesForCurrentCategory, categoryNodeMap } = useMemo(() => {
+      const nodeMap = new Map<string, Node>();
+      const categoryNodeMap = new Map<string, Node>();
+      
+      const centerNode: Node = { id: 'center', type: 'center' } as Node;
+      
+      const itemNodes: Node[] = [];
+      const catNodes: Node[] = [];
+
+      finalData.forEach(item => {
+          const activities = item.Activity?.split(',').map(c => c.trim()) || [];
+          activities.forEach(activity => {
+              if (!categoryNodeMap.has(activity)) {
+                  const catNode = { id: `cat-${activity}`, type: 'category', label: activity, parentAttractor: centerNode } as Node;
+                  categoryNodeMap.set(activity, catNode);
+                  catNodes.push(catNode);
+              }
+              const parentNode = categoryNodeMap.get(activity)!;
+              const itemNode = { id: `${item.id}-${activity}`, type: 'item', label: item.title, parentAttractor: parentNode } as Node;
+              nodeMap.set(itemNode.id, itemNode);
+              itemNodes.push(itemNode);
+          });
       });
-    });
 
-    let catName = "Vue d'ensemble";
-    if (viewState.level === 'category') catName = viewState.targetNode.label;
-    if (viewState.level === 'item') catName = viewState.targetNode.parentAttractor?.label || "Vue d'ensemble";
-    
-    const itemNodes = Array.from(nodeMap.values()).filter(node => node.parentAttractor?.label === catName);
+      let catName = "Vue d'ensemble";
+      if (viewState.level === 'category') catName = viewState.targetNode.label;
+      if (viewState.level === 'item') catName = viewState.targetNode.parentAttractor?.label || "Vue d'ensemble";
+      
+      const itemsForCat = Array.from(nodeMap.values()).filter(node => node.parentAttractor?.label === catName);
 
-    return { activeCategoryName: catName, nodeMap, itemNodesForCurrentCategory: itemNodes };
+      return { 
+        activeCategoryName: catName, 
+        nodeMap, 
+        itemNodesForCurrentCategory: itemsForCat,
+        categoryNodeMap
+      };
   }, [viewState, finalData]);
+
 
   const activeItem = useMemo(() => {
       if (viewState.level === 'item') {
@@ -123,6 +137,17 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
       }
       return null;
   }, [viewState, finalData]);
+
+  // Scroll to active item in the list
+  useEffect(() => {
+    if (activeItem && activeItemRef.current) {
+        activeItemRef.current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest'
+        });
+    }
+  }, [activeItem]);
+
 
   const allCategories = useMemo(() => {
     const categories = new Set<string>();
@@ -170,20 +195,30 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
     }
   };
 
-
-  const cyberClubLogo = useMemo(() => {
-      const brand = brands.find(b => b.Brand === 'Cyber Club');
-      return brand?.Logo || null;
-  }, [brands]);
-  
-  const currentCategoryBrand = brands.find(b => b.Activity === activeCategoryName);
-  const currentCategoryLogo = activeCategoryName === 'Vue d\'ensemble' 
-    ? cyberClubLogo
-    : currentCategoryBrand?.Logo || null;
+  const handleListItemClick = (item: ProcessedItem) => {
+    const categoryToFind = activeCategoryName === 'Vue d\'ensemble' 
+        ? item.Activity?.split(',')[0].trim() 
+        : activeCategoryName;
+    
+    if (categoryToFind) {
+        const nodeId = `${item.id}-${categoryToFind}`;
+        const targetNode = nodeMap.get(nodeId);
+        if (targetNode) {
+            setViewState({ level: 'item', targetNode });
+        }
+    }
+  };
 
   const handleCategorySelect = useCallback((categoryName: string) => {
-      // This is now handled by the graph view's internal logic
-  }, []);
+      if (categoryName === 'Vue d\'ensemble') {
+          setViewState({ level: 'overview' });
+      } else {
+          const catNode = categoryNodeMap.get(categoryName);
+          if (catNode) {
+            setViewState({ level: 'category', targetNode: catNode });
+          }
+      }
+  }, [categoryNodeMap]);
   
   const navigateCategories = (direction: 'next' | 'prev') => {
       const currentIndex = navigationCategories.indexOf(activeCategoryName);
@@ -214,6 +249,16 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
       document.documentElement.classList.remove('graph-view-active');
     };
   }, [viewMode]);
+
+  const cyberClubLogo = useMemo(() => {
+      const brand = brands.find(b => b.Brand === 'Cyber Club');
+      return brand?.Logo || null;
+  }, [brands]);
+  
+  const currentCategoryBrand = brands.find(b => b.Activity === activeCategoryName);
+  const currentCategoryLogo = activeCategoryName === 'Vue d\'ensemble' 
+    ? cyberClubLogo
+    : currentCategoryBrand?.Logo || null;
 
   return (
     <div className="relative h-full min-h-[calc(100vh-4rem)] w-full">
@@ -328,12 +373,20 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
                         </div>
                         
                         <ScrollArea className="flex-1 mt-4 pt-4 border-t border-border/50">
-                            <ul className="space-y-1 text-xs text-muted-foreground">
+                            <ul className="space-y-1 text-xs">
                             {itemsForCurrentCategory.map(item => (
-                                <li key={item.id} className="truncate">
-                                <Link href={item.pdfUrl || '#'} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                                <li 
+                                    key={item.id}
+                                    ref={activeItem?.id === item.id ? activeItemRef : null}
+                                    className={cn(
+                                        "truncate rounded-md p-1 -mx-1 transition-colors cursor-pointer",
+                                        activeItem?.id === item.id 
+                                            ? 'bg-primary/20 text-primary font-semibold'
+                                            : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                                    )}
+                                    onClick={() => handleListItemClick(item)}
+                                >
                                     {item.title}
-                                </Link>
                                 </li>
                             ))}
                             </ul>
@@ -358,3 +411,5 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
     </div>
   );
 }
+
+    
