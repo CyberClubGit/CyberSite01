@@ -57,9 +57,11 @@ export interface NetworkMember {
   'Profil Picture': string;
   Contact: string;
   Role: string;
-  Proximité: string;
+  Proximity: string;
   Brand: string;
   profilePictureUrl?: string;
+  // Ajout de la nouvelle propriété pour le filtrage
+  'Show ?': string;
 }
 
 
@@ -175,12 +177,15 @@ export const getBrands = unstable_cache(
 export const getNetwork = unstable_cache(
   async (): Promise<NetworkMember[]> => {
     console.log('[Sheets] === Fetching Network Members ===');
-    const rawData = await fetchAndParseCsv<any>(NETWORK_SHEET_URL);
+    const rawData = await fetchAndParseCsv<NetworkMember>(NETWORK_SHEET_URL);
 
-    return rawData.map((row) => ({
-      ...row,
-      profilePictureUrl: row['Profil Picture'] ? convertGoogleDriveLinkToDirect(row['Profil Picture']) : undefined,
-    } as NetworkMember));
+    // Filter members based on the "Show ?" column and process their profile picture
+    return rawData
+      .filter(member => member['Show ?'] === 'TRUE')
+      .map((member) => ({
+        ...member,
+        profilePictureUrl: member['Profil Picture'] ? convertGoogleDriveLinkToDirect(member['Profil Picture']) : undefined,
+      }));
   },
   ['network'],
   { revalidate: 300 }
