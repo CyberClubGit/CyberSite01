@@ -240,7 +240,7 @@ export function processGalleryLinks<T extends Record<string, any>>(item: T): Pro
     // Single-purpose URLs
     stlUrl: item.Stl ? item.Stl.trim() : null,
     pdfUrl: item.Pdf ? item.Pdf.trim() : null,
-    reelUrl: item.Reel ? item.Reel.trim() : null,
+    reelUrl: item.Reel ? convertGoogleDriveLinkToDirectVideo(item.Reel.trim()) : null,
     videoUrl: item.Video ? convertGoogleDriveLinkToDirect(item.Video) : null,
       
     // Normalized Text fields

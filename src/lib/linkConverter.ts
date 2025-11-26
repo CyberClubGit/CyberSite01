@@ -1,4 +1,5 @@
 
+
 import { extractGoogleDriveId } from './google-drive-utils';
 
 /**
@@ -15,7 +16,7 @@ function getYouTubeId(url: string): string | null {
  * Creates an embeddable URL for YouTube or Google Drive videos.
  *
  * - For YouTube, it creates a clean embed link (no cookies, autoplay, no controls).
- * - For Google Drive, it creates a direct embed link.
+ * - For Google Drive, it uses the direct download/streaming URL.
  */
 export function getEmbeddableVideoUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -25,12 +26,8 @@ export function getEmbeddableVideoUrl(url: string | null | undefined): string | 
     return `https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&controls=0&mute=1&loop=1&playlist=${youtubeId}`;
   }
 
-  const googleDriveId = extractGoogleDriveId(url);
-  if (googleDriveId) {
-    return `https://drive.google.com/file/d/${googleDriveId}/preview`;
-  }
-
-  // Fallback for direct video links
+  // If it's a Google Drive link, it should have been pre-processed to a direct link.
+  // We just return it as is. This also handles direct MP4 links.
   return url;
 }
 
