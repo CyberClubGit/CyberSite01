@@ -362,7 +362,7 @@ export function Header({ categories, brands }: HeaderProps) {
           {/* Actions for All Screens */}
           <div className="ml-auto flex items-center justify-end flex-1 md:flex-initial space-x-2">
               <CartIcon />
-              <div className="hidden md:flex items-center space-x-2">
+              <div className="flex items-center space-x-2">
                 {renderAuthSection()}
               </div>
           </div>
@@ -411,17 +411,7 @@ export function Header({ categories, brands }: HeaderProps) {
               <nav className="flex flex-col gap-1 mt-2 border-t border-border/50 pt-2">
                 {renderNavLinks(true)}
               </nav>
-              <div className="mt-2 border-t border-border/50 pt-2">
-                {user?.isAdmin && (
-                  <Button asChild variant="ghost" className="w-full justify-start mb-2">
-                    <Link href="/admin/orders" onClick={() => setIsMobileMenuOpen(false)}>
-                      <Shield className="mr-2 h-4 w-4" />
-                      Admin
-                    </Link>
-                  </Button>
-                )}
-                {renderAuthSection()}
-              </div>
+              
             </div>
           </PopoverContent>
         </Popover>
