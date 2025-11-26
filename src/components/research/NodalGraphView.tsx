@@ -67,7 +67,9 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     });
     // Ensure all predefined categories exist for stable layout
     Object.keys(CATEGORY_ANGLES).forEach(cat => categories.add(cat));
-    return Array.from(categories);
+    
+    // Explicitly filter out unwanted categories
+    return Array.from(categories).filter(cat => cat !== 'Cybernetics' && cat !== 'Other');
   }, [items]);
 
   useEffect(() => {
@@ -120,7 +122,6 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
 
     items.forEach(item => {
         const itemCategories = item.Activity?.split(',').map(c => c.trim()).filter(c => allCategories.includes(c));
-        if (itemCategories.length === 0) itemCategories.push('Other');
         
         itemCategories.forEach(categoryName => {
             if (!itemsByCategory[categoryName]) {
