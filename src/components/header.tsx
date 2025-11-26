@@ -203,16 +203,16 @@ export function Header({ categories, brands }: HeaderProps) {
                 className={`text-sm font-medium transition-colors hover:text-primary menu-link ${isActive ? 'active' : ''} ${isMobile ? 'block w-full text-left p-2' : ''}`}
             >
                 <div className="flex items-center gap-2">
-                  {category['Url Logo Png'] ? (
-                    <Image
-                      src={category['Url Logo Png']}
-                      alt={`${category.Name} logo`}
-                      width={20}
-                      height={20}
-                      className="object-contain dark:invert"
-                    />
-                  ): (
-                    category.Url.toLowerCase() === 'home' ? <Home className="w-5 h-5" /> : null
+                  {category.Url.toLowerCase() === 'home' ? <Home className="w-5 h-5" /> : (
+                    category['Url Logo Png'] ? (
+                      <Image
+                        src={category['Url Logo Png']}
+                        alt={`${category.Name} logo`}
+                        width={20}
+                        height={20}
+                        className="object-contain dark:invert"
+                      />
+                    ) : null
                   )}
                   <span>{category.Name}</span>
                 </div>
@@ -311,24 +311,24 @@ export function Header({ categories, brands }: HeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="fixed bottom-0 md:sticky md:top-0 z-50 w-full border-t md:border-b md:border-t-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
-        <div className="mr-auto flex items-center gap-2">
-           <div className="md:hidden">
-            <Link href="/" className="flex items-center gap-2 font-headline">
-              {cyberClubLogo && (
-                <Image
-                  src={cyberClubLogo}
-                  alt="Cyber Club Logo"
-                  width={32}
-                  height={32}
-                  className="object-contain dark:invert"
-                />
-              )}
-              <span className="font-bold">CYBER CLUB</span>
-            </Link>
-          </div>
-          <div className="hidden md:flex">
+        <div className="mr-auto flex items-center gap-2 md:hidden">
+           <Link href="/" className="flex items-center gap-2 font-headline">
+             {cyberClubLogo && (
+               <Image
+                 src={cyberClubLogo}
+                 alt="Cyber Club Logo"
+                 width={32}
+                 height={32}
+                 className="object-contain dark:invert"
+               />
+             )}
+             <span className="font-bold">CYBER CLUB</span>
+           </Link>
+         </div>
+        <div className="hidden md:flex mr-auto items-center gap-2">
+           <div className="hidden md:flex">
              <Select onValueChange={handleBrandChange} value={selectedBrand}>
                 <SelectTrigger className="w-auto brand-selector font-headline h-14 px-4 text-lg">
                   <SelectValue placeholder="Select Brand" className="uppercase" />
@@ -355,13 +355,11 @@ export function Header({ categories, brands }: HeaderProps) {
           </div>
         </div>
 
-        <div className="hidden md:flex flex-1 items-center justify-center">
-          <nav className="flex gap-6">
-            {renderNavLinks()}
-          </nav>
-        </div>
-
-        <div className="ml-auto flex items-center justify-end space-x-2">
+        <nav className="hidden md:flex flex-1 items-center justify-center gap-6">
+          {renderNavLinks()}
+        </nav>
+        
+        <div className="ml-auto flex items-center justify-center md:justify-end flex-1 md:flex-initial space-x-2">
             <CartIcon />
             <div className="hidden md:flex items-center space-x-2">
               {renderAuthSection()}
@@ -379,7 +377,16 @@ export function Header({ categories, brands }: HeaderProps) {
                         <SheetTitle className="sr-only">Menu</SheetTitle>
                         <SheetDescription className="sr-only">Main navigation menu and brand selector.</SheetDescription>
                          <Link href="/" className="flex items-center space-x-2" onClick={() => setIsMobileMenuOpen(false)}>
-                            
+                             {cyberClubLogo && (
+                               <Image
+                                 src={cyberClubLogo}
+                                 alt="Cyber Club Logo"
+                                 width={32}
+                                 height={32}
+                                 className="object-contain dark:invert"
+                               />
+                             )}
+                             <span className="font-bold">CYBER CLUB</span>
                         </Link>
                     </SheetHeader>
                     <div className="flex flex-col gap-4 p-4">
