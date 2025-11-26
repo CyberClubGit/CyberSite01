@@ -131,7 +131,7 @@ export default async function CatchAllPage({ params }: { params: { slug:string[]
 
   // Specific layout for the Research page
   if (category.Url.toLowerCase() === 'research') {
-    return <ResearchPageClient category={category} brand={brand} initialData={processedData} />;
+    return <ResearchPageClient category={category} brand={brand} initialData={processedData} brands={brands} />;
   }
   
   // For all other pages (including Projects, Tools, etc.)

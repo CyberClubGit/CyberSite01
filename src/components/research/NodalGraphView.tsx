@@ -1,24 +1,24 @@
-
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import type { ProcessedItem } from '@/lib/sheets';
+import type { Brand, ProcessedItem } from '@/lib/sheets';
 import { useSimulation, type Node } from './use-simulation';
 import { NodalGraphNode } from './NodalGraphNode';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { PanZoom, type PanZoomApi } from './PanZoom';
 import { Loader2 } from 'lucide-react';
+import { createActivityColorMap } from '@/lib/color-utils';
 
 interface NodalGraphViewProps {
   items: ProcessedItem[];
+  brands: Brand[];
 }
 
 interface Link {
   source: string; // ID of source node
   target: string; // ID of target node
 }
-
 
 // Catégories fixes et leurs positions angulaires pour une disposition radiale
 const CATEGORY_ANGLES: Record<string, number> = {
@@ -32,8 +32,11 @@ const CATEGORY_ANGLES: Record<string, number> = {
   'Other': 315,
 };
 
-const getNodeColor = (theme: string | undefined, type: 'center' | 'category' | 'item') => {
+const getNodeColor = (theme: string | undefined, type: 'center' | 'category' | 'item', activityColor?: string) => {
   const isDark = theme === 'dark';
+  if (type === 'category' && activityColor) {
+    return activityColor;
+  }
   switch (type) {
     case 'center':
       return isDark ? '#FFFFFF' : '#000000';
@@ -45,16 +48,16 @@ const getNodeColor = (theme: string | undefined, type: 'center' | 'category' | '
   }
 };
 
-export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items }) => {
+export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands }) => {
   const { resolvedTheme } = useTheme();
   const [links, setLinks] = useState<Link[]>([]);
   const panZoomRef = useRef<PanZoomApi>(null);
 
-  const { simulatedNodes, setNodes: setSimulationNodes } = useSimulation({
-    attractionStiffness: 0.01,
-    repulsionStiffness: 1000,
-    damping: 0.95,
-  });
+  const { simulatedNodes, setNodes: setSimulationNodes } = useSimulation();
+
+  const activityColorMap = useMemo(() => {
+    return createActivityColorMap(brands, resolvedTheme === 'dark' ? 'dark' : 'light');
+  }, [brands, resolvedTheme]);
 
   const allCategories = useMemo(() => {
     const categories = new Set<string>();
@@ -68,7 +71,8 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items }) => {
   }, [items]);
 
   useEffect(() => {
-    const categoryRadius = 250;
+    const categoryRadius = 350; // Increased radius for more space
+    const itemRadius = 150;     // Radius for items around categories
     
     const newNodes: Node[] = [];
     const newLinks: Link[] = [];
@@ -90,7 +94,6 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items }) => {
     const sortedCategories = allCategories.sort((a, b) => (CATEGORY_ANGLES[a] ?? 999) - (CATEGORY_ANGLES[b] ?? 999));
 
     sortedCategories.forEach(cat => {
-      // Utiliser l'angle prédéfini pour une disposition radiale parfaite
       const angle = (CATEGORY_ANGLES[cat] ?? Math.random() * 360) * (Math.PI / 180);
       const attractor = {
         x: categoryRadius * Math.cos(angle),
@@ -105,44 +108,61 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items }) => {
         label: cat,
         type: 'category',
         attractor,
-        color: getNodeColor(resolvedTheme, 'category'),
+        color: getNodeColor(resolvedTheme, 'category', activityColorMap[cat]),
       };
       categoryNodes[cat] = catNode;
       newNodes.push(catNode);
-      // Link from center to category
       newLinks.push({ source: 'center', target: catNode.id });
     });
+    
+    // Group items by category for radial layout
+    const itemsByCategory: Record<string, ProcessedItem[]> = {};
 
-    // 3. Item Nodes - DUPLICATE FOR MULTI-CATEGORY
     items.forEach(item => {
-      const itemCategories = item.Activity?.split(',').map(c => c.trim()).filter(c => allCategories.includes(c));
-      
-      if (itemCategories.length === 0) {
-        itemCategories.push('Other');
-      }
+        const itemCategories = item.Activity?.split(',').map(c => c.trim()).filter(c => allCategories.includes(c));
+        if (itemCategories.length === 0) itemCategories.push('Other');
+        
+        itemCategories.forEach(categoryName => {
+            if (!itemsByCategory[categoryName]) {
+                itemsByCategory[categoryName] = [];
+            }
+            itemsByCategory[categoryName].push(item);
+        });
+    });
 
-      itemCategories.forEach(categoryName => {
+
+    // 3. Item Nodes - With radial positioning
+    Object.keys(itemsByCategory).forEach(categoryName => {
         const categoryNode = categoryNodes[categoryName];
-        if (categoryNode) {
-          const itemNodeId = `${item.id}-${categoryName}`;
-          
-          const itemNode: Node = {
-            id: itemNodeId,
-            x: categoryNode.x + (Math.random() - 0.5) * 50,
-            y: categoryNode.y + (Math.random() - 0.5) * 50,
-            vx: 0, vy: 0,
-            radius: 6,
-            label: item.title,
-            type: 'item',
-            attractor: { x: categoryNode.x, y: categoryNode.y },
-            color: getNodeColor(resolvedTheme, 'item'),
-            href: item.pdfUrl || '#',
-          };
-          newNodes.push(itemNode);
-          
-          newLinks.push({ source: categoryNode.id, target: itemNode.id });
-        }
-      });
+        if (!categoryNode) return;
+
+        const categoryItems = itemsByCategory[categoryName];
+        const angleStep = (2 * Math.PI) / (categoryItems.length || 1);
+
+        categoryItems.forEach((item, index) => {
+            const itemNodeId = `${item.id}-${categoryName}`;
+            const angle = index * angleStep;
+
+            const attractor = {
+              x: categoryNode.attractor.x + itemRadius * Math.cos(angle),
+              y: categoryNode.attractor.y + itemRadius * Math.sin(angle),
+            };
+            
+            const itemNode: Node = {
+                id: itemNodeId,
+                x: attractor.x + (Math.random() - 0.5) * 20,
+                y: attractor.y + (Math.random() - 0.5) * 20,
+                vx: 0, vy: 0,
+                radius: 6,
+                label: item.title,
+                type: 'item',
+                attractor,
+                color: getNodeColor(resolvedTheme, 'item'),
+                href: item.pdfUrl || '#',
+            };
+            newNodes.push(itemNode);
+            newLinks.push({ source: categoryNode.id, target: itemNode.id });
+        });
     });
     
     setLinks(newLinks);
@@ -150,12 +170,12 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items }) => {
 
     // Auto-frame on load
     const timeout = setTimeout(() => {
-        panZoomRef.current?.zoomTo(0, 0, 0.5, false);
+        panZoomRef.current?.zoomTo(0, 0, 0.4, false);
     }, 500);
 
     return () => clearTimeout(timeout);
 
-  }, [items, allCategories, resolvedTheme, setSimulationNodes]);
+  }, [items, allCategories, resolvedTheme, setSimulationNodes, activityColorMap]);
 
   const onNodeClick = useCallback((node: Node) => {
     if (node.href && node.href !== '#') {
@@ -181,7 +201,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items }) => {
       )}
       <PanZoom
         ref={panZoomRef}
-        minZoom={0.1}
+        minZoom={0.05}
         maxZoom={3}
         className={cn("w-full h-full transition-opacity duration-500", hasSimulated ? 'opacity-100' : 'opacity-0')}
       >

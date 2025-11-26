@@ -24,9 +24,9 @@ interface SimulationOptions {
 
 export const useSimulation = (options: SimulationOptions = {}) => {
   const {
-    attractionStiffness = 0.01,
-    repulsionStiffness = 400,
-    damping = 0.9,
+    attractionStiffness = 0.005, // Lowered for smoother attraction
+    repulsionStiffness = 150,   // Significantly lowered to reduce jitter
+    damping = 0.95,             // Increased for faster stabilization
   } = options;
 
   const [nodes, setNodes] = useState<Node[]>([]);
@@ -58,16 +58,16 @@ export const useSimulation = (options: SimulationOptions = {}) => {
           let distance = Math.sqrt(dx * dx + dy * dy);
           distance = Math.max(1, distance); // Avoid division by zero
 
-          const force = (repulsionStiffness / (distance * distance));
           const minDistance = nodeA.radius + nodeB.radius;
 
           if (distance < minDistance) {
               const overlap = minDistance - distance;
-              const pushFactor = overlap * 0.1; 
+              const pushFactor = overlap * 0.05; // Gentle push to resolve overlap
               nodeA.vx += (dx / distance) * pushFactor;
               nodeA.vy += (dy / distance) * pushFactor;
           }
-
+          
+          const force = (repulsionStiffness / (distance * distance));
           nodeA.vx += (dx / distance) * force;
           nodeA.vy += (dy / distance) * force;
         }

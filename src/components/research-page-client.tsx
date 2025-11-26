@@ -16,6 +16,7 @@ interface ResearchPageClientProps {
   category: Category;
   brand?: Brand;
   initialData: ProcessedItem[];
+  brands: Brand[];
 }
 
 const ListView = ({ items }: { items: ProcessedItem[] }) => (
@@ -37,7 +38,7 @@ const ListView = ({ items }: { items: ProcessedItem[] }) => (
 );
 
 
-export function ResearchPageClient({ category, brand, initialData }: ResearchPageClientProps) {
+export function ResearchPageClient({ category, brand, initialData, brands }: ResearchPageClientProps) {
   const [viewMode, setViewMode] = useState<'list' | 'graph'>('list');
   
   const finalData = useMemo(() => {
@@ -86,7 +87,7 @@ export function ResearchPageClient({ category, brand, initialData }: ResearchPag
                 <ListView items={finalData} />
               </TabsContent>
               <TabsContent value="graph">
-                <NodalGraphView items={finalData} />
+                <NodalGraphView items={finalData} brands={brands} />
               </TabsContent>
             </Tabs>
 
