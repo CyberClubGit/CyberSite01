@@ -283,49 +283,6 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
                     </TabsTrigger>
                 </div>
             </TabsList>
-            
-            {viewMode === 'graph' && (
-              <div className="absolute top-24 w-full flex justify-center z-10">
-                <div className="p-4 rounded-lg bg-background/50 backdrop-blur-md border border-border/50">
-                    <div className="flex items-center justify-center gap-2">
-                        <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-md" 
-                            onClick={() => navigateCategories('prev')}
-                            style={{ color: 'var(--brand-color)' }}
-                        >
-                            <ArrowLeft className="h-4 w-4" />
-                        </Button>
-                        <div 
-                            className="px-4 py-1 rounded-full bg-transparent border font-headline uppercase text-center min-w-[200px] flex items-center justify-center gap-3 text-sm flex-1"
-                            style={{ color: 'var(--brand-color)', borderColor: 'var(--brand-color)' }}
-                        >
-                            {currentCategoryLogo && (
-                            <Image 
-                                src={currentCategoryLogo} 
-                                alt={`${activeCategoryName} logo`}
-                                width={16}
-                                height={16}
-                                className={cn(resolvedTheme === 'dark' && activeCategoryName !== "Vue d'ensemble" && 'invert')}
-                            />
-                            )}
-                            <span>{activeCategoryName}</span>
-                        </div>
-                        <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-md" 
-                            onClick={() => navigateCategories('next')}
-                            style={{ color: 'var(--brand-color)' }}
-                        >
-                            <ArrowRight className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </div>
-              </div>
-            )}
-
 
             <TabsContent value="list" className="mt-0 h-full">
                  <div className="absolute top-24 left-4 md:left-8 z-10 max-w-sm w-[calc(100%-2rem)] md:w-auto">
@@ -368,7 +325,46 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
             
         {viewMode === 'graph' && (
             <>
-                <div className="absolute top-[13rem] left-4 md:left-8 z-10 space-y-4 max-w-sm w-[calc(100%-2rem)] md:w-auto">
+                <div className="absolute top-24 left-4 md:left-8 z-10 space-y-4 max-w-sm w-[calc(100%-2rem)] md:w-auto">
+                    
+                    <div className="p-4 rounded-lg bg-background/50 backdrop-blur-md border border-border/50">
+                        <div className="flex items-center justify-center gap-2">
+                            <Button 
+                                variant="outline" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-md" 
+                                onClick={() => navigateCategories('prev')}
+                                style={{ color: 'var(--brand-color)' }}
+                            >
+                                <ArrowLeft className="h-4 w-4" />
+                            </Button>
+                            <div 
+                                className="px-4 py-1 rounded-full bg-transparent border font-headline uppercase text-center min-w-[200px] flex items-center justify-center gap-3 text-sm flex-1"
+                                style={{ color: 'var(--brand-color)', borderColor: 'var(--brand-color)' }}
+                            >
+                                {currentCategoryLogo && (
+                                <Image 
+                                    src={currentCategoryLogo} 
+                                    alt={`${activeCategoryName} logo`}
+                                    width={16}
+                                    height={16}
+                                    className={cn(resolvedTheme === 'dark' && activeCategoryName !== "Vue d'ensemble" && 'invert')}
+                                />
+                                )}
+                                <span>{activeCategoryName}</span>
+                            </div>
+                            <Button 
+                                variant="outline" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-md" 
+                                onClick={() => navigateCategories('next')}
+                                style={{ color: 'var(--brand-color)' }}
+                            >
+                                <ArrowRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+
                     <div className="p-4 rounded-lg bg-background/50 backdrop-blur-md border border-border/50 flex flex-col flex-1 min-h-0 max-h-[calc(100vh-14rem-6rem)]">
                         <h3 className="font-headline text-lg mb-2 border-b border-border/50 pb-2">Projets</h3>
                         <ScrollArea className="flex-1">
@@ -410,5 +406,7 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
     </div>
   );
 }
+
+    
 
     
