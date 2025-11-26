@@ -81,7 +81,7 @@ export function ProjectReelOverlay({ project, onClose }: ProjectReelOverlayProps
             {project.pdfUrl ? (
                 <div className="h-full flex flex-col justify-center">
                     <h2 className="font-headline text-lg mb-4 text-center">Galerie Document</h2>
-                    <div className="mx-auto w-full max-w-lg">
+                    <div className="mx-auto w-full">
                         <HorizontalPdfViewer files={[project.pdfUrl]} />
                     </div>
                 </div>

@@ -116,7 +116,7 @@ export const HorizontalPdfViewer: React.FC<HorizontalPdfViewerProps> = ({ files 
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex -ml-4">
           {files.map((file, index) => (
-            <div key={index} className="flex-shrink-0 w-1/4 min-w-[150px] md:w-1/5 lg:w-1/6 pl-4">
+            <div key={index} className="flex-shrink-0 w-2/3 min-w-[240px] pl-4">
                <div className="aspect-[2/3] rounded-lg overflow-hidden border border-border">
                  <PdfThumbnail file={file} />
                </div>
