@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, Fragment } from 'react';
+import { useState, useMemo } from 'react';
 import type { Brand, Category, Project } from '@/lib/sheets';
 import { filterItemsByBrandActivity } from '@/lib/activity-filter';
 import Image from 'next/image';
@@ -17,9 +17,11 @@ import { CatalogItemDetails } from './catalog-item-details';
 import { ShoppingCart } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileCatalogView } from './mobile-catalog-view';
 
 // The interface of the item processed, to ensure consistency
-type CatalogItem = Project & {
+export type CatalogItem = Project & {
   Price_Print?: string; // Price is a string from the sheet
 };
 
@@ -58,6 +60,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   const [selectedItem, setSelectedItem] = useState<CatalogItem | null>(null);
 
   const { addToCart } = useCart();
+  const isMobile = useIsMobile();
 
   const handleFilterChange = (filterType: 'type' | 'material', value: string) => {
     const setter = filterType === 'type' ? setSelectedTypes : setSelectedMaterials;
@@ -102,6 +105,10 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
       });
     }
   };
+
+  if (isMobile) {
+    return <MobileCatalogView initialData={finalData} onSelectItem={setSelectedItem} />;
+  }
 
   return (
     <>
