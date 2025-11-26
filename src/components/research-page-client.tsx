@@ -180,18 +180,20 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
         </Tabs>
             
         {viewMode === 'graph' && (
-            <div className="absolute top-24 left-4 md:left-8 z-10 w-[calc(100%-2rem)] md:w-auto">
-                 <div className="p-4 rounded-lg bg-background/50 backdrop-blur-md border border-border/50 max-w-sm flex flex-col max-h-[calc(100vh-8rem)]">
-                    <div>
-                        <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl capitalize">
-                            {category?.Name || 'Recherche'}
-                        </h1>
-                        <p className="max-w-[700px] text-muted-foreground md:text-xl mt-2">
-                            {category?.Description || ''}
-                        </p>
-                    </div>
-                    
-                    <div className="mt-4 flex items-center justify-center gap-2">
+            <div className="absolute top-24 left-4 md:left-8 z-10 max-w-sm w-[calc(100%-2rem)] md:w-auto flex flex-col max-h-[calc(100vh-7rem-6rem)]">
+                {/* Bloc Titre + Slogan */}
+                <div className="mb-4">
+                    <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl capitalize">
+                        {category?.Name || 'Recherche'}
+                    </h1>
+                    <p className="max-w-[700px] text-muted-foreground md:text-xl mt-2">
+                        {category?.Description || ''}
+                    </p>
+                </div>
+                
+                {/* Boîte Flottante avec sélecteur et liste */}
+                 <div className="p-4 rounded-lg bg-background/50 backdrop-blur-md border border-border/50 flex flex-col flex-1 min-h-0">
+                    <div className="flex items-center justify-center gap-2">
                         <Button 
                             variant="outline" 
                             size="icon" 
