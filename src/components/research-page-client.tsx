@@ -55,9 +55,20 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
     <>
       <div className="relative bg-transparent">
         {category.Background && <VideoBackground src={category.Background} />}
+
+        {viewMode === 'graph' && (
+            <div className="fixed inset-0 z-0">
+                <NodalGraphView items={finalData} brands={brands} />
+            </div>
+        )}
+
         <section className="w-full py-8 md:py-12 relative z-10">
           <div className="container px-4 md:px-6">
-            <Tabs defaultValue="list" className="w-full" onValueChange={(value) => setViewMode(value as 'list' | 'graph')}>
+            <Tabs 
+                value={viewMode} 
+                onValueChange={(value) => setViewMode(value as 'list' | 'graph')}
+                className="w-full"
+            >
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
                 <div className="space-y-2 mb-4 md:mb-0">
                   <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl capitalize">
@@ -87,8 +98,9 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
               <TabsContent value="list">
                 <ListView items={finalData} />
               </TabsContent>
+              {/* The graph is rendered outside the TabsContent for full-page layout */}
               <TabsContent value="graph">
-                <NodalGraphView items={finalData} brands={brands} />
+                {/* This can be empty or show some helper text if needed */}
               </TabsContent>
             </Tabs>
 

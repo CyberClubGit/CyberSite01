@@ -93,9 +93,9 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
 
     // 2. Category Nodes (excluding Cyber Club)
     const categoryNodes: Record<string, Node> = {};
-    const mainCategories = allCategories.filter(cat => cat !== 'Cyber Club');
+    const mainCategories = allCategories.filter(cat => cat !== 'Cyber Club' && CATEGORY_ANGLES[cat] !== undefined);
     
-    const sortedCategories = mainCategories.filter(cat => CATEGORY_ANGLES[cat] !== undefined).sort((a, b) => CATEGORY_ANGLES[a] - CATEGORY_ANGLES[b]);
+    const sortedCategories = mainCategories.sort((a, b) => CATEGORY_ANGLES[a] - CATEGORY_ANGLES[b]);
     
     sortedCategories.forEach(cat => {
       const angle = (CATEGORY_ANGLES[cat]) * (Math.PI / 180);
@@ -206,7 +206,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
   const hasSimulated = simulatedNodes.length > 0;
 
   return (
-    <div className="relative w-full h-[70vh] border rounded-lg bg-background/50 overflow-hidden">
+    <div className="relative w-full h-full bg-background/50 backdrop-blur-sm overflow-hidden">
       {!hasSimulated && (
         <div className="absolute inset-0 flex items-center justify-center text-muted-foreground z-10">
           <Loader2 className="w-8 h-8 animate-spin" />
