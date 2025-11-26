@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { Brand, Category } from '@/lib/sheets';
 import { filterItemsByBrandActivity } from '@/lib/activity-filter';
 import { VideoBackground } from './video-background';
@@ -50,6 +51,20 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
       description: item.Description || item.Content || '',
     }));
   }, [initialData, brand]);
+
+  // Effect to lock/unlock page scroll based on view mode
+  useEffect(() => {
+    if (viewMode === 'graph') {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    // Cleanup function to restore scroll when the component unmounts
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [viewMode]);
 
   return (
     <>
