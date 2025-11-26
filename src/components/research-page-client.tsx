@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -58,12 +56,6 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
       <div className={cn("relative bg-transparent", viewMode === 'graph' && 'graph-view-active')}>
         {category.Background && <VideoBackground src={category.Background} />}
 
-        {viewMode === 'graph' && (
-            <div className="fixed inset-0 z-0">
-                <NodalGraphView items={finalData} brands={brands} />
-            </div>
-        )}
-
         <section className="w-full py-8 md:py-12 relative z-10">
           <div className="container px-4 md:px-6">
             <Tabs 
@@ -100,9 +92,10 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
               <TabsContent value="list">
                 <ListView items={finalData} />
               </TabsContent>
-              {/* The graph is rendered outside the TabsContent for full-page layout */}
               <TabsContent value="graph">
-                {/* This can be empty or show some helper text if needed */}
+                <div className="w-full" style={{ height: 'calc(100vh - 16rem)'}}>
+                    <NodalGraphView items={finalData} brands={brands} />
+                </div>
               </TabsContent>
             </Tabs>
 
@@ -112,3 +105,5 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
     </>
   );
 }
+
+    

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
@@ -252,6 +251,22 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
               </SelectContent>
           </Select>
       </div>
+      
+       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
+          <Select onValueChange={handleCategorySelect}>
+              <SelectTrigger className="w-[220px] bg-background/70 backdrop-blur-md">
+                  <SelectValue placeholder="Naviguer vers une catégorie" />
+              </SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="all">Vue d'ensemble</SelectItem>
+                  {sortedVisibleCategories.map(cat => (
+                      <SelectItem key={`bottom-select-${cat}`} value={`cat-${cat}`}>
+                          {cat}
+                      </SelectItem>
+                  ))}
+              </SelectContent>
+          </Select>
+      </div>
 
       <PanZoom
         ref={panZoomRef}
@@ -298,3 +313,5 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     </div>
   );
 };
+
+    
