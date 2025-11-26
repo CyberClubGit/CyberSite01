@@ -13,6 +13,7 @@ export interface Node {
   label: string;
   type: 'center' | 'category' | 'item';
   attractor: { x: number; y: number };
+  parentAttractor: { x: number; y: number } | null;
   color: string;
   href?: string;
   logoUrl?: string | null;

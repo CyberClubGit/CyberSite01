@@ -127,6 +127,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
       label: 'Cyber Club',
       type: 'center',
       attractor: { x: 0, y: 0 },
+      parentAttractor: null,
       color: getNodeColor(resolvedTheme, 'center'),
       logoUrl: cyberClubLogo,
     };
@@ -150,6 +151,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
         label: cat,
         type: 'category',
         attractor,
+        parentAttractor: centerNode.attractor,
         color: getNodeColor(resolvedTheme, 'category', activityColorMap[cat]),
         logoUrl: activityLogoMap[cat] || null,
       };
@@ -189,6 +191,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
                     x: attractor.x, y: attractor.y,
                     vx: 0, vy: 0, radius: 6, label: item.title, type: 'item',
                     attractor,
+                    parentAttractor: centerNode.attractor,
                     color: getNodeColor(resolvedTheme, 'item', activityColorMap.Cybernetics),
                     href: item.pdfUrl || '#'
                 };
@@ -210,6 +213,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
                     x: attractor.x, y: attractor.y,
                     vx: 0, vy: 0, radius: 6, label: item.title, type: 'item',
                     attractor,
+                    parentAttractor: categoryNode.attractor,
                     color: categoryNode.color,
                     href: item.pdfUrl || '#'
                 };
@@ -305,6 +309,17 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     return map;
   }, [simulatedNodes]);
 
+  const itemLinks = useMemo(() => {
+      if (!lockedCategoryId) return new Set();
+      const items = new Set<string>();
+      links.forEach(link => {
+          if (link.source === lockedCategoryId) {
+              items.add(link.target);
+          }
+      });
+      return items;
+  }, [links, lockedCategoryId]);
+
   const hasSimulated = simulatedNodes.length > 0;
 
   return (
@@ -363,6 +378,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
             if (!source || !target) return null;
 
             const isHovered = hoveredNodeId === source.id || hoveredNodeId === target.id;
+            const isRelatedToLocked = (lockedCategoryId === source.id && itemLinks.has(target.id)) || (lockedCategoryId === target.id);
 
             return (
               <line
@@ -372,8 +388,8 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
                 x2={target.x}
                 y2={target.y}
                 stroke={source.color}
-                strokeWidth={isHovered ? "1.5" : "0.5"}
-                strokeOpacity={isHovered ? 1 : 0.4}
+                strokeWidth={isHovered || isRelatedToLocked ? "1.5" : "0.5"}
+                strokeOpacity={isHovered || isRelatedToLocked ? 1 : 0.4}
                 className="transition-all duration-300"
               />
             );
@@ -387,6 +403,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
             node={node}
             isHovered={hoveredNodeId === node.id}
             isLocked={lockedCategoryId === node.id}
+            isEmphasized={itemLinks.has(node.id)}
             onClick={onNodeClick}
             onHover={setHoveredNodeId}
           />

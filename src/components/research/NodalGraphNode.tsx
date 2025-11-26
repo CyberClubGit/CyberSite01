@@ -10,14 +10,16 @@ interface NodalGraphNodeProps {
   node: Node;
   isHovered: boolean;
   isLocked: boolean;
+  isEmphasized: boolean; // New prop to indicate if the item node should be enlarged
   onClick: (node: Node) => void;
   onHover: (id: string | null) => void;
 }
 
 const ITEM_RADIUS_FOR_GLOW = 60; // Should match itemRadius in NodalGraphView
 
-const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovered, isLocked, onClick, onHover }) => {
-  const { x, y, radius, label, type, color, href, logoUrl } = node;
+const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovered, isLocked, isEmphasized, onClick, onHover }) => {
+  const { x, y, label, type, color, href, logoUrl, parentAttractor } = node;
+  let { radius } = node;
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -37,9 +39,38 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
   const isCenter = type === 'center';
   const isCategory = type === 'category';
 
-  const labelYOffset = radius + 8; // Adjust distance of label from node
-  const labelWidth = isCenter ? 120 : 100;
-  const labelHeight = 28;
+  if (isItem && isEmphasized) {
+    radius *= 3;
+  }
+
+  // --- Label Positioning ---
+  let labelXOffset = -50;
+  let labelYOffset = radius + 8;
+  let labelWidth = isCenter ? 120 : 100;
+  let labelHeight = 28;
+  let textAlign: 'center' | 'left' | 'right' = 'center';
+
+  if (isItem && isEmphasized && parentAttractor) {
+    labelWidth = 80;
+    labelHeight = 24;
+    textAlign = 'left';
+    // Position label to the side of the node
+    const isRightOfParent = x > parentAttractor.x;
+    if (isRightOfParent) {
+      labelXOffset = -labelWidth - 8; // To the left
+    } else {
+      labelXOffset = radius + 8; // To the right
+    }
+    labelYOffset = -labelHeight / 2; // Centered vertically
+  } else if (isItem) {
+    labelWidth = 80;
+    labelHeight = 24;
+    labelXOffset = -labelWidth / 2;
+    labelYOffset = radius + 4;
+  } else { // Center or Category
+    labelXOffset = -labelWidth / 2;
+  }
+  // --- End Label Positioning ---
 
   const scale = isHovered ? 1.2 : 1;
   const logoSize = radius * 1.2;
@@ -82,7 +113,7 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
         fillOpacity={isItem ? 0.8 : 0.5}
         stroke={color}
         strokeWidth="1"
-        className="group-hover:opacity-80"
+        className="group-hover:opacity-80 transition-all duration-300"
       />
       <circle
         r={radius + 3}
@@ -90,7 +121,7 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
         stroke={color}
         strokeWidth="0.5"
         strokeDasharray="2 2"
-        className="opacity-50 animate-pulse group-hover:opacity-0"
+        className="opacity-50 animate-pulse group-hover:opacity-0 transition-all duration-300"
       />
 
       {/* Logo inside node */}
@@ -114,64 +145,33 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
       )}
       
       {/* Label Elements */}
-      {!isItem && (
-        <foreignObject 
-          x={-labelWidth / 2} 
-          y={labelYOffset} 
-          width={labelWidth} 
-          height={labelHeight}
-          style={{ overflow: 'visible', pointerEvents: 'none' }}
+      <foreignObject 
+        x={labelXOffset} 
+        y={labelYOffset} 
+        width={labelWidth} 
+        height={labelHeight}
+        style={{ overflow: 'visible', pointerEvents: 'none' }}
+      >
+        <div 
+          xmlns="http://www.w3.org/1999/xhtml"
+          style={{
+            color: color,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            padding: isItem ? '2px 4px' : '4px 8px',
+            borderRadius: isItem ? '4px' : '8px',
+            textAlign: textAlign,
+            width: '100%',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            fontSize: isCenter ? '14px' : (isItem ? (isEmphasized ? '10px' : '8px') : '10px'),
+            fontFamily: isCenter ? 'Orbitron, sans-serif' : 'Kode Mono, monospace',
+            fontWeight: isCenter ? 'bold' : 'normal',
+          }}
         >
-          <div 
-            xmlns="http://www.w3.org/1999/xhtml"
-            style={{
-              color: color,
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-              padding: '4px 8px',
-              borderRadius: '8px',
-              textAlign: 'center',
-              width: '100%',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              fontSize: isCenter ? '14px' : '10px',
-              fontFamily: isCenter ? 'Orbitron, sans-serif' : 'Kode Mono, monospace',
-              fontWeight: isCenter ? 'bold' : 'normal',
-            }}
-          >
-            {label}
-          </div>
-        </foreignObject>
-      )}
-
-       {isItem && (
-        <foreignObject 
-          x={-80 / 2} 
-          y={radius + 4} 
-          width={80} 
-          height={24}
-          style={{ overflow: 'visible', pointerEvents: 'none' }}
-        >
-          <div 
-            xmlns="http://www.w3.org/1999/xhtml"
-            style={{
-              fontSize: '8px',
-              color: color,
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-              padding: '2px 4px',
-              borderRadius: '4px',
-              textAlign: 'center',
-              width: '100%',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              fontFamily: 'monospace',
-            }}
-          >
-            {label}
-          </div>
-        </foreignObject>
-      )}
+          {label}
+        </div>
+      </foreignObject>
     </g>
   );
 };
