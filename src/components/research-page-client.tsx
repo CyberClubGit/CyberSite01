@@ -166,86 +166,98 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
         />
       </div>
 
-      <section className="relative z-10 w-full py-8 md:py-12">
-        <div className="container px-4 md:px-6">
-          <Tabs 
-              value={viewMode} 
-              onValueChange={(value) => setViewMode(value as 'list' | 'graph')}
-              className="w-full"
-          >
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
-              <div className="space-y-4 mb-4 md:mb-0">
-                <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl capitalize">
-                  {category?.Name || 'Recherche'}
-                </h1>
-                <div className="flex items-center gap-2">
-                    <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-md" 
-                        onClick={() => navigateCategories('prev')}
-                        style={{ color: 'var(--brand-color)' }}
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <div 
-                        className="px-4 py-1 rounded-full bg-background/50 backdrop-blur-md font-headline uppercase text-center min-w-[200px] flex items-center justify-center gap-3 text-sm"
-                        style={{ color: 'var(--brand-color)', borderColor: 'var(--brand-color)' }}
-                    >
-                        {currentCategoryLogo && (
-                        <Image 
-                            src={currentCategoryLogo} 
-                            alt={`${currentCategoryName} logo`}
-                            width={16}
-                            height={16}
-                            className={cn(currentCategoryName !== 'Vue d\'ensemble' && 'dark:invert')}
-                            style={{ filter: resolvedTheme === 'dark' && currentCategoryName !== 'Vue d\'ensemble' ? 'invert(1)' : 'none' }}
-                        />
-                        )}
-                        <span>{currentCategoryName}</span>
-                    </div>
-                    <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-md" 
-                        onClick={() => navigateCategories('next')}
-                        style={{ color: 'var(--brand-color)' }}
-                    >
-                        <ArrowRight className="h-4 w-4" />
-                    </Button>
-                </div>
-                 <div className="pt-4 text-xs text-muted-foreground">
-                    <ul className="space-y-1">
-                      {itemsForCurrentCategory.map(item => (
-                        <li key={item.id} className="truncate">
-                           <Link href={item.pdfUrl || '#'} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                            {item.title}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                </div>
-              </div>
-              <div className="flex-shrink-0">
-                <TabsList>
-                  <TabsTrigger value="list">
-                    <List className="mr-2 h-4 w-4" />
-                    Liste
-                  </TabsTrigger>
-                  <TabsTrigger value="graph">
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Graphe Nodal
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-            </div>
-            
-            <TabsContent value="list">
-              <ListView items={finalData} />
-            </TabsContent>
-            <TabsContent value="graph" />
+      <div className="absolute top-8 w-full flex justify-center z-20">
+        <Tabs 
+            value={viewMode} 
+            onValueChange={(value) => setViewMode(value as 'list' | 'graph')}
+        >
+          <TabsList>
+            <TabsTrigger value="list">
+              <List className="mr-2 h-4 w-4" />
+              Liste
+            </TabsTrigger>
+            <TabsTrigger value="graph">
+              <Share2 className="mr-2 h-4 w-4" />
+              Graphe Nodal
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
 
-          </Tabs>
+      <section className="relative z-10 w-full py-24 md:py-32">
+        <div className="container px-4 md:px-6">
+          <TabsContent value="list">
+              <div className="flex flex-col items-center space-y-4 text-center mb-12">
+                <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl capitalize">
+                    {category?.Name || 'Recherche'}
+                </h1>
+                 <p className="max-w-[700px] text-muted-foreground md:text-xl">
+                  {category?.Description || ''}
+                </p>
+              </div>
+            <ListView items={finalData} />
+          </TabsContent>
+          <TabsContent value="graph" className="mt-0">
+             <div className="flex flex-col items-start gap-8">
+                <div>
+                    <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl capitalize">
+                        {category?.Name || 'Recherche'}
+                    </h1>
+                     <p className="max-w-[700px] text-muted-foreground md:text-xl mt-2">
+                        {category?.Description || ''}
+                    </p>
+                </div>
+                
+                <div className="p-4 rounded-lg bg-background/50 backdrop-blur-md border border-border/50">
+                    <div className="flex items-center gap-2">
+                        <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-md" 
+                            onClick={() => navigateCategories('prev')}
+                            style={{ color: 'var(--brand-color)' }}
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                        <div 
+                            className="px-4 py-1 rounded-full bg-transparent border font-headline uppercase text-center min-w-[200px] flex items-center justify-center gap-3 text-sm"
+                            style={{ color: 'var(--brand-color)', borderColor: 'var(--brand-color)' }}
+                        >
+                            {currentCategoryLogo && (
+                            <Image 
+                                src={currentCategoryLogo} 
+                                alt={`${currentCategoryName} logo`}
+                                width={16}
+                                height={16}
+                                className={cn(resolvedTheme === 'dark' && currentCategoryName !== 'Vue d\'ensemble' && 'invert')}
+                            />
+                            )}
+                            <span>{currentCategoryName}</span>
+                        </div>
+                        <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-md" 
+                            onClick={() => navigateCategories('next')}
+                            style={{ color: 'var(--brand-color)' }}
+                        >
+                            <ArrowRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+                     <div className="pt-4 text-xs text-muted-foreground">
+                        <ul className="space-y-1 columns-2 gap-4">
+                          {itemsForCurrentCategory.map(item => (
+                            <li key={item.id} className="truncate">
+                               <Link href={item.pdfUrl || '#'} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                                {item.title}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                    </div>
+                </div>
+              </div>
+          </TabsContent>
         </div>
       </section>
     </div>
