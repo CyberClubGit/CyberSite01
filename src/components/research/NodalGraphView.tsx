@@ -10,6 +10,14 @@ import { cn } from '@/lib/utils';
 import { PanZoom, type PanZoomApi } from './PanZoom';
 import { Loader2 } from 'lucide-react';
 import { createActivityColorMap } from '@/lib/color-utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
 
 interface NodalGraphViewProps {
   items: ProcessedItem[];
@@ -71,6 +79,13 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     return Array.from(categories).filter(cat => cat !== 'Cybernetics' && cat !== 'Other');
   }, [items]);
 
+  const sortedVisibleCategories = useMemo(() => {
+      return allCategories
+          .filter(cat => cat !== 'Cyber Club' && CATEGORY_ANGLES[cat] !== undefined)
+          .sort((a, b) => CATEGORY_ANGLES[a] - CATEGORY_ANGLES[b]);
+  }, [allCategories]);
+
+
   useEffect(() => {
     const categoryRadius = 350; 
     const itemRadius = 60;
@@ -93,11 +108,8 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
 
     // 2. Category Nodes (excluding Cyber Club)
     const categoryNodes: Record<string, Node> = {};
-    const mainCategories = allCategories.filter(cat => cat !== 'Cyber Club' && CATEGORY_ANGLES[cat] !== undefined);
     
-    const sortedCategories = mainCategories.sort((a, b) => CATEGORY_ANGLES[a] - CATEGORY_ANGLES[b]);
-    
-    sortedCategories.forEach(cat => {
+    sortedVisibleCategories.forEach(cat => {
       const angle = (CATEGORY_ANGLES[cat]) * (Math.PI / 180);
       const attractor = {
         x: categoryRadius * Math.cos(angle),
@@ -189,13 +201,24 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
 
     return () => clearTimeout(timeout);
 
-  }, [items, allCategories, resolvedTheme, setSimulationNodes, activityColorMap]);
+  }, [items, sortedVisibleCategories, resolvedTheme, setSimulationNodes, activityColorMap]);
 
   const onNodeClick = useCallback((node: Node) => {
     if (node.href && node.href !== '#') {
       window.open(node.href, '_blank');
     }
   }, []);
+
+  const handleCategorySelect = (categoryId: string) => {
+      if (!categoryId) {
+          panZoomRef.current?.zoomTo(0, 0, 0.4, true);
+          return;
+      }
+      const nodeToZoom = simulatedNodes.find(n => n.id === categoryId);
+      if (nodeToZoom) {
+          panZoomRef.current?.zoomTo(nodeToZoom.x, nodeToZoom.y, 1.2, true);
+      }
+  };
   
   const nodeMap = useMemo(() => {
     const map = new Map<string, Node>();
@@ -213,6 +236,23 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
           <span className="ml-2">Initializing simulation...</span>
         </div>
       )}
+      
+      <div className="absolute top-4 right-4 z-20">
+          <Select onValueChange={handleCategorySelect}>
+              <SelectTrigger className="w-[180px] bg-background/70 backdrop-blur-md">
+                  <SelectValue placeholder="Zoom sur catégorie" />
+              </SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="">Vue d'ensemble</SelectItem>
+                  {sortedVisibleCategories.map(cat => (
+                      <SelectItem key={`select-${cat}`} value={`cat-${cat}`}>
+                          {cat}
+                      </SelectItem>
+                  ))}
+              </SelectContent>
+          </Select>
+      </div>
+
       <PanZoom
         ref={panZoomRef}
         minZoom={0.05}
