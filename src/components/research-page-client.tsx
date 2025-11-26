@@ -1,16 +1,19 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { Brand, Category } from '@/lib/sheets';
 import { filterItemsByBrandActivity } from '@/lib/activity-filter';
 import { VideoBackground } from './video-background';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { List, Share2 } from 'lucide-react';
+import { List, Share2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import Link from 'next/link';
 import { NodalGraphView } from './research/NodalGraphView';
 import { cn } from '@/lib/utils';
+import { useTheme } from 'next-themes';
+import { Button } from './ui/button';
+import Image from 'next/image';
 
 type ProcessedItem = ReturnType<typeof import('@/lib/sheets').processGalleryLinks>;
 
@@ -20,6 +23,16 @@ interface ResearchPageClientProps {
   initialData: ProcessedItem[];
   brands: Brand[];
 }
+
+const CATEGORY_ANGLES: Record<string, number> = {
+  'Design': 0,
+  'Architecture': 60,
+  'Multimedias': 120,
+  'Textile': 180,
+  'Nature': 240,
+  'Mecatronics': 300,
+};
+
 
 const ListView = ({ items }: { items: ProcessedItem[] }) => (
   <div className="space-y-4">
@@ -42,7 +55,10 @@ const ListView = ({ items }: { items: ProcessedItem[] }) => (
 
 export function ResearchPageClient({ category, brand, initialData, brands }: ResearchPageClientProps) {
   const [viewMode, setViewMode] = useState<'list' | 'graph'>('graph');
-  
+  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0); // 0 for overview
+  const [lockedCategoryId, setLockedCategoryId] = useState<string | null>(null);
+  const { resolvedTheme } = useTheme();
+
   const finalData = useMemo(() => {
     const brandFiltered = filterItemsByBrandActivity(initialData, brand?.Brand);
     return brandFiltered.map(item => ({
@@ -51,6 +67,69 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
       description: item.Description || item.Content || '',
     }));
   }, [initialData, brand]);
+
+  const allCategories = useMemo(() => {
+    const categories = new Set<string>();
+    initialData.forEach(item => {
+        const itemCategories = item.Activity?.split(',').map(c => c.trim()) || [];
+        itemCategories.forEach(cat => categories.add(cat));
+    });
+    Object.keys(CATEGORY_ANGLES).forEach(cat => categories.add(cat));
+    return Array.from(categories);
+  }, [initialData]);
+
+  const sortedVisibleCategories = useMemo(() => {
+      return allCategories
+          .filter(cat => cat !== 'Cyber Club' && cat !== 'Cybernetics' && cat !== 'Other' && CATEGORY_ANGLES[cat] !== undefined)
+          .sort((a, b) => CATEGORY_ANGLES[a] - CATEGORY_ANGLES[b]);
+  }, [allCategories]);
+
+  const navigationCategories = useMemo(() => ['Vue d\'ensemble', ...sortedVisibleCategories], [sortedVisibleCategories]);
+  
+  const currentCategoryName = navigationCategories[currentCategoryIndex];
+
+  const itemsForCurrentCategory = useMemo(() => {
+    if (currentCategoryName === 'Vue d\'ensemble') {
+      return finalData;
+    }
+    return finalData.filter(item => {
+      const itemActivities = item.Activity?.split(',').map(c => c.trim()) || [];
+      return itemActivities.includes(currentCategoryName);
+    });
+  }, [finalData, currentCategoryName]);
+
+  const cyberClubLogo = useMemo(() => {
+      const brand = brands.find(b => b.Brand === 'Cyber Club');
+      return brand?.Logo || null;
+  }, [brands]);
+  
+  const currentCategoryBrand = brands.find(b => b.Activity === currentCategoryName);
+  const currentCategoryLogo = currentCategoryName === 'Vue d\'ensemble' 
+    ? cyberClubLogo
+    : currentCategoryBrand?.Logo || null;
+
+  const handleCategorySelect = useCallback((categoryName: string) => {
+      const index = navigationCategories.findIndex(c => c === categoryName);
+      if (index === -1) return;
+      
+      setCurrentCategoryIndex(index);
+
+      if (index === 0 || categoryName === 'all') { // "Vue d'ensemble"
+          setLockedCategoryId(null);
+      } else {
+          const categoryId = `cat-${categoryName}`;
+          setLockedCategoryId(categoryId);
+      }
+  }, [navigationCategories]);
+  
+  const navigateCategories = (direction: 'next' | 'prev') => {
+      const newIndex = direction === 'next'
+          ? (currentCategoryIndex + 1) % navigationCategories.length
+          : (currentCategoryIndex - 1 + navigationCategories.length) % navigationCategories.length;
+      
+      handleCategorySelect(navigationCategories[newIndex]);
+  };
+
 
   // Effect to lock/unlock page scroll based on view mode
   useEffect(() => {
@@ -73,14 +152,18 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
     <div className={cn("relative h-full min-h-[calc(100vh-4rem)] w-full")}>
       {category.Background && <VideoBackground src={category.Background} />}
 
-      {/* Nodal graph is now a background element */}
       <div 
         className={cn(
           "absolute inset-0 z-0 transition-opacity duration-500",
           viewMode === 'graph' ? 'opacity-100' : 'opacity-0 pointer-events-none'
         )}
       >
-        <NodalGraphView items={finalData} brands={brands} />
+        <NodalGraphView 
+          items={finalData} 
+          brands={brands}
+          onCategorySelect={handleCategorySelect}
+          lockedCategoryId={lockedCategoryId}
+        />
       </div>
 
       <section className="relative z-10 w-full py-8 md:py-12">
@@ -95,9 +178,53 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
                 <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl capitalize">
                   {category?.Name || 'Recherche'}
                 </h1>
-                <p className="max-w-[700px] text-muted-foreground">
-                  {category?.Description || `Explorez nos publications et nos travaux.`}
-                </p>
+                 <div className="flex items-center gap-2">
+                    <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-md" 
+                        onClick={() => navigateCategories('prev')}
+                        style={{ color: 'var(--brand-color)' }}
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <div 
+                        className="px-4 py-1 rounded-full bg-background/50 backdrop-blur-md font-headline uppercase text-center min-w-[200px] flex items-center justify-center gap-3 text-sm"
+                        style={{ color: 'var(--brand-color)', borderColor: 'var(--brand-color)' }}
+                    >
+                        {currentCategoryLogo && (
+                        <Image 
+                            src={currentCategoryLogo} 
+                            alt={`${currentCategoryName} logo`}
+                            width={16}
+                            height={16}
+                            className={cn(currentCategoryName !== 'Vue d\'ensemble' && 'dark:invert')}
+                            style={{ filter: resolvedTheme === 'dark' && currentCategoryName !== 'Vue d\'ensemble' ? 'invert(1)' : 'none' }}
+                        />
+                        )}
+                        <span>{currentCategoryName}</span>
+                    </div>
+                    <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-md" 
+                        onClick={() => navigateCategories('next')}
+                        style={{ color: 'var(--brand-color)' }}
+                    >
+                        <ArrowRight className="h-4 w-4" />
+                    </Button>
+                </div>
+                 <div className="pt-4 text-xs text-muted-foreground h-24 overflow-y-auto">
+                    <ul className="space-y-1">
+                      {itemsForCurrentCategory.map(item => (
+                        <li key={item.id} className="truncate">
+                           <Link href={item.pdfUrl || '#'} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                            {item.title}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                </div>
               </div>
               <div className="flex-shrink-0">
                 <TabsList>
@@ -116,7 +243,6 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
             <TabsContent value="list">
               <ListView items={finalData} />
             </TabsContent>
-            {/* The content for 'graph' is now handled by the background div */}
             <TabsContent value="graph" />
 
           </Tabs>

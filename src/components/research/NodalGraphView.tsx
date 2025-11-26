@@ -8,22 +8,15 @@ import { NodalGraphNode } from './NodalGraphNode';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { PanZoom, type PanZoomApi, type PanZoomState } from './PanZoom';
-import { Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { createActivityColorMap } from '@/lib/color-utils';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Button } from '../ui/button';
-import Image from 'next/image';
 
 
 interface NodalGraphViewProps {
   items: ProcessedItem[];
   brands: Brand[];
+  onCategorySelect: (categoryName: string) => void;
+  lockedCategoryId: string | null;
 }
 
 interface Link {
@@ -62,15 +55,12 @@ const ZOOM_LEVEL_CATEGORY = 1.2;
 const ZOOM_LEVEL_OVERVIEW = 0.4;
 const ATTRACTION_RADIUS = 30; // Screen pixels - REDUCED from 50 to make escaping easier
 
-export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands }) => {
+export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, onCategorySelect, lockedCategoryId }) => {
   const { resolvedTheme } = useTheme();
   const [links, setLinks] = useState<Link[]>([]);
   const panZoomRef = useRef<PanZoomApi>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-  const [isLocked, setIsLocked] = useState(false);
-  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0); // 0 for overview
-  const [lockedCategoryId, setLockedCategoryId] = useState<string | null>(null);
-  const interactionTimeoutRef = useRef<NodeJS.Timeout>();
+  const isLocked = !!lockedCategoryId;
 
   const { simulatedNodes, setNodes: setSimulationNodes } = useSimulation();
 
@@ -94,25 +84,18 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
   }, [brands]);
 
 
-  const allCategories = useMemo(() => {
-    const categories = new Set<string>();
-    items.forEach(item => {
-        const itemCategories = item.Activity?.split(',').map(c => c.trim()) || [];
-        itemCategories.forEach(cat => categories.add(cat));
-    });
-    // Ensure all predefined categories exist for stable layout
-    Object.keys(CATEGORY_ANGLES).forEach(cat => categories.add(cat));
-    
-    return Array.from(categories);
-  }, [items]);
-
   const sortedVisibleCategories = useMemo(() => {
-      return allCategories
+      const categories = new Set<string>();
+      items.forEach(item => {
+          const itemCategories = item.Activity?.split(',').map(c => c.trim()) || [];
+          itemCategories.forEach(cat => categories.add(cat));
+      });
+      Object.keys(CATEGORY_ANGLES).forEach(cat => categories.add(cat));
+      
+      return Array.from(categories)
           .filter(cat => cat !== 'Cyber Club' && cat !== 'Cybernetics' && cat !== 'Other' && CATEGORY_ANGLES[cat] !== undefined)
           .sort((a, b) => CATEGORY_ANGLES[a] - CATEGORY_ANGLES[b]);
-  }, [allCategories]);
-
-  const navigationCategories = useMemo(() => ['Vue d\'ensemble', ...sortedVisibleCategories], [sortedVisibleCategories]);
+  }, [items]);
 
   useEffect(() => {
     const categoryRadius = 350; 
@@ -232,58 +215,30 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     
     setLinks(newLinks);
     setSimulationNodes(newNodes);
-
-    const timeout = setTimeout(() => {
-        panZoomRef.current?.zoomTo(0, 0, ZOOM_LEVEL_OVERVIEW, true);
-    }, 500);
-
-    return () => clearTimeout(timeout);
-
   }, [items, sortedVisibleCategories, resolvedTheme, setSimulationNodes, activityColorMap, activityLogoMap, cyberClubLogo]);
+
+
+  useEffect(() => {
+     if (!simulatedNodes.length) return;
+     
+     if (lockedCategoryId) {
+       const nodeToZoom = simulatedNodes.find(n => n.id === lockedCategoryId);
+       if (nodeToZoom) {
+         panZoomRef.current?.zoomTo(nodeToZoom.x, nodeToZoom.y, ZOOM_LEVEL_CATEGORY, true);
+       }
+     } else {
+       panZoomRef.current?.zoomTo(0, 0, ZOOM_LEVEL_OVERVIEW, true);
+     }
+  }, [lockedCategoryId, simulatedNodes]);
 
   const onNodeClick = useCallback((node: Node) => {
     if (node.href && node.href !== '#') {
       window.open(node.href, '_blank');
     }
   }, []);
-
-  const handleCategorySelect = useCallback((categoryName: string) => {
-      const index = navigationCategories.findIndex(c => c === categoryName);
-      if (index === -1) return;
-      
-      setCurrentCategoryIndex(index);
-
-      if (index === 0 || categoryName === 'all') { // "Vue d'ensemble"
-          panZoomRef.current?.zoomTo(0, 0, ZOOM_LEVEL_OVERVIEW, true);
-          setIsLocked(false);
-          setLockedCategoryId(null);
-          return;
-      }
-      
-      const categoryId = `cat-${categoryName}`;
-      const nodeToZoom = simulatedNodes.find(n => n.id === categoryId);
-      if (nodeToZoom) {
-          panZoomRef.current?.zoomTo(nodeToZoom.x, nodeToZoom.y, ZOOM_LEVEL_CATEGORY, true);
-          setIsLocked(true);
-          setLockedCategoryId(nodeToZoom.id);
-      }
-  }, [navigationCategories, simulatedNodes]);
-
-  const navigateCategories = (direction: 'next' | 'prev') => {
-      const newIndex = direction === 'next'
-          ? (currentCategoryIndex + 1) % navigationCategories.length
-          : (currentCategoryIndex - 1 + navigationCategories.length) % navigationCategories.length;
-      
-      handleCategorySelect(navigationCategories[newIndex]);
-  };
-
+  
   const handleManualPan = () => {
-    setIsLocked(false); // Unlock on manual interaction
-    setLockedCategoryId(null);
-    setCurrentCategoryIndex(0); // Go back to overview state
-    clearTimeout(interactionTimeoutRef.current);
-    interactionTimeoutRef.current = setTimeout(() => {
-    }, 1500);
+    onCategorySelect('Vue d\'ensemble');
   };
   
   const handleTransformChange = useCallback((state: PanZoomState) => {
@@ -306,9 +261,9 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     }
 
     if (closestNode && minDistance * state.zoom < ATTRACTION_RADIUS) {
-      handleCategorySelect(closestNode.label);
+      onCategorySelect(closestNode.label);
     }
-  }, [isLocked, simulatedNodes, handleCategorySelect]);
+  }, [isLocked, simulatedNodes, onCategorySelect]);
   
   const nodeMap = useMemo(() => {
     const map = new Map<string, Node>();
@@ -328,13 +283,6 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
   }, [links, lockedCategoryId]);
 
   const hasSimulated = simulatedNodes.length > 0;
-  
-  const currentCategoryName = navigationCategories[currentCategoryIndex];
-  const currentCategoryBrand = brands.find(b => b.Activity === currentCategoryName);
-  const currentCategoryLogo = currentCategoryName === 'Vue d\'ensemble' 
-    ? cyberClubLogo
-    : currentCategoryBrand?.Logo || null;
-
 
   return (
     <div className="relative w-full h-full bg-background/50 backdrop-blur-sm overflow-hidden">
@@ -344,43 +292,6 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
           <span className="ml-2">Initializing simulation...</span>
         </div>
       )}
-      
-       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="h-10 w-10 rounded-full bg-background/70 backdrop-blur-md" 
-            onClick={() => navigateCategories('prev')}
-            style={{ color: 'var(--brand-color)' }}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div 
-            className="px-6 py-2 rounded-full bg-background/70 backdrop-blur-md font-headline uppercase text-center min-w-[250px] flex items-center justify-center gap-3"
-            style={{ color: 'var(--brand-color)', borderColor: 'var(--brand-color)' }}
-          >
-            {currentCategoryLogo && (
-              <Image 
-                src={currentCategoryLogo} 
-                alt={`${currentCategoryName} logo`}
-                width={20}
-                height={20}
-                className={cn(currentCategoryName !== 'Vue d\'ensemble' && 'dark:invert')}
-                style={{ filter: resolvedTheme === 'dark' && currentCategoryName !== 'Vue d\'ensemble' ? 'invert(1)' : 'none' }}
-              />
-            )}
-            <span>{currentCategoryName}</span>
-          </div>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="h-10 w-10 rounded-full bg-background/70 backdrop-blur-md" 
-            onClick={() => navigateCategories('next')}
-            style={{ color: 'var(--brand-color)' }}
-          >
-            <ArrowRight className="h-5 w-5" />
-          </Button>
-      </div>
 
       <PanZoom
         ref={panZoomRef}
