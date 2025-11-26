@@ -51,17 +51,31 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
   let textAlign: 'center' | 'left' | 'right' = 'center';
 
   if (isItem && isEmphasized && parentAttractor) {
-    labelWidth = 80;
-    labelHeight = 24;
-    textAlign = 'left';
-    // Position label to the side of the node
-    const isRightOfParent = x > parentAttractor.x;
-    if (isRightOfParent) {
-      labelXOffset = -labelWidth - 8; // To the left
-    } else {
-      labelXOffset = radius + 8; // To the right
-    }
-    labelYOffset = -labelHeight / 2; // Centered vertically
+      const deltaX = x - parentAttractor.x;
+      const deltaY = y - parentAttractor.y;
+      labelWidth = 80;
+      labelHeight = 24;
+
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        // Horizontally dominant
+        if (deltaX > 0) { // Node is to the right
+            labelXOffset = radius + 8;
+            textAlign = 'left';
+        } else { // Node is to the left
+            labelXOffset = -labelWidth - 8;
+            textAlign = 'right';
+        }
+        labelYOffset = -labelHeight / 2;
+      } else {
+        // Vertically dominant
+        textAlign = 'center';
+        if (deltaY > 0) { // Node is below
+            labelYOffset = radius + 8;
+        } else { // Node is above
+            labelYOffset = -labelHeight - 8;
+        }
+        labelXOffset = -labelWidth / 2;
+      }
   } else if (isItem) {
     labelWidth = 80;
     labelHeight = 24;
