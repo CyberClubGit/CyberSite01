@@ -95,7 +95,7 @@ export function ProjectReelOverlay({ project, onClose }: ProjectReelOverlayProps
       </div>
       
       {/* Slide Navigation */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4 z-20">
+      <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-4 z-20">
         <button 
           onClick={() => setActiveSlide('info')}
           className={cn(
