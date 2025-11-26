@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -6,7 +5,7 @@ import type { Brand, Category } from '@/lib/sheets';
 import { filterItemsByBrandActivity } from '@/lib/activity-filter';
 import { VideoBackground } from './video-background';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { List, Share2, AppWindow, ArrowLeft, ArrowRight, X } from 'lucide-react';
+import { List, Share2, AppWindow, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import Link from 'next/link';
 import { NodalGraphView } from './research/NodalGraphView';
@@ -29,36 +28,50 @@ const CATEGORY_ANGLES: Record<string, number> = {
   'Mecatronics': 300,
 };
 
-const ListView = ({ items, category, brand }: { items: ProcessedItem[], category: Category, brand?: Brand }) => (
+const ListView = ({ items, onOpenApp }: { items: ProcessedItem[], onOpenApp: (url: string) => void; }) => (
     <section className="w-full py-24 md:py-32 relative z-10">
         <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center space-y-4 text-center mb-12">
-                <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl capitalize">
-                    {category?.Name || 'Recherche'}
-                </h1>
-                <p className="max-w-[700px] text-muted-foreground md:text-xl">
-                    {category?.Description || ''}
-                </p>
-            </div>
             <div className="space-y-4">
                 {items.map((item) => (
-                <Link href={item.pdfUrl || '#'} key={item.id} target="_blank" rel="noopener noreferrer" className="block">
-                    <Card className="hover:border-primary hover:bg-muted/50 transition-all">
-                    <CardHeader>
-                        <CardTitle className="font-headline text-xl">{item.title}</CardTitle>
-                        <CardDescription className="text-xs text-muted-foreground">{item.Date}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
-                    </CardContent>
+                    <Card key={item.id} className="hover:border-primary hover:bg-muted/50 transition-all flex flex-col sm:flex-row">
+                        <div className="flex-1">
+                            <CardHeader>
+                                <CardTitle className="font-headline text-xl">{item.title}</CardTitle>
+                                <CardDescription className="text-xs text-muted-foreground">{item.Date}</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
+                            </CardContent>
+                        </div>
+                        <div className="p-6 flex flex-col sm:flex-row items-center gap-4 border-t sm:border-t-0 sm:border-l">
+                           {item.pdfUrl && (
+                             <Button variant="outline" asChild className="w-full sm:w-auto">
+                                <Link href={item.pdfUrl} target="_blank" rel="noopener noreferrer">
+                                    Voir PDF
+                                </Link>
+                            </Button>
+                           )}
+                           {(item as any).appUrl && (
+                             <Button onClick={() => onOpenApp((item as any).appUrl)} className="w-full sm:w-auto">
+                                <AppWindow className="mr-2 h-4 w-4" />
+                                Ouvrir l'app
+                            </Button>
+                           )}
+                        </div>
                     </Card>
-                </Link>
                 ))}
             </div>
         </div>
     </section>
 );
 
+
+interface ResearchPageClientProps {
+  category: Category;
+  brand?: Brand;
+  initialData: ProcessedItem[];
+  brands: Brand[];
+}
 
 export function ResearchPageClient({ category, brand, initialData, brands }: ResearchPageClientProps) {
   const [viewMode, setViewMode] = useState<'list' | 'graph' | 'app'>('graph');
@@ -73,7 +86,7 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
       ...item,
       title: item.Title || item.Name || item.Item || 'Untitled',
       description: item.Description || item.Content || '',
-      appUrl: item['Url app'] || null,
+      appUrl: item['Url app'] || item['Url App'] || null,
     }));
   }, [initialData, brand]);
 
@@ -192,7 +205,15 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
             </TabsList>
 
             <TabsContent value="list" className="mt-0 h-full">
-                <ListView items={finalData} category={category} brand={brand}/>
+                <div className="absolute top-24 left-4 md:left-8 z-10 max-w-sm w-[calc(100%-2rem)] md:w-auto">
+                    <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl capitalize">
+                        {category?.Name || 'Recherche'}
+                    </h1>
+                    <p className="max-w-[700px] text-muted-foreground md:text-xl mt-2">
+                        {category?.Description || ''}
+                    </p>
+                </div>
+                <ListView items={finalData} onOpenApp={handleOpenApp}/>
             </TabsContent>
 
             <TabsContent value="graph" className="mt-0 h-full w-full">
