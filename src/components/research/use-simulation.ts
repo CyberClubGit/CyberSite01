@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -14,6 +15,7 @@ export interface Node {
   attractor: { x: number; y: number };
   color: string;
   href?: string;
+  logoUrl?: string | null;
 }
 
 interface SimulationOptions {

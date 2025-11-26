@@ -76,6 +76,21 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     return createActivityColorMap(brands, resolvedTheme === 'dark' ? 'dark' : 'light');
   }, [brands, resolvedTheme]);
 
+  const activityLogoMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    brands.forEach(brand => {
+        if (brand.Activity && brand.Logo) {
+            map[brand.Activity] = brand.Logo;
+        }
+    });
+    return map;
+  }, [brands]);
+
+  const cyberClubLogo = useMemo(() => {
+      return brands.find(b => b.Brand === 'Cyber Club')?.Logo || null;
+  }, [brands]);
+
+
   const allCategories = useMemo(() => {
     const categories = new Set<string>();
     items.forEach(item => {
@@ -108,11 +123,12 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
       id: 'center',
       x: 0, y: 0,
       vx: 0, vy: 0,
-      radius: 20,
+      radius: 24, // Increased size by 20% from 20
       label: 'Cyber Club',
       type: 'center',
       attractor: { x: 0, y: 0 },
       color: getNodeColor(resolvedTheme, 'center'),
+      logoUrl: cyberClubLogo,
     };
     newNodes.push(centerNode);
 
@@ -135,6 +151,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
         type: 'category',
         attractor,
         color: getNodeColor(resolvedTheme, 'category', activityColorMap[cat]),
+        logoUrl: activityLogoMap[cat] || null,
       };
       categoryNodes[cat] = catNode;
       newNodes.push(catNode);
@@ -211,7 +228,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
 
     return () => clearTimeout(timeout);
 
-  }, [items, sortedVisibleCategories, resolvedTheme, setSimulationNodes, activityColorMap]);
+  }, [items, sortedVisibleCategories, resolvedTheme, setSimulationNodes, activityColorMap, activityLogoMap, cyberClubLogo]);
 
   const onNodeClick = useCallback((node: Node) => {
     if (node.href && node.href !== '#') {
@@ -225,7 +242,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
       
       setCurrentCategoryIndex(index);
 
-      if (index === 0) { // "Vue d'ensemble"
+      if (index === 0 || categoryName === 'all') { // "Vue d'ensemble"
           panZoomRef.current?.zoomTo(0, 0, ZOOM_LEVEL_OVERVIEW, true);
           setIsLocked(false);
           setLockedCategoryId(null);
@@ -300,13 +317,17 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
       )}
       
       <div className="absolute top-4 right-4 z-20">
-          <Select onValueChange={handleCategorySelect} value={navigationCategories[currentCategoryIndex] || 'Vue d\'ensemble'}>
+          <Select 
+            onValueChange={handleCategorySelect} 
+            value={navigationCategories[currentCategoryIndex] === 'Vue d\'ensemble' ? 'all' : navigationCategories[currentCategoryIndex]}
+          >
               <SelectTrigger className="w-[220px] bg-background/70 backdrop-blur-md">
                   <SelectValue placeholder="Naviguer vers une catégorie" />
               </SelectTrigger>
               <SelectContent>
-                  {navigationCategories.map((cat, index) => (
-                      <SelectItem key={`select-${index}`} value={cat}>
+                   <SelectItem value="all">Vue d'ensemble</SelectItem>
+                  {sortedVisibleCategories.map((cat) => (
+                      <SelectItem key={`select-${cat}`} value={cat}>
                           {cat}
                       </SelectItem>
                   ))}
@@ -319,7 +340,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="px-4 py-2 rounded-full bg-background/70 backdrop-blur-md font-mono text-center min-w-[220px]">
-            {navigationCategories[currentCategoryIndex] || 'Vue d\'ensemble'}
+            {navigationCategories[currentCategoryIndex]}
           </div>
           <Button variant="outline" size="icon" className="h-10 w-10 rounded-full bg-background/70 backdrop-blur-md" onClick={() => navigateCategories('next')}>
             <ArrowRight className="h-5 w-5" />
@@ -374,4 +395,3 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     </div>
   );
 };
-
