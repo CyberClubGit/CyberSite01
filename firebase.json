@@ -1,14 +1,4 @@
-
 {
-  "hosting": {
-    "target": "live",
-    "public": "out",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ]
-  },
   "functions": {
     "source": "functions"
   }
