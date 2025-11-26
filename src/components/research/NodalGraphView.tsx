@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
@@ -62,25 +63,30 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
   const allCategories = useMemo(() => {
     const categories = new Set<string>();
     items.forEach(item => {
-      const itemCategories = item.Activity?.split(',').map(c => c.trim()) || ['Other'];
-      itemCategories.forEach(cat => categories.add(cat));
+        // Inclure 'Cyber Club' comme une catégorie potentielle
+        const itemCategories = item.Activity?.split(',').map(c => c.trim()) || ['Other'];
+        if (itemCategories.length === 0) {
+            categories.add('Other');
+        } else {
+            itemCategories.forEach(cat => categories.add(cat));
+        }
     });
     // Ensure all predefined categories exist for stable layout
     Object.keys(CATEGORY_ANGLES).forEach(cat => categories.add(cat));
     
-    // Explicitly filter out unwanted categories
+    // Explicitly filter out unwanted categories from the main ring
     return Array.from(categories).filter(cat => cat !== 'Cybernetics' && cat !== 'Other');
   }, [items]);
 
   useEffect(() => {
-    const categoryRadius = 350; // Increased radius for more space
-    const itemRadius = 150;     // Radius for items around categories
+    const categoryRadius = 350; 
+    const itemRadius = 80;     // Reduced radius to bring items closer
     
     const newNodes: Node[] = [];
     const newLinks: Link[] = [];
 
     // 1. Centre Node
-    newNodes.push({
+    const centerNode: Node = {
       id: 'center',
       x: 0, y: 0,
       vx: 0, vy: 0,
@@ -89,12 +95,14 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
       type: 'center',
       attractor: { x: 0, y: 0 },
       color: getNodeColor(resolvedTheme, 'center'),
-    });
+    };
+    newNodes.push(centerNode);
 
-    // 2. Category Nodes
+    // 2. Category Nodes (excluding Cyber Club)
     const categoryNodes: Record<string, Node> = {};
-    const sortedCategories = allCategories.sort((a, b) => (CATEGORY_ANGLES[a] ?? 999) - (CATEGORY_ANGLES[b] ?? 999));
-
+    const mainCategories = allCategories.filter(cat => cat !== 'Cyber Club');
+    const sortedCategories = mainCategories.sort((a, b) => (CATEGORY_ANGLES[a] ?? 999) - (CATEGORY_ANGLES[b] ?? 999));
+    
     sortedCategories.forEach(cat => {
       const angle = (CATEGORY_ANGLES[cat] ?? Math.random() * 360) * (Math.PI / 180);
       const attractor = {
@@ -117,53 +125,67 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
       newLinks.push({ source: 'center', target: catNode.id });
     });
     
-    // Group items by category for radial layout
-    const itemsByCategory: Record<string, ProcessedItem[]> = {};
-
+    // 3. Group items by their activities
+    const itemsByActivity: Record<string, ProcessedItem[]> = {};
     items.forEach(item => {
-        const itemCategories = item.Activity?.split(',').map(c => c.trim()).filter(c => allCategories.includes(c));
-        
-        itemCategories.forEach(categoryName => {
-            if (!itemsByCategory[categoryName]) {
-                itemsByCategory[categoryName] = [];
-            }
-            itemsByCategory[categoryName].push(item);
-        });
+        const itemActivities = item.Activity?.split(',').map(c => c.trim()).filter(Boolean);
+        if (itemActivities && itemActivities.length > 0) {
+            itemActivities.forEach(activity => {
+                if (!itemsByActivity[activity]) itemsByActivity[activity] = [];
+                itemsByActivity[activity].push(item);
+            });
+        }
     });
 
+    // 4. Create Item Nodes
+    Object.keys(itemsByActivity).forEach(activityName => {
+        const activityItems = itemsByActivity[activityName];
+        
+        // **Perfect Radial Distribution**
+        const angleStep = (2 * Math.PI) / (activityItems.length || 1);
+        
+        // Handle "Cyber Club" items as a special case
+        if (activityName === 'Cyber Club') {
+            activityItems.forEach((item, index) => {
+                const angle = index * angleStep;
+                const attractor = {
+                    x: centerNode.x + itemRadius * 1.5 * Math.cos(angle), // a bit further out from center
+                    y: centerNode.y + itemRadius * 1.5 * Math.sin(angle),
+                };
+                const itemNode: Node = {
+                    id: `${item.id}-${activityName}`,
+                    x: attractor.x, y: attractor.y,
+                    vx: 0, vy: 0, radius: 6, label: item.title, type: 'item',
+                    attractor,
+                    color: getNodeColor(resolvedTheme, 'item'),
+                    href: item.pdfUrl || '#'
+                };
+                newNodes.push(itemNode);
+                newLinks.push({ source: centerNode.id, target: itemNode.id });
+            });
+        } else {
+            // Handle regular category items
+            const categoryNode = categoryNodes[activityName];
+            if (!categoryNode) return;
 
-    // 3. Item Nodes - With radial positioning
-    Object.keys(itemsByCategory).forEach(categoryName => {
-        const categoryNode = categoryNodes[categoryName];
-        if (!categoryNode) return;
-
-        const categoryItems = itemsByCategory[categoryName];
-        const angleStep = (2 * Math.PI) / (categoryItems.length || 1);
-
-        categoryItems.forEach((item, index) => {
-            const itemNodeId = `${item.id}-${categoryName}`;
-            const angle = index * angleStep;
-
-            const attractor = {
-              x: categoryNode.attractor.x + itemRadius * Math.cos(angle),
-              y: categoryNode.attractor.y + itemRadius * Math.sin(angle),
-            };
-            
-            const itemNode: Node = {
-                id: itemNodeId,
-                x: attractor.x + (Math.random() - 0.5) * 20,
-                y: attractor.y + (Math.random() - 0.5) * 20,
-                vx: 0, vy: 0,
-                radius: 6,
-                label: item.title,
-                type: 'item',
-                attractor,
-                color: getNodeColor(resolvedTheme, 'item'),
-                href: item.pdfUrl || '#',
-            };
-            newNodes.push(itemNode);
-            newLinks.push({ source: categoryNode.id, target: itemNode.id });
-        });
+            activityItems.forEach((item, index) => {
+                const angle = index * angleStep;
+                const attractor = {
+                    x: categoryNode.attractor.x + itemRadius * Math.cos(angle),
+                    y: categoryNode.attractor.y + itemRadius * Math.sin(angle),
+                };
+                const itemNode: Node = {
+                    id: `${item.id}-${activityName}`,
+                    x: attractor.x, y: attractor.y,
+                    vx: 0, vy: 0, radius: 6, label: item.title, type: 'item',
+                    attractor,
+                    color: getNodeColor(resolvedTheme, 'item'),
+                    href: item.pdfUrl || '#'
+                };
+                newNodes.push(itemNode);
+                newLinks.push({ source: categoryNode.id, target: itemNode.id });
+            });
+        }
     });
     
     setLinks(newLinks);
