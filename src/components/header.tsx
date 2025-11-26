@@ -52,6 +52,23 @@ export function Header({ categories, brands }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
 
+  // Dynamic Favicon Update Effect
+  useEffect(() => {
+    if (!selectedBrand || !brands.length) return;
+
+    const brand = brands.find(b => b.Brand === selectedBrand);
+    const faviconUrl = brand?.Logo || '/icon.ico'; // Fallback to default
+
+    let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.href = faviconUrl;
+
+  }, [selectedBrand, brands]);
+
   const getCurrentCategorySlug = useCallback(() => {
     const pathParts = pathname.split('/').filter(p => p);
     if (pathParts.length === 0) return 'home';
