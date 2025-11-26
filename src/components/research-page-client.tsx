@@ -174,11 +174,11 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
               className="w-full"
           >
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
-              <div className="space-y-2 mb-4 md:mb-0">
+              <div className="space-y-4 mb-4 md:mb-0">
                 <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl capitalize">
                   {category?.Name || 'Recherche'}
                 </h1>
-                 <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
                     <Button 
                         variant="outline" 
                         size="icon" 
@@ -214,7 +214,7 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
                         <ArrowRight className="h-4 w-4" />
                     </Button>
                 </div>
-                 <div className="pt-4 text-xs text-muted-foreground h-24 overflow-y-auto">
+                 <div className="pt-4 text-xs text-muted-foreground">
                     <ul className="space-y-1">
                       {itemsForCurrentCategory.map(item => (
                         <li key={item.id} className="truncate">
