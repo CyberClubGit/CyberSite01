@@ -26,8 +26,12 @@ export function getEmbeddableVideoUrl(url: string | null | undefined): string | 
     return `https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&controls=0&mute=1&loop=1&playlist=${youtubeId}`;
   }
 
-  // If it's a Google Drive link, it should have been pre-processed to a direct link.
-  // We just return it as is. This also handles direct MP4 links.
+  const googleDriveId = extractGoogleDriveId(url);
+  if (googleDriveId) {
+    return `https://drive.google.com/uc?export=download&id=${googleDriveId}`;
+  }
+  
+  // For other direct links (like pre-processed ones)
   return url;
 }
 
@@ -49,3 +53,4 @@ export function getProxiedPdfUrl(url: string | null | undefined): string {
   // For other URLs, we also try the proxy
   return `https://corsproxy.io/?${encodeURIComponent(url)}`;
 }
+
