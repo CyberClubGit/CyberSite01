@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { List, Share2, AppWindow, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import Link from 'next/link';
-import { NodalGraphView, type Node } from './research/NodalGraphView';
+import { NodalGraphView } from './research/NodalGraphView';
+import type { Node } from './research/use-simulation';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
 import { Button } from './ui/button';
@@ -54,7 +55,7 @@ const ListView = ({ items, onOpenApp }: { items: ProcessedItem[], onOpenApp: (ur
                            {(item as any).appUrl && (
                              <Button onClick={() => onOpenApp((item as any).appUrl)} className="w-full sm:w-auto">
                                 <AppWindow className="mr-2 h-4 w-4" />
-                                Ouvrir l'app
+                                Ouvrir l\'app
                             </Button>
                            )}
                         </div>

@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import type { Brand, ProcessedItem } from '@/lib/sheets';
+import type { Brand } from '@/lib/sheets';
 import { useSimulation, type Node } from './use-simulation';
 import { NodalGraphNode } from './NodalGraphNode';
 import { useTheme } from 'next-themes';
@@ -11,6 +11,7 @@ import { PanZoom, type PanZoomApi, type PanZoomState } from './PanZoom';
 import { Loader2 } from 'lucide-react';
 import { createActivityColorMap } from '@/lib/color-utils';
 import { useDebouncedCallback } from 'use-debounce';
+import type { Project } from '@/lib/sheets';
 
 export type ViewState = 
   | { level: 'overview' }
@@ -18,7 +19,7 @@ export type ViewState =
   | { level: 'item', targetNode: Node };
 
 interface NodalGraphViewProps {
-  items: ProcessedItem[];
+  items: Project[];
   brands: Brand[];
   viewState: ViewState;
   onViewStateChange: (newState: ViewState) => void;
@@ -119,7 +120,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, v
       newLinks.push({ source: 'center', target: catNode.id, gradientId: `grad-${catNode.id}` });
     });
 
-    const itemsByActivity: Record<string, ProcessedItem[]> = {};
+    const itemsByActivity: Record<string, Project[]> = {};
     items.forEach(item => {
       const itemActivities = item.Activity?.split(',').map(c => c.trim()).filter(Boolean);
       if (itemActivities?.length) {
