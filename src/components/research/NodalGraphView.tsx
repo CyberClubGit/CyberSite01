@@ -13,6 +13,12 @@ interface NodalGraphViewProps {
   items: ProcessedItem[];
 }
 
+interface Link {
+  source: string; // ID of source node
+  target: string; // ID of target node
+}
+
+
 // Catégories fixes et leurs positions angulaires
 const CATEGORY_ANGLES: Record<string, number> = {
   'Design': 0,
@@ -40,7 +46,7 @@ const getNodeColor = (theme: string | undefined, type: 'center' | 'category' | '
 
 export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items }) => {
   const { resolvedTheme } = useTheme();
-  const [nodes, setNodes] = useState<Node[]>([]);
+  const [links, setLinks] = useState<Link[]>([]);
   const panZoomRef = useRef<PanZoomApi>(null);
 
   const { simulatedNodes, setNodes: setSimulationNodes } = useSimulation({
@@ -60,20 +66,19 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items }) => {
 
   useEffect(() => {
     const categoryRadius = 250;
-    const itemRadius = 100;
-    const centerAttractor = { x: 0, y: 0 };
-
-    const initialNodes: Node[] = [];
+    
+    const newNodes: Node[] = [];
+    const newLinks: Link[] = [];
 
     // 1. Centre Node
-    initialNodes.push({
+    newNodes.push({
       id: 'center',
       x: 0, y: 0,
       vx: 0, vy: 0,
       radius: 20,
       label: 'Cyber Club',
       type: 'center',
-      attractor: centerAttractor,
+      attractor: { x: 0, y: 0 },
       color: getNodeColor(resolvedTheme, 'center'),
     });
 
@@ -97,33 +102,48 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items }) => {
         color: getNodeColor(resolvedTheme, 'category'),
       };
       categoryNodes[cat] = catNode;
-      initialNodes.push(catNode);
+      newNodes.push(catNode);
+      // Link from center to category
+      newLinks.push({ source: 'center', target: catNode.id });
     });
 
-    // 3. Item Nodes
+    // 3. Item Nodes - CRITICAL CHANGE: DUPLICATE FOR MULTI-CATEGORY
     items.forEach(item => {
       const itemCategories = item.Activity?.split(',').map(c => c.trim()).filter(c => allCategories.includes(c));
-      const parentCategory = itemCategories.length > 0 ? itemCategories[0] : 'Other';
-      const categoryNode = categoryNodes[parentCategory];
-
-      if (categoryNode) {
-        initialNodes.push({
-          id: item.id,
-          x: categoryNode.x + (Math.random() - 0.5) * 50,
-          y: categoryNode.y + (Math.random() - 0.5) * 50,
-          vx: 0, vy: 0,
-          radius: 6,
-          label: item.title,
-          type: 'item',
-          attractor: { x: categoryNode.x, y: categoryNode.y },
-          color: getNodeColor(resolvedTheme, 'item'),
-          href: item.pdfUrl || '#',
-        });
+      
+      // If no valid category, assign to 'Other'
+      if (itemCategories.length === 0) {
+        itemCategories.push('Other');
       }
+
+      itemCategories.forEach(categoryName => {
+        const categoryNode = categoryNodes[categoryName];
+        if (categoryNode) {
+          // Create a unique ID for each item instance per category
+          const itemNodeId = `${item.id}-${categoryName}`;
+          
+          const itemNode: Node = {
+            id: itemNodeId,
+            x: categoryNode.x + (Math.random() - 0.5) * 50,
+            y: categoryNode.y + (Math.random() - 0.5) * 50,
+            vx: 0, vy: 0,
+            radius: 6,
+            label: item.title,
+            type: 'item',
+            attractor: { x: categoryNode.x, y: categoryNode.y },
+            color: getNodeColor(resolvedTheme, 'item'),
+            href: item.pdfUrl || '#',
+          };
+          newNodes.push(itemNode);
+          
+          // Link from category to this specific item instance
+          newLinks.push({ source: categoryNode.id, target: itemNode.id });
+        }
+      });
     });
     
-    setNodes(initialNodes);
-    setSimulationNodes(initialNodes);
+    setLinks(newLinks);
+    setSimulationNodes(newNodes);
 
     // Auto-frame on load
     const timeout = setTimeout(() => {
@@ -135,10 +155,16 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items }) => {
   }, [items, allCategories, resolvedTheme, setSimulationNodes]);
 
   const onNodeClick = useCallback((node: Node) => {
-    if (node.href) {
+    if (node.href && node.href !== '#') {
       window.open(node.href, '_blank');
     }
   }, []);
+  
+  const nodeMap = useMemo(() => {
+    const map = new Map<string, Node>();
+    simulatedNodes.forEach(node => map.set(node.id, node));
+    return map;
+  }, [simulatedNodes]);
 
   const hasSimulated = simulatedNodes.length > 0;
 
@@ -156,6 +182,28 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items }) => {
         maxZoom={3}
         className={cn("w-full h-full transition-opacity duration-500", hasSimulated ? 'opacity-100' : 'opacity-0')}
       >
+        {/* Render Links */}
+        <g>
+          {links.map((link, i) => {
+            const source = nodeMap.get(link.source);
+            const target = nodeMap.get(link.target);
+            if (!source || !target) return null;
+            return (
+              <line
+                key={i}
+                x1={source.x}
+                y1={source.y}
+                x2={target.x}
+                y2={target.y}
+                stroke={source.color}
+                strokeWidth="0.5"
+                strokeOpacity="0.4"
+              />
+            );
+          })}
+        </g>
+        
+        {/* Render Nodes */}
         {simulatedNodes.map(node => (
           <NodalGraphNode
             key={node.id}
