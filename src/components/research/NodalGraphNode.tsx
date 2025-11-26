@@ -78,7 +78,7 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
       const deltaY = y;
       labelWidth = 150;
       labelHeight = 32;
-      labelFontSize = '16px';
+      labelFontSize = '64px'; // Increased font size for overview
       
       if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5) { // More horizontal
         textAlign = deltaX > 0 ? 'left' : 'right';
