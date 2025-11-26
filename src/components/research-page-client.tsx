@@ -324,9 +324,9 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
             
         {viewMode === 'graph' && (
             <>
-                <div className="absolute top-24 left-4 md:left-8 z-10 max-w-sm w-[calc(100%-2rem)] md:w-auto">
+                <div className="absolute top-24 left-4 md:left-8 z-10 max-w-sm w-[calc(100%-2rem)] md:w-auto space-y-4">
                     {/* Bloc Titre + Slogan */}
-                    <div className="mb-4">
+                    <div>
                         <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl capitalize">
                             {category?.Name || 'Recherche'}
                         </h1>
@@ -335,8 +335,8 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
                         </p>
                     </div>
                     
-                    {/* Boîte Flottante avec sélecteur et liste */}
-                     <div className="p-4 rounded-lg bg-background/50 backdrop-blur-md border border-border/50 flex flex-col flex-1 min-h-0 max-h-[calc(100vh-14rem-6rem)]">
+                    {/* Boîte pour le sélecteur */}
+                    <div className="p-4 rounded-lg bg-background/50 backdrop-blur-md border border-border/50">
                         <div className="flex items-center justify-center gap-2">
                             <Button 
                                 variant="outline" 
@@ -372,8 +372,11 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
                                 <ArrowRight className="h-4 w-4" />
                             </Button>
                         </div>
-                        
-                        <ScrollArea className="flex-1 mt-4 pt-4 border-t border-border/50">
+                    </div>
+
+                    {/* Boîte pour la liste */}
+                    <div className="p-4 rounded-lg bg-background/50 backdrop-blur-md border border-border/50 flex flex-col flex-1 min-h-0 max-h-[calc(100vh-14rem-12rem)]">
+                        <ScrollArea className="flex-1">
                             <ul className="space-y-1 text-xs">
                             {itemsForCurrentCategory.map(item => (
                                 <li 
@@ -412,5 +415,3 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
     </div>
   );
 }
-
-    

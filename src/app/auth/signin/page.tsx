@@ -28,7 +28,7 @@ export default function SignInPage() {
         const result = await getRedirectResult(auth);
         if (result) {
           // User successfully signed in via redirect.
-          router.push('/');
+          router.push('/profile');
         } else {
           setIsCheckingRedirect(false);
         }
@@ -47,7 +47,7 @@ export default function SignInPage() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push('/'); // Redirect to home
+      router.push('/profile'); // Redirect to profile
     } catch (err: any) {
       setError(err.message || 'Erreur de connexion');
     } finally {
