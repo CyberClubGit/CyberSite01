@@ -8,11 +8,12 @@ import { cn } from '@/lib/utils';
 interface NodalGraphNodeProps {
   node: Node;
   isHovered: boolean;
+  isLocked: boolean;
   onClick: (node: Node) => void;
   onHover: (id: string | null) => void;
 }
 
-const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovered, onClick, onHover }) => {
+const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovered, isLocked, onClick, onHover }) => {
   const { x, y, radius, label, type, color, href } = node;
 
   const handleClick = useCallback((e: React.MouseEvent) => {
@@ -45,6 +46,25 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
       onMouseLeave={handleMouseLeave}
       className={cn('transition-all duration-300 group', isClickable ? 'cursor-pointer' : 'cursor-default')}
     >
+      {/* Glow Effect for Locked Node */}
+      <defs>
+          <filter id={`glow-${node.id}`}>
+              <feGaussianBlur stdDeviation="3.5" result="coloredBlur" />
+              <feMerge>
+                  <feMergeNode in="coloredBlur" />
+                  <feMergeNode in="SourceGraphic" />
+              </feMerge>
+          </filter>
+      </defs>
+      {isLocked && (
+        <circle
+          r={radius + 5}
+          fill={color}
+          className="opacity-70"
+          style={{ filter: `url(#glow-${node.id})` }}
+        />
+      )}
+
       {/* Circle Elements */}
       <circle
         r={radius}

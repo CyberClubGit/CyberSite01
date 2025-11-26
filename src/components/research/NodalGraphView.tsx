@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
@@ -65,7 +66,8 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
   const panZoomRef = useRef<PanZoomApi>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
-  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(-1); // -1 for overview
+  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0); // 0 for overview
+  const [lockedCategoryId, setLockedCategoryId] = useState<string | null>(null);
   const interactionTimeoutRef = useRef<NodeJS.Timeout>();
 
   const { simulatedNodes, setNodes: setSimulationNodes } = useSimulation();
@@ -217,14 +219,16 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     }
   }, []);
 
-  const handleCategorySelect = (categoryName: string) => {
+  const handleCategorySelect = useCallback((categoryName: string) => {
       const index = navigationCategories.findIndex(c => c === categoryName);
       if (index === -1) return;
+      
       setCurrentCategoryIndex(index);
 
       if (index === 0) { // "Vue d'ensemble"
           panZoomRef.current?.zoomTo(0, 0, ZOOM_LEVEL_OVERVIEW, true);
           setIsLocked(false);
+          setLockedCategoryId(null);
           return;
       }
       
@@ -233,8 +237,9 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
       if (nodeToZoom) {
           panZoomRef.current?.zoomTo(nodeToZoom.x, nodeToZoom.y, ZOOM_LEVEL_CATEGORY, true);
           setIsLocked(true);
+          setLockedCategoryId(nodeToZoom.id);
       }
-  };
+  }, [navigationCategories, simulatedNodes]);
 
   const navigateCategories = (direction: 'next' | 'prev') => {
       const newIndex = direction === 'next'
@@ -246,6 +251,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
 
   const handleManualPan = () => {
     setIsLocked(false); // Unlock on manual interaction
+    setLockedCategoryId(null);
     setCurrentCategoryIndex(0); // Go back to overview state
     clearTimeout(interactionTimeoutRef.current);
     interactionTimeoutRef.current = setTimeout(() => {
@@ -295,8 +301,8 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
       
       <div className="absolute top-4 right-4 z-20">
           <Select onValueChange={handleCategorySelect} value={navigationCategories[currentCategoryIndex] || 'Vue d\'ensemble'}>
-              <SelectTrigger className="w-[180px] bg-background/70 backdrop-blur-md">
-                  <SelectValue placeholder="Zoom sur catégorie" />
+              <SelectTrigger className="w-[220px] bg-background/70 backdrop-blur-md">
+                  <SelectValue placeholder="Naviguer vers une catégorie" />
               </SelectTrigger>
               <SelectContent>
                   {navigationCategories.map((cat, index) => (
@@ -312,7 +318,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
           <Button variant="outline" size="icon" className="h-10 w-10 rounded-full bg-background/70 backdrop-blur-md" onClick={() => navigateCategories('prev')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="px-4 py-2 rounded-full bg-background/70 backdrop-blur-md font-mono text-center min-w-[180px]">
+          <div className="px-4 py-2 rounded-full bg-background/70 backdrop-blur-md font-mono text-center min-w-[220px]">
             {navigationCategories[currentCategoryIndex] || 'Vue d\'ensemble'}
           </div>
           <Button variant="outline" size="icon" className="h-10 w-10 rounded-full bg-background/70 backdrop-blur-md" onClick={() => navigateCategories('next')}>
@@ -359,6 +365,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
             key={node.id}
             node={node}
             isHovered={hoveredNodeId === node.id}
+            isLocked={lockedCategoryId === node.id}
             onClick={onNodeClick}
             onHover={setHoveredNodeId}
           />
@@ -367,3 +374,4 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     </div>
   );
 };
+
