@@ -147,7 +147,7 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
           </filter>
       </defs>
 
-      {isLocked && (isCategory || isCenter) && (
+      {isLocked && isCategory && (
         <circle
           r={glowRadius}
           fill={color}

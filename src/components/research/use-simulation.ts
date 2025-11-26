@@ -33,7 +33,7 @@ export const useSimulation = (options: SimulationOptions = {}) => {
   } = options;
 
   const nodesRef = useRef<Node[]>([]);
-  const [simulatedNodes, setSimulatedNodes] = useState<Node[]>([]);
+  const [, setTick] = useState(0);
   const animationFrameRef = useRef<number>();
 
   const runSimulation = useCallback(() => {
@@ -43,10 +43,9 @@ export const useSimulation = (options: SimulationOptions = {}) => {
     }
 
     const currentNodes = nodesRef.current;
-    const newNodes = currentNodes.map(node => ({ ...node }));
-
-    for (let i = 0; i < newNodes.length; i++) {
-      const nodeA = newNodes[i];
+    
+    for (let i = 0; i < currentNodes.length; i++) {
+      const nodeA = currentNodes[i];
 
       // 1. Attraction Force to attractor
       const dxAttractor = nodeA.attractor.x - nodeA.x;
@@ -55,9 +54,9 @@ export const useSimulation = (options: SimulationOptions = {}) => {
       nodeA.vy += dyAttractor * attractionStiffness;
 
       // 2. Repulsion Force from other nodes
-      for (let j = 0; j < newNodes.length; j++) {
+      for (let j = 0; j < currentNodes.length; j++) {
         if (i === j) continue;
-        const nodeB = newNodes[j];
+        const nodeB = currentNodes[j];
         
         const dx = nodeA.x - nodeB.x;
         const dy = nodeA.y - nodeB.y;
@@ -80,22 +79,23 @@ export const useSimulation = (options: SimulationOptions = {}) => {
     }
 
     // 3. Update positions and apply damping
-    for (const node of newNodes) {
+    for (const node of currentNodes) {
       node.vx *= damping;
       node.vy *= damping;
       node.x += node.vx;
       node.y += node.vy;
     }
-    
-    nodesRef.current = newNodes;
-    setSimulatedNodes(newNodes);
 
     animationFrameRef.current = requestAnimationFrame(runSimulation);
   }, [attractionStiffness, repulsionStiffness, damping]);
   
   const setNodes = useCallback((newNodes: Node[]) => {
       nodesRef.current = newNodes;
-      setSimulatedNodes(newNodes);
+      setTick(t => t + 1); // Force a re-render to show initial state
+  }, []);
+
+  const forceUpdate = useCallback(() => {
+    setTick(t => t + 1);
   }, []);
 
   useEffect(() => {
@@ -108,5 +108,5 @@ export const useSimulation = (options: SimulationOptions = {}) => {
     };
   }, [runSimulation]);
 
-  return { simulatedNodes, setNodes };
+  return { simulatedNodes: nodesRef.current, setNodes, forceUpdate };
 };

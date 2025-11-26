@@ -32,7 +32,7 @@ interface PanZoomProps {
   maxZoom?: number;
   className?: string;
   onZoomRequest?: (deltaY: number, mouseX: number, mouseY: number) => void;
-  onTransformChange?: (state: PanZoomState) => void;
+  onPan?: () => void;
 }
 
 const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
@@ -41,7 +41,7 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
   maxZoom = 5,
   className,
   onZoomRequest,
-  onTransformChange,
+  onPan,
 }, ref) => {
   const transformRef = useRef<PanZoomState>({ x: 0, y: 0, zoom: 1 });
   const [isPanning, setIsPanning] = useState(false);
@@ -50,17 +50,13 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const isAnimatingRef = useRef(false);
 
-  const debouncedOnTransformChange = useDebouncedCallback((state: PanZoomState) => {
-    onTransformChange?.(state);
-  }, 50);
-
   const updateTransform = (newTransform: PanZoomState, animate: boolean = false) => {
     transformRef.current = newTransform;
     if (contentRef.current) {
         contentRef.current.style.transition = animate ? 'transform 700ms cubic-bezier(0.25, 1, 0.5, 1)' : '';
         contentRef.current.style.transform = `translate(${newTransform.x}px, ${newTransform.y}px) scale(${newTransform.zoom})`;
     }
-    debouncedOnTransformChange(newTransform);
+    if (onPan) onPan();
   };
   
   useImperativeHandle(ref, () => ({
@@ -112,7 +108,7 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
 
       updateTransform({ x: newX, y: newY, zoom: newZoom });
     }
-  }, [minZoom, maxZoom, onZoomRequest]);
+  }, [minZoom, maxZoom, onZoomRequest, onPan]);
 
 
   const onMouseDown = useCallback((e: ReactMouseEvent<SVGSVGElement> | TouchEvent) => {
@@ -149,7 +145,7 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
     updateTransform({ ...currentTransform, x: currentTransform.x + dx, y: currentTransform.y + dy });
     
     lastPointRef.current = { x: point.clientX, y: point.clientY };
-  }, [isPanning]);
+  }, [isPanning, onPan]);
 
 
   useEffect(() => {

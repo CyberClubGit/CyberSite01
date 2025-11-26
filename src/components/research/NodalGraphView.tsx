@@ -31,7 +31,7 @@ type ViewState =
 
 const ZOOM_LEVELS = {
   overview: 0.35,
-  category: 1,
+  category: 2, // Zoom x2
   item: 2,
 };
 
@@ -61,7 +61,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [viewState, setViewState] = useState<ViewState>({ level: 'overview' });
 
-  const { simulatedNodes, setNodes: setSimulationNodes } = useSimulation();
+  const { simulatedNodes, setNodes: setSimulationNodes, forceUpdate } = useSimulation();
 
   const activityColorMap = useMemo(() => createActivityColorMap(brands, resolvedTheme === 'dark' ? 'dark' : 'light'), [brands, resolvedTheme]);
   const activityLogoMap = useMemo(() => {
@@ -150,14 +150,16 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
   }, [items, sortedVisibleCategories, resolvedTheme, setSimulationNodes, activityColorMap, activityLogoMap, cyberClubLogo]);
   
   const onNodeClick = useCallback((node: Node) => {
-    if (node.type === 'category') {
+    if (viewState.level === 'category' && node.id === viewState.categoryId) {
+        setViewState({ level: 'overview' });
+    } else if (node.type === 'category') {
         setViewState({ level: 'category', categoryId: node.id });
     } else if (node.type === 'center') {
         setViewState({ level: 'overview' });
     } else if (node.type === 'item') {
         setViewState({ level: 'item', itemId: node.id });
     }
-  }, []);
+  }, [viewState]);
 
   const handleZoomRequest = useCallback((deltaY: number, mouseX: number, mouseY: number) => {
     let closestNode: Node | null = null;
@@ -252,6 +254,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
         maxZoom={3}
         className={cn("w-full h-full transition-opacity duration-500", hasSimulated ? 'opacity-100' : 'opacity-0')}
         onZoomRequest={handleZoomRequest}
+        onPan={() => forceUpdate()}
       >
         <defs>
           {links.filter(l => l.gradientId).map(link => {
@@ -299,7 +302,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
             node={node}
             isHovered={hoveredNodeId === node.id}
             isLocked={activeCategoryId === node.id}
-            isAnotherNodeLocked={!!activeCategoryId && activeCategoryId !== node.id}
+            isAnotherNodeLocked={!!activeCategoryId && activeCategoryId !== node.id && node.type === 'category'}
             isEmphasized={itemLinks.has(node.id)}
             onClick={onNodeClick}
             onHover={setHoveredNodeId}
