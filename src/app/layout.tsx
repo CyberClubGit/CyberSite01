@@ -40,8 +40,8 @@ export default async function RootLayout({
         <Providers>
           <div className="flex flex-col min-h-screen text-foreground bg-transparent">
             <Header categories={categories} brands={brands} />
-            <main className="flex-grow group/research-page">{children}</main>
-            <Footer className="group-has-[.graph-view-active]:hidden" />
+            <main className="flex-grow">{children}</main>
+            <Footer className="graph-view-active:hidden" />
           </div>
         </Providers>
         <Toaster />

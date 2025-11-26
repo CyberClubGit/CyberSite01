@@ -41,7 +41,7 @@ const ListView = ({ items }: { items: ProcessedItem[] }) => (
 
 
 export function ResearchPageClient({ category, brand, initialData, brands }: ResearchPageClientProps) {
-  const [viewMode, setViewMode] = useState<'list' | 'graph'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'graph'>('graph');
   
   const finalData = useMemo(() => {
     const brandFiltered = filterItemsByBrandActivity(initialData, brand?.Brand);
@@ -56,69 +56,72 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
   useEffect(() => {
     if (viewMode === 'graph') {
       document.body.style.overflow = 'hidden';
+      document.documentElement.classList.add('graph-view-active');
     } else {
       document.body.style.overflow = '';
+      document.documentElement.classList.remove('graph-view-active');
     }
 
     // Cleanup function to restore scroll when the component unmounts
     return () => {
       document.body.style.overflow = '';
+      document.documentElement.classList.remove('graph-view-active');
     };
   }, [viewMode]);
 
   return (
-    <>
-      <div className={cn("relative bg-transparent", viewMode === 'graph' && 'graph-view-active')}>
-        {category.Background && <VideoBackground src={category.Background} />}
+    <div className={cn("relative h-full min-h-[calc(100vh-4rem)] w-full")}>
+      {category.Background && <VideoBackground src={category.Background} />}
 
-        <section className="w-full py-8 md:py-12 relative z-10">
-          <div className="container px-4 md:px-6">
-            <Tabs 
-                value={viewMode} 
-                onValueChange={(value) => setViewMode(value as 'list' | 'graph')}
-                className="w-full"
-            >
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
-                <div className="space-y-2 mb-4 md:mb-0">
-                  <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl capitalize">
-                    {category?.Name || 'Recherche'}
-                  </h1>
-                  <p className="max-w-[700px] text-muted-foreground">
-                    {category?.Description || `Explorez nos publications et nos travaux.`}
-                  </p>
-                </div>
-                <div className="flex-shrink-0">
-                  <TabsList>
-                    <TabsTrigger value="list">
-                      <List className="mr-2 h-4 w-4" />
-                      Liste
-                    </TabsTrigger>
-                    <TabsTrigger value="graph">
-                      <Share2 className="mr-2 h-4 w-4" />
-                      Graphe Nodal
-                    </TabsTrigger>
-                    <TabsTrigger value="z" disabled>
-                      (à venir)
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
-              </div>
-              
-              <TabsContent value="list">
-                <ListView items={finalData} />
-              </TabsContent>
-              <TabsContent value="graph">
-                <div className="w-full" style={{ height: 'calc(100vh - 16rem)'}}>
-                    <NodalGraphView items={finalData} brands={brands} />
-                </div>
-              </TabsContent>
-            </Tabs>
-
-          </div>
-        </section>
+      {/* Nodal graph is now a background element */}
+      <div 
+        className={cn(
+          "absolute inset-0 z-0 transition-opacity duration-500",
+          viewMode === 'graph' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}
+      >
+        <NodalGraphView items={finalData} brands={brands} />
       </div>
-    </>
+
+      <section className="relative z-10 w-full py-8 md:py-12">
+        <div className="container px-4 md:px-6">
+          <Tabs 
+              value={viewMode} 
+              onValueChange={(value) => setViewMode(value as 'list' | 'graph')}
+              className="w-full"
+          >
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
+              <div className="space-y-2 mb-4 md:mb-0">
+                <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl capitalize">
+                  {category?.Name || 'Recherche'}
+                </h1>
+                <p className="max-w-[700px] text-muted-foreground">
+                  {category?.Description || `Explorez nos publications et nos travaux.`}
+                </p>
+              </div>
+              <div className="flex-shrink-0">
+                <TabsList>
+                  <TabsTrigger value="list">
+                    <List className="mr-2 h-4 w-4" />
+                    Liste
+                  </TabsTrigger>
+                  <TabsTrigger value="graph">
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Graphe Nodal
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+            </div>
+            
+            <TabsContent value="list">
+              <ListView items={finalData} />
+            </TabsContent>
+            {/* The content for 'graph' is now handled by the background div */}
+            <TabsContent value="graph" />
+
+          </Tabs>
+        </div>
+      </section>
+    </div>
   );
 }
-
-    
