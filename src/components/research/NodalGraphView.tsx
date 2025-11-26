@@ -89,7 +89,8 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
   }, [brands]);
 
   const cyberClubLogo = useMemo(() => {
-      return brands.find(b => b.Brand === 'Cyber Club')?.Logo || null;
+      const brand = brands.find(b => b.Brand === 'Cyber Club');
+      return brand?.Logo || null;
   }, [brands]);
 
 
@@ -125,7 +126,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
       id: 'center',
       x: 0, y: 0,
       vx: 0, vy: 0,
-      radius: 33.6, // Original: 20 -> 24 (20% increase) -> 33.6 (40% increase from 24)
+      radius: 33.6, // Original: 24 -> 33.6 (40% increase)
       label: 'Cyber Club',
       type: 'center',
       attractor: { x: 0, y: 0 },
@@ -329,9 +330,11 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
   const hasSimulated = simulatedNodes.length > 0;
   
   const currentCategoryName = navigationCategories[currentCategoryIndex];
+  const currentCategoryBrand = brands.find(b => b.Activity === currentCategoryName);
   const currentCategoryLogo = currentCategoryName === 'Vue d\'ensemble' 
     ? cyberClubLogo
-    : activityLogoMap[currentCategoryName];
+    : currentCategoryBrand?.Logo || null;
+
 
   return (
     <div className="relative w-full h-full bg-background/50 backdrop-blur-sm overflow-hidden">
@@ -341,25 +344,6 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
           <span className="ml-2">Initializing simulation...</span>
         </div>
       )}
-      
-      <div className="absolute top-4 right-4 z-20">
-          <Select 
-            onValueChange={(value) => handleCategorySelect(value === 'all' ? 'Vue d\'ensemble' : value)} 
-            value={navigationCategories[currentCategoryIndex]}
-          >
-              <SelectTrigger className="w-[220px] bg-background/70 backdrop-blur-md">
-                  <SelectValue placeholder="Naviguer vers une catégorie" />
-              </SelectTrigger>
-              <SelectContent>
-                   <SelectItem value="Vue d'ensemble">Vue d'ensemble</SelectItem>
-                  {sortedVisibleCategories.map((cat) => (
-                      <SelectItem key={`select-${cat}`} value={cat}>
-                          {cat}
-                      </SelectItem>
-                  ))}
-              </SelectContent>
-          </Select>
-      </div>
       
        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
           <Button 
@@ -381,8 +365,8 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
                 alt={`${currentCategoryName} logo`}
                 width={20}
                 height={20}
-                className="dark:invert"
-                style={{ filter: resolvedTheme === 'dark' ? 'invert(1)' : 'none' }}
+                className={cn(currentCategoryName !== 'Vue d\'ensemble' && 'dark:invert')}
+                style={{ filter: resolvedTheme === 'dark' && currentCategoryName !== 'Vue d\'ensemble' ? 'invert(1)' : 'none' }}
               />
             )}
             <span>{currentCategoryName}</span>
@@ -411,10 +395,15 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
             const source = nodeMap.get(link.source);
             const target = nodeMap.get(link.target);
             if (!source || !target) return null;
+            
+            // Use the brand color if available, otherwise fallback to the node's own color
+            const targetBrandColor = brands.find(b => b.Activity === target.label)?.['Color Light'];
+            const finalTargetColor = targetBrandColor ? `#${targetBrandColor}` : target.color;
+
             return (
-              <linearGradient key={link.gradientId} id={link.gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+              <linearGradient key={link.gradientId} id={link.gradientId} x1="0%" y1="0%" x2="100%" y2="0%" gradientUnits="userSpaceOnUse">
                 <stop offset="0%" style={{ stopColor: source.color, stopOpacity: 0.5 }} />
-                <stop offset="100%" style={{ stopColor: target.color, stopOpacity: 1 }} />
+                <stop offset="100%" style={{ stopColor: finalTargetColor, stopOpacity: 1 }} />
               </linearGradient>
             );
           })}
@@ -443,6 +432,16 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
                 className: "transition-all duration-300",
             };
 
+            // Hack to apply gradient to line, needs to be calculated
+            const angle = Math.atan2(target.y - source.y, target.x - source.x) * 180 / Math.PI;
+            if (isGradientLink) {
+              const gradientTransform = `rotate(${angle}, ${source.x}, ${source.y})`;
+               const gradRef = document.getElementById(link.gradientId!);
+               if (gradRef) {
+                 gradRef.setAttribute('gradientTransform', gradientTransform);
+               }
+            }
+            
             return <line {...lineProps} />;
           })}
         </g>
@@ -464,3 +463,5 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     </div>
   );
 };
+
+    
