@@ -7,6 +7,12 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
 import React, { useEffect, useRef, useState } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import Link from 'next/link';
+import { Instagram } from 'lucide-react';
+
 
 // NodalGraph component to be included in this file
 interface Node {
@@ -255,6 +261,61 @@ interface HomePageClientProps {
 
 export function HomePageClient({ category, brand, network }: HomePageClientProps) {
   const brandName = brand?.Brand || 'CYBER CLUB';
+  const isMobile = useIsMobile();
+  
+  const samuel = network.find(m => m.Name === 'Samuel Belaisch');
+
+
+  const renderNetworkSection = () => {
+    if (isMobile) {
+      if (!samuel) return null;
+
+      return (
+        <section className="w-full py-12 md:py-24 bg-background">
+          <div className="container px-4 md:px-6 flex flex-col items-center">
+            <h2 className="text-3xl font-headline font-bold tracking-tighter sm:text-5xl text-center mb-8">The Architect</h2>
+            <Card className="w-full max-w-sm">
+                <CardContent className="flex flex-col items-center text-center p-6">
+                    <Avatar className="w-32 h-32 mb-4 border-4 border-primary">
+                        <AvatarImage src={samuel.profilePictureUrl} alt={samuel.Name} />
+                        <AvatarFallback>{samuel.Name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <CardTitle className="font-headline text-2xl">{samuel.Name}</CardTitle>
+                    <p className="text-muted-foreground mt-1">{samuel.Role}</p>
+                    {samuel.Contact && (
+                        <Button asChild className="mt-6">
+                            <Link href={samuel.Contact} target="_blank" rel="noopener noreferrer">
+                                <Instagram className="mr-2 h-4 w-4" />
+                                Contact
+                            </Link>
+                        </Button>
+                    )}
+                </CardContent>
+            </Card>
+          </div>
+        </section>
+      );
+    }
+
+    return (
+      <section className="w-full h-screen py-12 md:py-24 lg:py-32 bg-background border-y">
+        <div className="container h-full px-4 md:px-6 flex flex-col">
+          <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
+            <div className="space-y-2">
+              <h2 className="text-3xl font-headline font-bold tracking-tighter sm:text-5xl">Network</h2>
+              <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                Notre écosystème de créateurs, chercheurs et collaborateurs.
+              </p>
+            </div>
+          </div>
+          <div className="flex-1 min-h-0">
+            <NodalGraph members={network} />
+          </div>
+        </div>
+      </section>
+    );
+  };
+
 
   return (
     <>
@@ -269,22 +330,9 @@ export function HomePageClient({ category, brand, network }: HomePageClientProps
         </div>
       </div>
 
-      {/* Section 2: Network Graph */}
-      <section className="w-full h-screen py-12 md:py-24 lg:py-32 bg-background border-y">
-        <div className="container h-full px-4 md:px-6 flex flex-col">
-          <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-            <div className="space-y-2">
-              <h2 className="text-3xl font-headline font-bold tracking-tighter sm:text-5xl">Network</h2>
-              <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Notre écosystème de créateurs, chercheurs et collaborateurs.
-              </p>
-            </div>
-          </div>
-          <div className="flex-1 min-h-0">
-             <NodalGraph members={network} />
-          </div>
-        </div>
-      </section>
+      {/* Section 2: Network / Architect Section */}
+      {renderNetworkSection()}
+
 
       {/* Section 3: Blank Content Section */}
       <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
