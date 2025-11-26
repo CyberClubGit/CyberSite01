@@ -32,6 +32,7 @@ interface PanZoomProps {
   maxZoom?: number;
   className?: string;
   onZoomRequest?: (deltaY: number, mouseX: number, mouseY: number) => void;
+  onTransformChange?: (state: PanZoomState) => void;
 }
 
 const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
@@ -40,45 +41,51 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
   maxZoom = 5,
   className,
   onZoomRequest,
+  onTransformChange,
 }, ref) => {
-  const [transform, setTransform] = useState<PanZoomState>({ x: 0, y: 0, zoom: 1 });
+  const transformRef = useRef<PanZoomState>({ x: 0, y: 0, zoom: 1 });
   const [isPanning, setIsPanning] = useState(false);
   const containerRef = useRef<SVGSVGElement>(null);
   const contentRef = useRef<SVGGElement>(null);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
   const isAnimatingRef = useRef(false);
 
-  const getCurrentState = useCallback((): PanZoomState => {
-    return transform;
-  }, [transform]);
+  const debouncedOnTransformChange = useDebouncedCallback((state: PanZoomState) => {
+    onTransformChange?.(state);
+  }, 50);
 
+  const updateTransform = (newTransform: PanZoomState, animate: boolean = false) => {
+    transformRef.current = newTransform;
+    if (contentRef.current) {
+        contentRef.current.style.transition = animate ? 'transform 700ms cubic-bezier(0.25, 1, 0.5, 1)' : '';
+        contentRef.current.style.transform = `translate(${newTransform.x}px, ${newTransform.y}px) scale(${newTransform.zoom})`;
+    }
+    debouncedOnTransformChange(newTransform);
+  };
+  
   useImperativeHandle(ref, () => ({
     zoomTo: (x, y, newZoom, animate = true) => {
       const parent = containerRef.current?.parentElement;
-      if (!parent || !contentRef.current) return;
-      
+      if (!parent) return;
+
       const clampedZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
       const centerX = parent.clientWidth / 2;
       const centerY = parent.clientHeight / 2;
       const newX = centerX - x * clampedZoom;
       const newY = centerY - y * clampedZoom;
       
+      isAnimatingRef.current = animate;
+      updateTransform({ x: newX, y: newY, zoom: clampedZoom }, animate);
+
       if (animate) {
-        isAnimatingRef.current = true;
-        contentRef.current.style.transition = 'transform 700ms cubic-bezier(0.25, 1, 0.5, 1)';
-        setTransform({ x: newX, y: newY, zoom: clampedZoom });
         setTimeout(() => {
-          if (contentRef.current) contentRef.current.style.transition = '';
           isAnimatingRef.current = false;
         }, 700);
-      } else {
-        setTransform({ x: newX, y: newY, zoom: clampedZoom });
-        isAnimatingRef.current = false;
       }
     },
-    getState: getCurrentState,
+    getState: () => transformRef.current,
   }));
-
+  
   const onWheel = useCallback((e: WheelEvent<SVGSVGElement>) => {
     e.preventDefault();
     if (isAnimatingRef.current) {
@@ -86,35 +93,35 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
         if(contentRef.current) contentRef.current.style.transition = '';
     };
 
+    const rect = e.currentTarget.getBoundingClientRect();
+    const currentTransform = transformRef.current;
+    
     if (onZoomRequest) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      // Convert mouse screen coordinates to SVG world coordinates
-      const mouseX = (e.clientX - rect.left - transform.x) / transform.zoom;
-      const mouseY = (e.clientY - rect.top - transform.y) / transform.zoom;
+      const mouseX = (e.clientX - rect.left - currentTransform.x) / currentTransform.zoom;
+      const mouseY = (e.clientY - rect.top - currentTransform.y) / currentTransform.zoom;
       onZoomRequest(e.deltaY, mouseX, mouseY);
     } else {
-      // Fallback continuous zoom if no handler is provided
-      const rect = e.currentTarget.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
 
       const zoomFactor = 1 - e.deltaY * 0.001;
-      const newZoom = Math.max(minZoom, Math.min(maxZoom, transform.zoom * zoomFactor));
+      const newZoom = Math.max(minZoom, Math.min(maxZoom, currentTransform.zoom * zoomFactor));
 
-      const newX = mouseX - (mouseX - transform.x) * (newZoom / transform.zoom);
-      const newY = mouseY - (mouseY - transform.y) * (newZoom / transform.zoom);
+      const newX = mouseX - (mouseX - currentTransform.x) * (newZoom / currentTransform.zoom);
+      const newY = mouseY - (mouseY - currentTransform.y) * (newZoom / currentTransform.zoom);
 
-      setTransform({ x: newX, y: newY, zoom: newZoom });
+      updateTransform({ x: newX, y: newY, zoom: newZoom });
     }
-  }, [transform, minZoom, maxZoom, onZoomRequest]);
+  }, [minZoom, maxZoom, onZoomRequest]);
+
 
   const onMouseDown = useCallback((e: ReactMouseEvent<SVGSVGElement> | TouchEvent) => {
     e.preventDefault();
     if (isAnimatingRef.current) {
-        isAnimatingRef.current = false;
-        if(contentRef.current) contentRef.current.style.transition = '';
-    };
-    
+      isAnimatingRef.current = false;
+      if (contentRef.current) contentRef.current.style.transition = '';
+    }
+
     setIsPanning(true);
     const point = 'touches' in e ? e.touches[0] : e;
     lastPointRef.current = { x: point.clientX, y: point.clientY };
@@ -126,8 +133,8 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
   const onMouseUp = useCallback((e: ReactMouseEvent<SVGSVGElement> | MouseEvent | TouchEvent) => {
     setIsPanning(false);
     lastPointRef.current = null;
-    if (e.currentTarget instanceof Element) {
-      e.currentTarget.classList.remove('cursor-grabbing');
+    if (containerRef.current) {
+      containerRef.current.classList.remove('cursor-grabbing');
     }
   }, []);
 
@@ -137,22 +144,28 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
     const point = 'touches' in e ? e.touches[0] : e;
     const dx = point.clientX - lastPointRef.current.x;
     const dy = point.clientY - lastPointRef.current.y;
-
-    setTransform(t => ({ ...t, x: t.x + dx, y: t.y + dy }));
+    
+    const currentTransform = transformRef.current;
+    updateTransform({ ...currentTransform, x: currentTransform.x + dx, y: currentTransform.y + dy });
+    
     lastPointRef.current = { x: point.clientX, y: point.clientY };
   }, [isPanning]);
 
+
   useEffect(() => {
+    const handleMove = (e: MouseEvent | TouchEvent) => onMouseMove(e);
+    const handleUp = (e: MouseEvent | TouchEvent) => onMouseUp(e);
+
     if (isPanning) {
-      window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('mouseup', onMouseUp);
-      window.addEventListener('touchmove', onMouseMove);
-      window.addEventListener('touchend', onMouseUp);
+      window.addEventListener('mousemove', handleMove);
+      window.addEventListener('mouseup', handleUp);
+      window.addEventListener('touchmove', handleMove);
+      window.addEventListener('touchend', handleUp);
       return () => {
-        window.removeEventListener('mousemove', onMouseMove);
-        window.removeEventListener('mouseup', onMouseUp);
-        window.removeEventListener('touchmove', onMouseMove);
-        window.removeEventListener('touchend', onMouseUp);
+        window.removeEventListener('mousemove', handleMove);
+        window.removeEventListener('mouseup', handleUp);
+        window.removeEventListener('touchmove', handleMove);
+        window.removeEventListener('touchend', handleUp);
       };
     }
   }, [isPanning, onMouseMove, onMouseUp]);
@@ -167,7 +180,7 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
     >
       <g 
         ref={contentRef}
-        style={{ transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.zoom})` }}
+        style={{ transform: `translate(${transformRef.current.x}px, ${transformRef.current.y}px) scale(${transformRef.current.zoom})` }}
       >
         {children}
       </g>
