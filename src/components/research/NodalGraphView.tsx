@@ -22,15 +22,14 @@ interface Link {
 }
 
 // Catégories fixes et leurs positions angulaires pour une disposition radiale
+// CORRECTION: Utilisation des noms corrects ("Mecatronics", "Multimedias")
 const CATEGORY_ANGLES: Record<string, number> = {
   'Design': 0,
-  'Architecture': 45,
-  'Multimedias': 90,
-  'Textile': 135,
-  'Nature': 180,
-  'Mecatronics': 225,
-  'Cybernetics': 270,
-  'Other': 315,
+  'Architecture': 60,
+  'Multimedias': 120,
+  'Textile': 180,
+  'Nature': 240,
+  'Mecatronics': 300,
 };
 
 const getNodeColor = (theme: string | undefined, type: 'center' | 'category' | 'item', activityColor?: string) => {
@@ -63,24 +62,20 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
   const allCategories = useMemo(() => {
     const categories = new Set<string>();
     items.forEach(item => {
-        // Inclure 'Cyber Club' comme une catégorie potentielle
-        const itemCategories = item.Activity?.split(',').map(c => c.trim()) || ['Other'];
-        if (itemCategories.length === 0) {
-            categories.add('Other');
-        } else {
-            itemCategories.forEach(cat => categories.add(cat));
-        }
+        const itemCategories = item.Activity?.split(',').map(c => c.trim()) || [];
+        itemCategories.forEach(cat => categories.add(cat));
     });
     // Ensure all predefined categories exist for stable layout
     Object.keys(CATEGORY_ANGLES).forEach(cat => categories.add(cat));
     
-    // Explicitly filter out unwanted categories from the main ring
+    // CORRECTION: Filtrer les catégories non désirées ("Other", "Cybernetics") ici
+    // pour qu'elles ne soient pas incluses dans les calculs de disposition.
     return Array.from(categories).filter(cat => cat !== 'Cybernetics' && cat !== 'Other');
   }, [items]);
 
   useEffect(() => {
     const categoryRadius = 350; 
-    const itemRadius = 80;     // Reduced radius to bring items closer
+    const itemRadius = 60;     // RAPPROCHÉ: Réduit de 80 à 60
     
     const newNodes: Node[] = [];
     const newLinks: Link[] = [];
@@ -101,6 +96,8 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     // 2. Category Nodes (excluding Cyber Club)
     const categoryNodes: Record<string, Node> = {};
     const mainCategories = allCategories.filter(cat => cat !== 'Cyber Club');
+    
+    // CORRECTION: Trier les catégories visibles pour une disposition stable.
     const sortedCategories = mainCategories.sort((a, b) => (CATEGORY_ANGLES[a] ?? 999) - (CATEGORY_ANGLES[b] ?? 999));
     
     sortedCategories.forEach(cat => {
@@ -140,20 +137,21 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     // 4. Create Item Nodes
     Object.keys(itemsByActivity).forEach(activityName => {
         const activityItems = itemsByActivity[activityName];
+        if (!activityItems || activityItems.length === 0) return;
         
-        // **Perfect Radial Distribution**
-        const angleStep = (2 * Math.PI) / (activityItems.length || 1);
+        // CORRECTION: Répartition radiale parfaite des éléments
+        const angleStep = (2 * Math.PI) / activityItems.length;
         
-        // Handle "Cyber Club" items as a special case
+        // CORRECTION: Gestion spéciale pour les articles "Cyber Club"
         if (activityName === 'Cyber Club') {
             activityItems.forEach((item, index) => {
                 const angle = index * angleStep;
                 const attractor = {
-                    x: centerNode.x + itemRadius * 1.5 * Math.cos(angle), // a bit further out from center
+                    x: centerNode.x + itemRadius * 1.5 * Math.cos(angle), // Un peu plus loin du centre
                     y: centerNode.y + itemRadius * 1.5 * Math.sin(angle),
                 };
                 const itemNode: Node = {
-                    id: `${item.id}-${activityName}`,
+                    id: `${item.id}-${activityName}`, // ID unique pour chaque instance d'item-activité
                     x: attractor.x, y: attractor.y,
                     vx: 0, vy: 0, radius: 6, label: item.title, type: 'item',
                     attractor,
@@ -164,7 +162,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
                 newLinks.push({ source: centerNode.id, target: itemNode.id });
             });
         } else {
-            // Handle regular category items
+            // Logique pour les catégories normales
             const categoryNode = categoryNodes[activityName];
             if (!categoryNode) return;
 
@@ -175,7 +173,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
                     y: categoryNode.attractor.y + itemRadius * Math.sin(angle),
                 };
                 const itemNode: Node = {
-                    id: `${item.id}-${activityName}`,
+                    id: `${item.id}-${activityName}`, // ID unique
                     x: attractor.x, y: attractor.y,
                     vx: 0, vy: 0, radius: 6, label: item.title, type: 'item',
                     attractor,
