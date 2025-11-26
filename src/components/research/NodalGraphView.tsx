@@ -16,7 +16,7 @@ interface NodalGraphViewProps {
   items: ProcessedItem[];
   brands: Brand[];
   onCategorySelect: (categoryName: string) => void;
-  lockedCategoryId: string | null;
+  activeCategoryName: string;
 }
 
 interface Link {
@@ -53,12 +53,14 @@ const getNodeColor = (theme: string | undefined, type: 'center' | 'category' | '
 
 const ZOOM_LEVEL_CATEGORY = 1.2;
 const ZOOM_LEVEL_OVERVIEW = 0.4;
+const ATTRACTION_RADIUS = 150; // World units
 
-export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, onCategorySelect, lockedCategoryId }) => {
+export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, onCategorySelect, activeCategoryName }) => {
   const { resolvedTheme } = useTheme();
   const [links, setLinks] = useState<Link[]>([]);
   const panZoomRef = useRef<PanZoomApi>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const [isUserPanning, setIsUserPanning] = useState(false);
 
   const { simulatedNodes, setNodes: setSimulationNodes } = useSimulation();
 
@@ -95,6 +97,10 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
           .sort((a, b) => CATEGORY_ANGLES[a] - CATEGORY_ANGLES[b]);
   }, [items]);
 
+  const categoryNodes = useMemo(() => {
+    return simulatedNodes.filter(n => n.type === 'category' || n.type === 'center');
+  }, [simulatedNodes]);
+
   useEffect(() => {
     const categoryRadius = 350; 
     const itemRadius = 60;
@@ -107,7 +113,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
       id: 'center',
       x: 0, y: 0,
       vx: 0, vy: 0,
-      radius: 33.6, // Original: 24 -> 33.6 (40% increase)
+      radius: 33.6,
       label: 'Cyber Club',
       type: 'center',
       attractor: { x: 0, y: 0 },
@@ -117,9 +123,8 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
     };
     newNodes.push(centerNode);
 
-    // 2. Category Nodes (excluding Cyber Club)
-    const categoryNodes: Record<string, Node> = {};
-    
+    // 2. Category Nodes
+    const categoryNodesMap: Record<string, Node> = {};
     sortedVisibleCategories.forEach(cat => {
       const angle = (CATEGORY_ANGLES[cat]) * (Math.PI / 180);
       const attractor = {
@@ -128,10 +133,9 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
       };
       const catNode: Node = {
         id: `cat-${cat}`,
-        x: attractor.x + (Math.random() - 0.5) * 50,
-        y: attractor.y + (Math.random() - 0.5) * 50,
+        x: attractor.x, y: attractor.y,
         vx: 0, vy: 0,
-        radius: 36, // Original: 12 -> Tripled to 36
+        radius: 36,
         label: cat,
         type: 'category',
         attractor,
@@ -139,7 +143,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
         color: getNodeColor(resolvedTheme, 'category', activityColorMap[cat]),
         logoUrl: activityLogoMap[cat] || null,
       };
-      categoryNodes[cat] = catNode;
+      categoryNodesMap[cat] = catNode;
       newNodes.push(catNode);
       newLinks.push({ 
         source: 'center', 
@@ -167,48 +171,27 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
         
         const angleStep = (2 * Math.PI) / activityItems.length;
         
-        if (activityName === 'Cyber Club') {
-            activityItems.forEach((item, index) => {
-                const angle = index * angleStep;
-                const attractor = {
-                    x: centerNode.x + itemRadius * 1.5 * Math.cos(angle),
-                    y: centerNode.y + itemRadius * 1.5 * Math.sin(angle),
-                };
-                const itemNode: Node = {
-                    id: `${item.id}-${activityName}`,
-                    x: attractor.x, y: attractor.y,
-                    vx: 0, vy: 0, radius: 6, label: item.title, type: 'item',
-                    attractor,
-                    parentAttractor: centerNode.attractor,
-                    color: getNodeColor(resolvedTheme, 'item', activityColorMap.Cybernetics),
-                    href: item.pdfUrl || '#'
-                };
-                newNodes.push(itemNode);
-                newLinks.push({ source: centerNode.id, target: itemNode.id });
-            });
-        } else {
-            const categoryNode = categoryNodes[activityName];
-            if (!categoryNode) return;
-
-            activityItems.forEach((item, index) => {
-                const angle = index * angleStep;
-                const attractor = {
-                    x: categoryNode.attractor.x + itemRadius * Math.cos(angle),
-                    y: categoryNode.attractor.y + itemRadius * Math.sin(angle),
-                };
-                const itemNode: Node = {
-                    id: `${item.id}-${activityName}`,
-                    x: attractor.x, y: attractor.y,
-                    vx: 0, vy: 0, radius: 6, label: item.title, type: 'item',
-                    attractor,
-                    parentAttractor: categoryNode.attractor,
-                    color: categoryNode.color,
-                    href: item.pdfUrl || '#'
-                };
-                newNodes.push(itemNode);
-                newLinks.push({ source: categoryNode.id, target: itemNode.id });
-            });
-        }
+        const parentNode = activityName === 'Cyber Club' ? centerNode : categoryNodesMap[activityName];
+        if (!parentNode) return;
+        
+        activityItems.forEach((item, index) => {
+            const angle = index * angleStep;
+            const attractor = {
+                x: parentNode.attractor.x + itemRadius * Math.cos(angle),
+                y: parentNode.attractor.y + itemRadius * Math.sin(angle),
+            };
+            const itemNode: Node = {
+                id: `${item.id}-${activityName}`,
+                x: attractor.x, y: attractor.y,
+                vx: 0, vy: 0, radius: 6, label: item.title, type: 'item',
+                attractor,
+                parentAttractor: parentNode.attractor,
+                color: parentNode.color,
+                href: item.pdfUrl || '#'
+            };
+            newNodes.push(itemNode);
+            newLinks.push({ source: parentNode.id, target: itemNode.id });
+        });
     });
     
     setLinks(newLinks);
@@ -216,20 +199,54 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
   }, [items, sortedVisibleCategories, resolvedTheme, setSimulationNodes, activityColorMap, activityLogoMap, cyberClubLogo]);
 
 
+  const handleTransformChange = useCallback((state: PanZoomState) => {
+    if (isUserPanning) return; // Don't attract while user is actively panning
+
+    let closestNode: Node | null = null;
+    let minDistance = Infinity;
+
+    for (const node of categoryNodes) {
+        const distance = Math.sqrt(
+            Math.pow(node.x - state.centerX, 2) + Math.pow(node.y - state.centerY, 2)
+        );
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestNode = node;
+        }
+    }
+
+    if (closestNode && minDistance < ATTRACTION_RADIUS / state.zoom) {
+        if (activeCategoryName !== closestNode.label) {
+            onCategorySelect(closestNode.label);
+        }
+    } else {
+        if (activeCategoryName !== "Vue d'ensemble") {
+            onCategorySelect("Vue d'ensemble");
+        }
+    }
+  }, [isUserPanning, categoryNodes, activeCategoryName, onCategorySelect]);
+
+
   useEffect(() => {
-     if (!simulatedNodes.length) return;
-     
-     if (lockedCategoryId) {
-       const nodeToZoom = simulatedNodes.find(n => n.id === lockedCategoryId);
-       if (nodeToZoom) {
-         panZoomRef.current?.zoomTo(nodeToZoom.x, nodeToZoom.y, ZOOM_LEVEL_CATEGORY, true);
-       }
-     } else {
-       panZoomRef.current?.zoomTo(0, 0, ZOOM_LEVEL_OVERVIEW, true);
-     }
-  }, [lockedCategoryId, simulatedNodes]);
+    if (isUserPanning || !simulatedNodes.length) return;
+    
+    let nodeToZoom: Node | undefined;
+    let zoomLevel = ZOOM_LEVEL_OVERVIEW;
+
+    if (activeCategoryName !== "Vue d'ensemble") {
+        nodeToZoom = simulatedNodes.find(n => n.label === activeCategoryName);
+        zoomLevel = ZOOM_LEVEL_CATEGORY;
+    } else {
+        nodeToZoom = simulatedNodes.find(n => n.type === 'center');
+    }
+
+    if (nodeToZoom) {
+        panZoomRef.current?.zoomTo(nodeToZoom.x, nodeToZoom.y, zoomLevel, true);
+    }
+  }, [activeCategoryName, isUserPanning, simulatedNodes]);
 
   const onNodeClick = useCallback((node: Node) => {
+    setIsUserPanning(false);
     if (node.type === 'category' || node.type === 'center') {
       onCategorySelect(node.label);
     } else if (node.href && node.href !== '#') {
@@ -237,15 +254,22 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
     }
   }, [onCategorySelect]);
   
-  const handleManualPan = () => {
-    onCategorySelect('Vue d\'ensemble');
-  };
-  
+  const handleManualPan = useCallback(() => {
+      setIsUserPanning(true);
+      onCategorySelect("Vue d'ensemble");
+  }, [onCategorySelect]);
+
   const nodeMap = useMemo(() => {
     const map = new Map<string, Node>();
     simulatedNodes.forEach(node => map.set(node.id, node));
     return map;
   }, [simulatedNodes]);
+
+  const lockedCategoryId = useMemo(() => {
+      if (activeCategoryName === "Vue d'ensemble") return null;
+      if (activeCategoryName === "Cyber Club") return 'center';
+      return `cat-${activeCategoryName}`;
+  }, [activeCategoryName]);
 
   const itemLinks = useMemo(() => {
       if (!lockedCategoryId) return new Set();
@@ -274,6 +298,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
         minZoom={0.05}
         maxZoom={3}
         className={cn("w-full h-full transition-opacity duration-500", hasSimulated ? 'opacity-100' : 'opacity-0')}
+        onTransformChange={handleTransformChange}
         onManualPan={handleManualPan}
       >
         <defs>
@@ -282,7 +307,6 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
             const target = nodeMap.get(link.target);
             if (!source || !target) return null;
             
-            // Use the brand color if available, otherwise fallback to the node's own color
             const targetBrandColor = brands.find(b => b.Activity === target.label)?.['Color Light'];
             const finalTargetColor = targetBrandColor ? `#${targetBrandColor}` : target.color;
 
@@ -317,7 +341,6 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
                 className: "transition-all duration-300",
             };
 
-            // Hack to apply gradient to line, needs to be calculated
             const angle = Math.atan2(target.y - source.y, target.x - source.x) * 180 / Math.PI;
             if (isGradientLink) {
               const gradRef = document.getElementById(link.gradientId!);
@@ -347,5 +370,3 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
     </div>
   );
 };
-
-    

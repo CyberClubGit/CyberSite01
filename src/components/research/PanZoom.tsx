@@ -65,20 +65,22 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
 
   // Debounced callback for transform changes
   const debouncedOnTransformChange = useDebouncedCallback((state: PanZoomState) => {
-    onTransformChange?.(state);
-  }, 100);
-
-  useEffect(() => {
-    if (onTransformChange && !isAnimatingRef.current) {
-        debouncedOnTransformChange(getCurrentState());
+    if (!isAnimatingRef.current) {
+        onTransformChange?.(state);
     }
-  }, [transform, onTransformChange, getCurrentState, debouncedOnTransformChange]);
+  }, 100);
+  
+  useEffect(() => {
+    debouncedOnTransformChange(getCurrentState());
+  }, [transform, getCurrentState, debouncedOnTransformChange]);
 
   useImperativeHandle(ref, () => ({
     zoomTo: (x, y, newZoom, animate = true) => {
       const parent = containerRef.current?.parentElement;
       if (!parent || !contentRef.current) return;
 
+      isAnimatingRef.current = true;
+      
       const clampedZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
 
       const centerX = parent.clientWidth / 2;
@@ -86,9 +88,8 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
 
       const newX = centerX - x * clampedZoom;
       const newY = centerY - y * clampedZoom;
-
+      
       if (animate) {
-        isAnimatingRef.current = true;
         contentRef.current.style.transition = 'transform 700ms cubic-bezier(0.25, 1, 0.5, 1)';
         setTransform({
           x: newX,
@@ -105,6 +106,7 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
           y: newY,
           zoom: clampedZoom,
         });
+        isAnimatingRef.current = false;
       }
     },
     getState: getCurrentState,
@@ -112,10 +114,10 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
 
   const onWheel = useCallback((e: WheelEvent<SVGSVGElement>) => {
     e.preventDefault();
-    if (!containerRef.current || isAnimatingRef.current) return;
+    if (isAnimatingRef.current) isAnimatingRef.current = false;
     onManualPan?.();
 
-    const rect = containerRef.current.getBoundingClientRect();
+    const rect = e.currentTarget.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
@@ -130,9 +132,9 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
 
   const onMouseDown = useCallback((e: ReactMouseEvent<SVGSVGElement> | TouchEvent) => {
     e.preventDefault();
-    if (isAnimatingRef.current) return;
+    if (isAnimatingRef.current) isAnimatingRef.current = false;
     onManualPan?.();
-
+    
     setIsPanning(true);
     const point = 'touches' in e ? e.touches[0] : e;
     lastPointRef.current = { x: point.clientX, y: point.clientY };
@@ -150,7 +152,7 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
   }, []);
 
   const onMouseMove = useCallback((e: ReactMouseEvent<SVGSVGElement> | MouseEvent | TouchEvent) => {
-    if (!isPanning || !lastPointRef.current || isAnimatingRef.current) return;
+    if (!isPanning || !lastPointRef.current) return;
     
     const point = 'touches' in e ? e.touches[0] : e;
     const dx = point.clientX - lastPointRef.current.x;

@@ -67,8 +67,7 @@ const ListView = ({ items, category, brand }: { items: ProcessedItem[], category
 
 export function ResearchPageClient({ category, brand, initialData, brands }: ResearchPageClientProps) {
   const [viewMode, setViewMode] = useState<'list' | 'graph'>('graph');
-  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0); // 0 for overview
-  const [lockedCategoryId, setLockedCategoryId] = useState<string | null>(null);
+  const [activeCategoryName, setActiveCategoryName] = useState("Vue d'ensemble");
   const { resolvedTheme } = useTheme();
 
   const finalData = useMemo(() => {
@@ -79,7 +78,7 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
       description: item.Description || item.Content || '',
     }));
   }, [initialData, brand]);
-
+  
   const allCategories = useMemo(() => {
     const categories = new Set<string>();
     initialData.forEach(item => {
@@ -96,48 +95,37 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
           .sort((a, b) => CATEGORY_ANGLES[a] - CATEGORY_ANGLES[b]);
   }, [allCategories]);
 
-  const navigationCategories = useMemo(() => ['Vue d\'ensemble', ...sortedVisibleCategories], [sortedVisibleCategories]);
-  
-  const currentCategoryName = navigationCategories[currentCategoryIndex];
+  const navigationCategories = useMemo(() => ["Vue d'ensemble", ...sortedVisibleCategories], [sortedVisibleCategories]);
 
   const itemsForCurrentCategory = useMemo(() => {
-    if (currentCategoryName === 'Vue d\'ensemble') {
+    if (activeCategoryName === 'Vue d\'ensemble') {
       return finalData;
     }
     return finalData.filter(item => {
       const itemActivities = item.Activity?.split(',').map(c => c.trim()) || [];
-      return itemActivities.includes(currentCategoryName);
+      return itemActivities.includes(activeCategoryName);
     });
-  }, [finalData, currentCategoryName]);
+  }, [finalData, activeCategoryName]);
 
   const cyberClubLogo = useMemo(() => {
       const brand = brands.find(b => b.Brand === 'Cyber Club');
       return brand?.Logo || null;
   }, [brands]);
   
-  const currentCategoryBrand = brands.find(b => b.Activity === currentCategoryName);
-  const currentCategoryLogo = currentCategoryName === 'Vue d\'ensemble' 
+  const currentCategoryBrand = brands.find(b => b.Activity === activeCategoryName);
+  const currentCategoryLogo = activeCategoryName === 'Vue d\'ensemble' 
     ? cyberClubLogo
     : currentCategoryBrand?.Logo || null;
 
   const handleCategorySelect = useCallback((categoryName: string) => {
-      const index = navigationCategories.findIndex(c => c === categoryName);
-      if (index === -1) return;
-      
-      setCurrentCategoryIndex(index);
-
-      if (index === 0 || categoryName === 'all') { // "Vue d'ensemble"
-          setLockedCategoryId(null);
-      } else {
-          const categoryId = `cat-${categoryName}`;
-          setLockedCategoryId(categoryId);
-      }
-  }, [navigationCategories]);
+    setActiveCategoryName(categoryName);
+  }, []);
   
   const navigateCategories = (direction: 'next' | 'prev') => {
+      const currentIndex = navigationCategories.indexOf(activeCategoryName);
       const newIndex = direction === 'next'
-          ? (currentCategoryIndex + 1) % navigationCategories.length
-          : (currentCategoryIndex - 1 + navigationCategories.length) % navigationCategories.length;
+          ? (currentIndex + 1) % navigationCategories.length
+          : (currentIndex - 1 + navigationCategories.length) % navigationCategories.length;
       
       handleCategorySelect(navigationCategories[newIndex]);
   };
@@ -158,40 +146,40 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
   }, [viewMode]);
 
   return (
-    <Tabs 
-        value={viewMode} 
-        onValueChange={(value) => setViewMode(value as 'list' | 'graph')}
-        className="relative h-full min-h-[calc(100vh-4rem)] w-full"
-    >
+    <div className="relative h-full min-h-[calc(100vh-4rem)] w-full">
         {category.Background && <VideoBackground src={category.Background} />}
         
-        <TabsList className="absolute top-8 w-full flex justify-center z-20 bg-transparent border-0">
-            <div className="p-1 rounded-full bg-background/50 backdrop-blur-md border">
-                <TabsTrigger value="list" className="rounded-full px-4">
-                <List className="mr-2 h-4 w-4" />
-                Liste
-                </TabsTrigger>
-                <TabsTrigger value="graph" className="rounded-full px-4">
-                <Share2 className="mr-2 h-4 w-4" />
-                Graphe
-                </TabsTrigger>
-            </div>
-        </TabsList>
+        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'list' | 'graph')} className="absolute inset-0">
+            <TabsList className="absolute top-8 w-full flex justify-center z-20 bg-transparent border-0">
+                <div className="p-1 rounded-full bg-background/50 backdrop-blur-md border">
+                    <TabsTrigger value="list" className="rounded-full px-4">
+                        <List className="mr-2 h-4 w-4" />
+                        Liste
+                    </TabsTrigger>
+                    <TabsTrigger value="graph" className="rounded-full px-4">
+                        <Share2 className="mr-2 h-4 w-4" />
+                        Graphe
+                    </TabsTrigger>
+                </div>
+            </TabsList>
 
-        <TabsContent value="list" className="mt-0">
-            <ListView items={finalData} category={category} brand={brand}/>
-        </TabsContent>
+            <TabsContent value="list" className="mt-0 h-full">
+                <ListView items={finalData} category={category} brand={brand}/>
+            </TabsContent>
 
-        <TabsContent value="graph" className="mt-0 h-full min-h-[calc(100vh-4rem)] w-full">
-            <div className="absolute inset-0 z-0">
-                <NodalGraphView 
-                    items={finalData} 
-                    brands={brands}
-                    onCategorySelect={handleCategorySelect}
-                    lockedCategoryId={lockedCategoryId}
-                />
-            </div>
+            <TabsContent value="graph" className="mt-0 h-full w-full">
+                <div className="absolute inset-0 z-0">
+                    <NodalGraphView 
+                        items={finalData} 
+                        brands={brands}
+                        onCategorySelect={handleCategorySelect}
+                        activeCategoryName={activeCategoryName}
+                    />
+                </div>
+            </TabsContent>
+        </Tabs>
             
+        {viewMode === 'graph' && (
             <div className="absolute top-24 left-4 md:left-8 z-10 w-[calc(100%-2rem)] md:w-auto">
                  <div className="p-4 rounded-lg bg-background/50 backdrop-blur-md border border-border/50 max-w-sm flex flex-col max-h-[calc(100vh-8rem)]">
                     <div>
@@ -220,13 +208,13 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
                             {currentCategoryLogo && (
                             <Image 
                                 src={currentCategoryLogo} 
-                                alt={`${currentCategoryName} logo`}
+                                alt={`${activeCategoryName} logo`}
                                 width={16}
                                 height={16}
-                                className={cn(resolvedTheme === 'dark' && currentCategoryName !== 'Vue d\'ensemble' && 'invert')}
+                                className={cn(resolvedTheme === 'dark' && activeCategoryName !== "Vue d'ensemble" && 'invert')}
                             />
                             )}
-                            <span>{currentCategoryName}</span>
+                            <span>{activeCategoryName}</span>
                         </div>
                         <Button 
                             variant="outline" 
@@ -252,7 +240,7 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
                     </ScrollArea>
                 </div>
             </div>
-        </TabsContent>
-    </Tabs>
+        )}
+    </div>
   );
 }
