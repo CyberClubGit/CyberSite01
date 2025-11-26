@@ -373,7 +373,7 @@ export function Header({ categories, brands }: HeaderProps) {
       </header>
 
       {/* Floating Action Button for Mobile Menu */}
-      <div className="md:hidden fixed bottom-20 right-4 z-50">
+      <div className="md:hidden fixed bottom-20 left-4 z-50">
          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
                 <Button variant="default" size="icon" className="rounded-full w-14 h-14 shadow-lg">
