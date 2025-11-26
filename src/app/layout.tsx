@@ -40,7 +40,7 @@ export default async function RootLayout({
         <Providers>
           <div className="flex flex-col min-h-screen text-foreground bg-transparent">
             <Header categories={categories} brands={brands} />
-            <main className="flex-grow pb-16 md:pb-0">{children}</main>
+            <main className="flex-grow pb-24 md:pb-0">{children}</main>
             <Footer className="hidden md:block graph-view-active:hidden" />
           </div>
         </Providers>
@@ -49,3 +49,5 @@ export default async function RootLayout({
     </html>
   );
 }
+
+    

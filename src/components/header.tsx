@@ -311,128 +311,137 @@ export function Header({ categories, brands }: HeaderProps) {
   }
 
   return (
-    <header className="fixed bottom-0 md:sticky md:top-0 z-50 w-full border-t md:border-b md:border-t-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center">
-        <div className="mr-auto flex items-center gap-2 md:hidden">
-           <Link href="/" className="flex items-center gap-2 font-headline">
-             {cyberClubLogo && (
-               <Image
-                 src={cyberClubLogo}
-                 alt="Cyber Club Logo"
-                 width={32}
-                 height={32}
-                 className="object-contain dark:invert"
-               />
-             )}
-             <span className="font-bold">CYBER CLUB</span>
-           </Link>
-         </div>
-        <div className="hidden md:flex mr-auto items-center gap-2">
-           <div className="hidden md:flex">
-             <Select onValueChange={handleBrandChange} value={selectedBrand}>
-                <SelectTrigger className="w-auto brand-selector font-headline h-14 px-4 text-lg">
-                  <SelectValue placeholder="Select Brand" className="uppercase" />
-                </SelectTrigger>
-                <SelectContent>
-                  {brands && brands.map((brand) => (
-                    <SelectItem key={brand.Brand} value={brand.Brand}>
-                      <div className="flex items-center gap-2 whitespace-nowrap font-headline">
-                        {brand.Logo && (
-                          <Image
-                            src={brand.Logo}
-                            alt={`${brand.Brand} logo`}
-                            width={28}
-                            height={28}
-                            className="object-contain dark:invert"
-                          />
-                        )}
-                        <span>{brand.Brand}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+    <>
+      <header className="md:sticky md:top-0 fixed bottom-0 z-40 w-full border-t md:border-b md:border-t-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center">
+          {/* Logo and Brand Selector for Desktop */}
+          <div className="hidden md:flex mr-auto items-center gap-2">
+            <Select onValueChange={handleBrandChange} value={selectedBrand}>
+              <SelectTrigger className="w-auto brand-selector font-headline h-14 px-4 text-lg">
+                <SelectValue placeholder="Select Brand" className="uppercase" />
+              </SelectTrigger>
+              <SelectContent>
+                {brands && brands.map((brand) => (
+                  <SelectItem key={brand.Brand} value={brand.Brand}>
+                    <div className="flex items-center gap-2 whitespace-nowrap font-headline">
+                      {brand.Logo && (
+                        <Image
+                          src={brand.Logo}
+                          alt={`${brand.Brand} logo`}
+                          width={28}
+                          height={28}
+                          className="object-contain dark:invert"
+                        />
+                      )}
+                      <span>{brand.Brand}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Logo for Mobile */}
+          <div className="flex items-center gap-2 md:hidden">
+            <Link href="/" className="flex items-center gap-2 font-headline">
+              {cyberClubLogo && (
+                <Image
+                  src={cyberClubLogo}
+                  alt="Cyber Club Logo"
+                  width={32}
+                  height={32}
+                  className="object-contain dark:invert"
+                />
+              )}
+              <span className="font-bold">CYBER CLUB</span>
+            </Link>
+          </div>
+          
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex flex-1 items-center justify-center gap-6">
+            {renderNavLinks()}
+          </nav>
+          
+          {/* Actions for All Screens */}
+          <div className="ml-auto flex items-center justify-end flex-1 md:flex-initial space-x-2">
+              <CartIcon />
+              <div className="hidden md:flex items-center space-x-2">
+                {renderAuthSection()}
+              </div>
           </div>
         </div>
+      </header>
 
-        <nav className="hidden md:flex flex-1 items-center justify-center gap-6">
-          {renderNavLinks()}
-        </nav>
-        
-        <div className="ml-auto flex items-center justify-center md:justify-end flex-1 md:flex-initial space-x-2">
-            <CartIcon />
-            <div className="hidden md:flex items-center space-x-2">
-              {renderAuthSection()}
-            </div>
-            <div className="md:hidden">
-              <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-                <SheetTrigger asChild>
-                   <Button variant="ghost" size="icon">
-                    <Menu className="h-6 w-6" />
-                    <span className="sr-only">Open navigation menu</span>
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="p-0">
-                    <SheetHeader className="p-4 border-b">
-                        <SheetTitle className="sr-only">Menu</SheetTitle>
-                        <SheetDescription className="sr-only">Main navigation menu and brand selector.</SheetDescription>
-                         <Link href="/" className="flex items-center space-x-2" onClick={() => setIsMobileMenuOpen(false)}>
-                             {cyberClubLogo && (
-                               <Image
-                                 src={cyberClubLogo}
-                                 alt="Cyber Club Logo"
-                                 width={32}
-                                 height={32}
-                                 className="object-contain dark:invert"
-                               />
-                             )}
-                             <span className="font-bold">CYBER CLUB</span>
+      {/* Floating Action Button for Mobile Menu */}
+      <div className="md:hidden fixed bottom-20 right-4 z-50">
+         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+                <Button variant="default" size="icon" className="rounded-full w-14 h-14 shadow-lg">
+                  <Menu className="h-6 w-6" />
+                  <span className="sr-only">Open navigation menu</span>
+                </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0">
+                <SheetHeader className="p-4 border-b">
+                    <SheetTitle className="sr-only">Menu</SheetTitle>
+                    <SheetDescription className="sr-only">Main navigation menu and brand selector.</SheetDescription>
+                      <Link href="/" className="flex items-center space-x-2" onClick={() => setIsMobileMenuOpen(false)}>
+                          {cyberClubLogo && (
+                            <Image
+                              src={cyberClubLogo}
+                              alt="Cyber Club Logo"
+                              width={32}
+                              height={32}
+                              className="object-contain dark:invert"
+                            />
+                          )}
+                          <span className="font-bold">CYBER CLUB</span>
+                    </Link>
+                </SheetHeader>
+                <div className="flex flex-col gap-4 p-4">
+                    <Select onValueChange={(value) => { handleBrandChange(value); setIsMobileMenuOpen(false); }} value={selectedBrand}>
+                      <SelectTrigger className="w-full brand-selector font-headline">
+                        <SelectValue placeholder="Select Brand" className="uppercase" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {brands && brands.map((brand) => (
+                          <SelectItem key={brand.Brand} value={brand.Brand}>
+                            <div className="flex items-center gap-2 whitespace-nowrap font-headline">
+                              {brand.Logo && (
+                                <Image
+                                  src={brand.Logo}
+                                  alt={`${brand.Brand} logo`}
+                                  width={24}
+                                  height={24}
+                                  className="object-contain dark:invert"
+                                />
+                              )}
+                              <span>{brand.Brand}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  <nav className="flex flex-col gap-2 mt-4 border-t pt-4">
+                    {renderNavLinks(true)}
+                  </nav>
+                    <div className="mt-auto border-t pt-4">
+                    {user?.isAdmin && (
+                      <Button asChild variant="outline" className="w-full justify-start mb-2">
+                        <Link href="/admin/orders" onClick={() => setIsMobileMenuOpen(false)}>
+                          <Shield className="mr-2 h-4 w-4" />
+                          Admin
                         </Link>
-                    </SheetHeader>
-                    <div className="flex flex-col gap-4 p-4">
-                       <Select onValueChange={(value) => { handleBrandChange(value); setIsMobileMenuOpen(false); }} value={selectedBrand}>
-                          <SelectTrigger className="w-full brand-selector font-headline">
-                            <SelectValue placeholder="Select Brand" className="uppercase" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {brands && brands.map((brand) => (
-                              <SelectItem key={brand.Brand} value={brand.Brand}>
-                                <div className="flex items-center gap-2 whitespace-nowrap font-headline">
-                                  {brand.Logo && (
-                                    <Image
-                                      src={brand.Logo}
-                                      alt={`${brand.Brand} logo`}
-                                      width={24}
-                                      height={24}
-                                      className="object-contain dark:invert"
-                                    />
-                                  )}
-                                  <span>{brand.Brand}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      <nav className="flex flex-col gap-2 mt-4 border-t pt-4">
-                        {renderNavLinks(true)}
-                      </nav>
-                       <div className="mt-auto border-t pt-4">
-                        {user?.isAdmin && (
-                          <Button asChild variant="outline" className="w-full justify-start mb-2">
-                            <Link href="/admin/orders" onClick={() => setIsMobileMenuOpen(false)}>
-                              <Shield className="mr-2 h-4 w-4" />
-                              Admin
-                            </Link>
-                          </Button>
-                        )}
-                        {renderAuthSection()}
-                       </div>
+                      </Button>
+                    )}
+                    {renderAuthSection()}
                     </div>
-                </SheetContent>
-              </Sheet>
-            </div>
-        </div>
+                </div>
+            </SheetContent>
+          </Sheet>
       </div>
-    </header>
+    </>
   );
 }
+
+    
