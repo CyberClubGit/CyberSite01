@@ -34,7 +34,7 @@ const CATEGORY_ANGLES: Record<string, number> = {
 
 const getNodeColor = (theme: string | undefined, type: 'center' | 'category' | 'item', activityColor?: string) => {
   const isDark = theme === 'dark';
-  if (type === 'category' && activityColor) {
+  if (activityColor) {
     return activityColor;
   }
   switch (type) {
@@ -155,7 +155,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
                     x: attractor.x, y: attractor.y,
                     vx: 0, vy: 0, radius: 6, label: item.title, type: 'item',
                     attractor,
-                    color: getNodeColor(resolvedTheme, 'item'),
+                    color: getNodeColor(resolvedTheme, 'item', activityColorMap.Cybernetics),
                     href: item.pdfUrl || '#'
                 };
                 newNodes.push(itemNode);
@@ -177,7 +177,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
                     x: attractor.x, y: attractor.y,
                     vx: 0, vy: 0, radius: 6, label: item.title, type: 'item',
                     attractor,
-                    color: getNodeColor(resolvedTheme, 'item'),
+                    color: getNodeColor(resolvedTheme, 'item', categoryNode.color),
                     href: item.pdfUrl || '#'
                 };
                 newNodes.push(itemNode);
