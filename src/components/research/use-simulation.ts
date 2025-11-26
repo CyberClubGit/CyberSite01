@@ -33,7 +33,7 @@ export const useSimulation = (options: SimulationOptions = {}) => {
   } = options;
 
   const nodesRef = useRef<Node[]>([]);
-  const [, setTick] = useState(0);
+  const [, setTick] = useState(0); // Used to force re-render
   const animationFrameRef = useRef<number>();
 
   const runSimulation = useCallback(() => {
@@ -43,19 +43,19 @@ export const useSimulation = (options: SimulationOptions = {}) => {
     }
 
     const currentNodes = nodesRef.current;
-    
+    let changed = false;
+
     for (let i = 0; i < currentNodes.length; i++) {
       const nodeA = currentNodes[i];
 
-      // 1. Attraction Force to attractor
+      // Attraction Force to attractor
       const dxAttractor = nodeA.attractor.x - nodeA.x;
       const dyAttractor = nodeA.attractor.y - nodeA.y;
       nodeA.vx += dxAttractor * attractionStiffness;
       nodeA.vy += dyAttractor * attractionStiffness;
 
-      // 2. Repulsion Force from other nodes
-      for (let j = 0; j < currentNodes.length; j++) {
-        if (i === j) continue;
+      // Repulsion Force from other nodes
+      for (let j = i + 1; j < currentNodes.length; j++) {
         const nodeB = currentNodes[j];
         
         const dx = nodeA.x - nodeB.x;
@@ -63,35 +63,50 @@ export const useSimulation = (options: SimulationOptions = {}) => {
         let distance = Math.sqrt(dx * dx + dy * dy);
         distance = Math.max(1, distance);
 
-        const minDistance = nodeA.radius + nodeB.radius;
+        const force = (repulsionStiffness / (distance * distance));
+        const repulsionForceX = (dx / distance) * force;
+        const repulsionForceY = (dy / distance) * force;
+        
+        nodeA.vx += repulsionForceX;
+        nodeA.vy += repulsionForceY;
+        nodeB.vx -= repulsionForceX;
+        nodeB.vy -= repulsionForceY;
 
+        // Collision avoidance
+        const minDistance = nodeA.radius + nodeB.radius;
         if (distance < minDistance) {
             const overlap = minDistance - distance;
-            const pushFactor = overlap * 0.05;
-            nodeA.vx += (dx / distance) * pushFactor;
-            nodeA.vy += (dy / distance) * pushFactor;
+            const pushFactor = overlap * 0.1; 
+            const pushX = (dx / distance) * pushFactor;
+            const pushY = (dy / distance) * pushFactor;
+            nodeA.vx += pushX;
+            nodeA.vy += pushY;
+            nodeB.vx -= pushX;
+            nodeB.vy -= pushY;
         }
-        
-        const force = (repulsionStiffness / (distance * distance));
-        nodeA.vx += (dx / distance) * force;
-        nodeA.vy += (dy / distance) * force;
       }
     }
 
-    // 3. Update positions and apply damping
+    // Update positions and apply damping
     for (const node of currentNodes) {
+      if (Math.abs(node.vx) > 0.01 || Math.abs(node.vy) > 0.01) {
+        changed = true;
+      }
       node.vx *= damping;
       node.vy *= damping;
       node.x += node.vx;
       node.y += node.vy;
     }
 
+    if(changed) {
+        forceUpdate(); // Force re-render if nodes moved
+    }
     animationFrameRef.current = requestAnimationFrame(runSimulation);
   }, [attractionStiffness, repulsionStiffness, damping]);
   
   const setNodes = useCallback((newNodes: Node[]) => {
       nodesRef.current = newNodes;
-      setTick(t => t + 1); // Force a re-render to show initial state
+      forceUpdate();
   }, []);
 
   const forceUpdate = useCallback(() => {
