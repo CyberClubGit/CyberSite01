@@ -14,6 +14,8 @@ interface NodalGraphNodeProps {
   onHover: (id: string | null) => void;
 }
 
+const ITEM_RADIUS_FOR_GLOW = 60; // Should match itemRadius in NodalGraphView
+
 const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovered, isLocked, onClick, onHover }) => {
   const { x, y, radius, label, type, color, href, logoUrl } = node;
 
@@ -42,6 +44,8 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
   const scale = isHovered ? 1.2 : 1;
   const logoSize = radius * 1.2;
 
+  const glowRadius = radius + ITEM_RADIUS_FOR_GLOW + 20; // Category radius + item orbit radius + padding
+
   return (
     <g 
       transform={`translate(${x}, ${y}) scale(${scale})`} 
@@ -52,22 +56,24 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
     >
       {/* Glow Effect for Locked Node */}
       <defs>
-          <filter id={`glow-${node.id}`}>
-              <feGaussianBlur stdDeviation="3.5" result="coloredBlur" />
+          <filter id={`glow-filter-${node.id}`} x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="15" result="coloredBlur" />
               <feMerge>
                   <feMergeNode in="coloredBlur" />
                   <feMergeNode in="SourceGraphic" />
               </feMerge>
           </filter>
       </defs>
-      {isLocked && (
+
+      {isLocked && (isCategory || isCenter) && (
         <circle
-          r={radius + 5}
+          r={glowRadius}
           fill={color}
-          className="opacity-70"
-          style={{ filter: `url(#glow-${node.id})` }}
+          className="opacity-20 transition-opacity duration-500"
+          style={{ filter: `url(#glow-filter-${node.id})`, pointerEvents: 'none' }}
         />
       )}
+
 
       {/* Circle Elements */}
       <circle
