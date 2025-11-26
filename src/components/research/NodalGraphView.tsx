@@ -332,7 +332,6 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
             const isGradientLink = !!link.gradientId;
             
             const lineProps = {
-                key: i,
                 x1: source.x,
                 y1: source.y,
                 x2: target.x,
@@ -353,7 +352,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
                }
             }
             
-            return <line {...lineProps} />;
+            return <line key={i} {...lineProps} />;
           })}
         </g>
         
