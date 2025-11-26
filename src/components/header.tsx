@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -338,8 +339,52 @@ export function Header({ categories, brands }: HeaderProps) {
             </Select>
           </div>
 
-          {/* Logo for Mobile */}
-          <div className="flex items-center gap-2 md:hidden">
+          {/* Mobile Layout: Burger, Logo */}
+          <div className="flex items-center gap-4 md:hidden">
+            <Popover open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-6 w-6" />
+                  <span className="sr-only">Open navigation menu</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent 
+                side="top" 
+                align="start" 
+                className="w-80 bg-background/90 backdrop-blur-md p-2 border-border"
+                sideOffset={10}
+              >
+                <div className="flex flex-col gap-4">
+                  <Select onValueChange={(value) => { handleBrandChange(value); setIsMobileMenuOpen(false); }} value={selectedBrand}>
+                    <SelectTrigger className="w-full brand-selector font-headline">
+                      <SelectValue placeholder="Select Brand" className="uppercase" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {brands && brands.map((brand) => (
+                        <SelectItem key={brand.Brand} value={brand.Brand}>
+                          <div className="flex items-center gap-2 whitespace-nowrap font-headline">
+                            {brand.Logo && (
+                              <Image
+                                src={brand.Logo}
+                                alt={`${brand.Brand} logo`}
+                                width={24}
+                                height={24}
+                                className="object-contain dark:invert"
+                              />
+                            )}
+                            <span>{brand.Brand}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <nav className="flex flex-col gap-1 mt-2 border-t border-border/50 pt-2">
+                    {renderNavLinks(true)}
+                  </nav>
+                </div>
+              </PopoverContent>
+            </Popover>
+
             <Link href="/" className="flex items-center gap-2 font-headline">
               {cyberClubLogo && (
                 <Image
@@ -368,54 +413,6 @@ export function Header({ categories, brands }: HeaderProps) {
           </div>
         </div>
       </header>
-
-      {/* Floating Action Button for Mobile Menu */}
-      <div className="md:hidden fixed bottom-20 left-4 z-50">
-        <Popover open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="default" size="icon" className="rounded-full w-14 h-14 shadow-lg">
-              <Menu className="h-6 w-6" />
-              <span className="sr-only">Open navigation menu</span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent 
-            side="top" 
-            align="start" 
-            className="w-80 bg-background/90 backdrop-blur-md p-2 border-border"
-            sideOffset={10}
-          >
-            <div className="flex flex-col gap-4">
-              <Select onValueChange={(value) => { handleBrandChange(value); setIsMobileMenuOpen(false); }} value={selectedBrand}>
-                <SelectTrigger className="w-full brand-selector font-headline">
-                  <SelectValue placeholder="Select Brand" className="uppercase" />
-                </SelectTrigger>
-                <SelectContent>
-                  {brands && brands.map((brand) => (
-                    <SelectItem key={brand.Brand} value={brand.Brand}>
-                      <div className="flex items-center gap-2 whitespace-nowrap font-headline">
-                        {brand.Logo && (
-                          <Image
-                            src={brand.Logo}
-                            alt={`${brand.Brand} logo`}
-                            width={24}
-                            height={24}
-                            className="object-contain dark:invert"
-                          />
-                        )}
-                        <span>{brand.Brand}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <nav className="flex flex-col gap-1 mt-2 border-t border-border/50 pt-2">
-                {renderNavLinks(true)}
-              </nav>
-              
-            </div>
-          </PopoverContent>
-        </Popover>
-      </div>
     </>
   );
 }
