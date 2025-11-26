@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
@@ -19,7 +20,7 @@ interface Link {
 }
 
 
-// Catégories fixes et leurs positions angulaires
+// Catégories fixes et leurs positions angulaires pour une disposition radiale
 const CATEGORY_ANGLES: Record<string, number> = {
   'Design': 0,
   'Architecture': 45,
@@ -61,6 +62,8 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items }) => {
       const itemCategories = item.Activity?.split(',').map(c => c.trim()) || ['Other'];
       itemCategories.forEach(cat => categories.add(cat));
     });
+    // Ensure all predefined categories exist for stable layout
+    Object.keys(CATEGORY_ANGLES).forEach(cat => categories.add(cat));
     return Array.from(categories);
   }, [items]);
 
@@ -84,7 +87,10 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items }) => {
 
     // 2. Category Nodes
     const categoryNodes: Record<string, Node> = {};
-    allCategories.forEach(cat => {
+    const sortedCategories = allCategories.sort((a, b) => (CATEGORY_ANGLES[a] ?? 999) - (CATEGORY_ANGLES[b] ?? 999));
+
+    sortedCategories.forEach(cat => {
+      // Utiliser l'angle prédéfini pour une disposition radiale parfaite
       const angle = (CATEGORY_ANGLES[cat] ?? Math.random() * 360) * (Math.PI / 180);
       const attractor = {
         x: categoryRadius * Math.cos(angle),
@@ -107,11 +113,10 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items }) => {
       newLinks.push({ source: 'center', target: catNode.id });
     });
 
-    // 3. Item Nodes - CRITICAL CHANGE: DUPLICATE FOR MULTI-CATEGORY
+    // 3. Item Nodes - DUPLICATE FOR MULTI-CATEGORY
     items.forEach(item => {
       const itemCategories = item.Activity?.split(',').map(c => c.trim()).filter(c => allCategories.includes(c));
       
-      // If no valid category, assign to 'Other'
       if (itemCategories.length === 0) {
         itemCategories.push('Other');
       }
@@ -119,7 +124,6 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items }) => {
       itemCategories.forEach(categoryName => {
         const categoryNode = categoryNodes[categoryName];
         if (categoryNode) {
-          // Create a unique ID for each item instance per category
           const itemNodeId = `${item.id}-${categoryName}`;
           
           const itemNode: Node = {
@@ -136,7 +140,6 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items }) => {
           };
           newNodes.push(itemNode);
           
-          // Link from category to this specific item instance
           newLinks.push({ source: categoryNode.id, target: itemNode.id });
         }
       });
@@ -147,7 +150,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items }) => {
 
     // Auto-frame on load
     const timeout = setTimeout(() => {
-        panZoomRef.current?.zoomTo(0, 0, 0.5, false); // Zoom out a bit to see the whole graph
+        panZoomRef.current?.zoomTo(0, 0, 0.5, false);
     }, 500);
 
     return () => clearTimeout(timeout);
