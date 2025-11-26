@@ -1,5 +1,5 @@
 
-import { getBrands, getCategories, getCategoryData, processGalleryLinks, type Brand, type Category } from '@/lib/sheets';
+import { getBrands, getCategories, getCategoryData, getNetwork, processGalleryLinks, type Brand, type Category } from '@/lib/sheets';
 import { notFound } from 'next/navigation';
 import { CatalogPageClient } from '@/components/catalog-page-client';
 import DefaultPageLayout from '@/components/default-page-layout';
@@ -89,7 +89,8 @@ export default async function CatchAllPage({ params }: { params: { slug:string[]
   
   // Specific layout for the Home page
   if (category.Url.toLowerCase() === 'home') {
-    return <HomePageClient category={category} brand={brand} />;
+    const network = await getNetwork();
+    return <HomePageClient category={category} brand={brand} network={network} />;
   }
   
   // Get raw data for the current category

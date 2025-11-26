@@ -51,14 +51,29 @@ export interface Project {
   [key: string]: any;
 }
 
+export interface NetworkMember {
+  Name: string;
+  Bio: string;
+  'Profil Picture': string;
+  Contact: string;
+  Role: string;
+  Proximité: string;
+  Brand: string;
+  profilePictureUrl?: string;
+}
+
 
 // ===== CONFIGURATION =====
 const SPREADSHEET_ID = '2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1';
 const MASTER_SHEET_GID = '177392102';
 const BRAND_SHEET_GID = '1634708260';
+const NETWORK_SHEET_GID = '676464294';
+
 
 const MASTER_SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${MASTER_SHEET_GID}&single=true&output=csv`;
 const BRAND_SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${BRAND_SHEET_GID}&single=true&output=csv`;
+const NETWORK_SHEET_URL = `https://docs.google.com/spreadsheets/d/e/${SPREADSHEET_ID}/pub?gid=${NETWORK_SHEET_GID}&single=true&output=csv`;
+
 
 // ===== HELPER: FETCH & PARSE CSV =====
 async function fetchAndParseCsv<T>(url: string): Promise<T[]> {
@@ -155,6 +170,22 @@ export const getBrands = unstable_cache(
   ['brands'],
   { revalidate: 300 }
 );
+
+// ===== FETCHER: NETWORK =====
+export const getNetwork = unstable_cache(
+  async (): Promise<NetworkMember[]> => {
+    console.log('[Sheets] === Fetching Network Members ===');
+    const rawData = await fetchAndParseCsv<any>(NETWORK_SHEET_URL);
+
+    return rawData.map((row) => ({
+      ...row,
+      profilePictureUrl: row['Profil Picture'] ? convertGoogleDriveLinkToDirect(row['Profil Picture']) : undefined,
+    } as NetworkMember));
+  },
+  ['network'],
+  { revalidate: 300 }
+);
+
 
 // ===== FETCHER: CATEGORY DATA =====
 export const getCategoryData = unstable_cache(
