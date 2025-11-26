@@ -10,6 +10,7 @@ import { List, Share2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import Link from 'next/link';
 import { NodalGraphView } from './research/NodalGraphView';
+import { cn } from '@/lib/utils';
 
 type ProcessedItem = ReturnType<typeof import('@/lib/sheets').processGalleryLinks>;
 
@@ -53,7 +54,7 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
 
   return (
     <>
-      <div className="relative bg-transparent">
+      <div className={cn("relative bg-transparent", viewMode === 'graph' && 'graph-view-active')}>
         {category.Background && <VideoBackground src={category.Background} />}
 
         {viewMode === 'graph' && (

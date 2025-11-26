@@ -1,13 +1,15 @@
+
 'use client';
 
 import Link from 'next/link';
 import { Network } from 'lucide-react';
 import { ThemeToggleButton } from './theme-toggle-button';
+import { cn } from '@/lib/utils';
 
 
-export function Footer() {
+export function Footer({ className }: { className?: string }) {
   return (
-    <footer className="border-t bg-background/80 backdrop-blur-sm">
+    <footer className={cn("border-t bg-background/80 backdrop-blur-sm", className)}>
       <div className="container py-8 px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Colonne 1: Logo & Description */}

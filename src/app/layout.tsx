@@ -6,6 +6,7 @@ import { Providers } from './providers';
 import type { Metadata } from 'next';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
+import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: 'CYBER CLUB',
@@ -38,8 +39,8 @@ export default async function RootLayout({
         <Providers>
           <div className="flex flex-col min-h-screen text-foreground bg-transparent">
             <Header categories={categories} brands={brands} />
-            <main className="flex-grow">{children}</main>
-            <Footer />
+            <main className="flex-grow group/research-page">{children}</main>
+            <Footer className="group-has-[.graph-view-active]:hidden" />
           </div>
         </Providers>
         <Toaster />
