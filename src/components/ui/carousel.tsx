@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -252,6 +253,29 @@ const CarouselNext = React.forwardRef<
 })
 CarouselNext.displayName = "CarouselNext"
 
+type DotButtonProps = React.ComponentPropsWithRef<'button'> & {
+  selected: boolean;
+};
+
+const DotButton = React.forwardRef<HTMLButtonElement, DotButtonProps>(
+  (props, ref) => {
+    const { selected, ...rest } = props;
+    return (
+      <button
+        ref={ref}
+        type="button"
+        className={cn(
+          'h-2 w-2 rounded-full transition-all duration-300',
+          selected ? 'w-4 bg-primary' : 'bg-muted-foreground/50'
+        )}
+        {...rest}
+      />
+    );
+  }
+);
+DotButton.displayName = 'DotButton';
+
+
 export {
   type CarouselApi,
   Carousel,
@@ -259,4 +283,5 @@ export {
   CarouselItem,
   CarouselPrevious,
   CarouselNext,
+  DotButton,
 }

@@ -1,18 +1,19 @@
 
 'use client';
 
+import React, { useState, useCallback, useEffect } from 'react';
+import useEmblaCarousel from 'embla-carousel-react';
 import { type Brand, type Category, type NetworkMember } from '@/lib/sheets';
 import { VideoBackground } from './video-background';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
-import React, { useEffect, useRef, useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import Link from 'next/link';
 import { Instagram } from 'lucide-react';
-
+import { DotButton } from './ui/carousel'; // Assurez-vous d'importer ce composant s'il existe
 
 // NodalGraph component to be included in this file
 interface Node {
@@ -29,7 +30,7 @@ interface Node {
 }
 
 const NodalGraph: React.FC<{ members: NetworkMember[] }> = ({ members }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const { resolvedTheme } = useTheme();
   const [nodes, setNodes] = useState<Node[]>([]);
   const [hoveredNode, setHoveredNode] = useState<Node | null>(null);
@@ -259,19 +260,66 @@ interface HomePageClientProps {
   network: NetworkMember[];
 }
 
+const HorizontalCarousel = ({ children }: { children: React.ReactNode }) => {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false });
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const scrollTo = useCallback((index: number) => emblaApi && emblaApi.scrollTo(index), [emblaApi]);
+
+  const onSelect = useCallback(() => {
+    if (emblaApi) setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (emblaApi) emblaApi.on('select', onSelect);
+    return () => {
+      if (emblaApi) emblaApi.off('select', onSelect);
+    };
+  }, [emblaApi, onSelect]);
+
+  const handleWheel = (event: React.WheelEvent) => {
+    if (event.deltaY > 50) { // Scroll down
+      emblaApi?.scrollNext();
+    } else if (event.deltaY < -50) { // Scroll up
+      emblaApi?.scrollPrev();
+    }
+  };
+
+  return (
+    <div className="overflow-hidden h-screen" ref={emblaRef} onWheel={handleWheel}>
+      <div className="flex h-full">
+        {React.Children.map(children, (child, index) => (
+          <div className="relative h-screen w-screen flex-shrink-0" key={index}>
+            {child}
+          </div>
+        ))}
+      </div>
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+        {React.Children.map(children, (_, index) => (
+          <DotButton
+            key={index}
+            selected={index === selectedIndex}
+            onClick={() => scrollTo(index)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+
 export function HomePageClient({ category, brand, network }: HomePageClientProps) {
   const brandName = brand?.Brand || 'CYBER CLUB';
   const isMobile = useIsMobile();
   
   const samuel = network.find(m => m.Name === 'Samuel Belaisch');
 
-
   const renderNetworkSection = () => {
     if (isMobile) {
       if (!samuel) return null;
 
       return (
-        <section className="w-full py-12 md:py-24 bg-background">
+        <section className="w-full h-full py-12 md:py-24 bg-background flex items-center justify-center">
           <div className="container px-4 md:px-6 flex flex-col items-center">
             <h2 className="text-3xl font-headline font-bold tracking-tighter sm:text-5xl text-center mb-8">The Architect</h2>
             <Card className="w-full max-w-sm">
@@ -298,7 +346,7 @@ export function HomePageClient({ category, brand, network }: HomePageClientProps
     }
 
     return (
-      <section className="w-full h-screen py-12 md:py-24 lg:py-32 bg-background border-y">
+      <section className="w-full h-full py-12 md:py-24 lg:py-32 bg-background border-y flex items-center justify-center">
         <div className="container h-full px-4 md:px-6 flex flex-col">
           <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
             <div className="space-y-2">
@@ -318,9 +366,9 @@ export function HomePageClient({ category, brand, network }: HomePageClientProps
 
 
   return (
-    <>
+    <HorizontalCarousel>
       {/* Section 1: Hero with Video Background */}
-      <div className="relative h-screen flex flex-col justify-center items-center text-center p-4">
+      <div className="h-full w-full flex flex-col justify-center items-center text-center p-4">
         {category.Background && <VideoBackground src={category.Background} />}
         <div className="relative z-10 bg-background/20 backdrop-blur-sm p-8 rounded-lg">
           <h1 className="text-4xl font-headline font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl/none">
@@ -331,11 +379,13 @@ export function HomePageClient({ category, brand, network }: HomePageClientProps
       </div>
 
       {/* Section 2: Network / Architect Section */}
-      {renderNetworkSection()}
+      <div className="h-full w-full">
+         {renderNetworkSection()}
+      </div>
 
 
       {/* Section 3: Blank Content Section */}
-      <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
+      <section className="w-full h-full py-12 md:py-24 lg:py-32 bg-background flex items-center justify-center">
         <div className="container px-4 md:px-6">
           <div className="flex flex-col items-center justify-center space-y-4 text-center">
             <div className="space-y-2">
@@ -347,6 +397,6 @@ export function HomePageClient({ category, brand, network }: HomePageClientProps
           </div>
         </div>
       </section>
-    </>
+    </HorizontalCarousel>
   );
 }
