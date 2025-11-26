@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -8,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { List, Share2, AppWindow, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import Link from 'next/link';
-import { NodalGraphView } from './research/NodalGraphView';
+import { NodalGraphView, type Node } from './research/NodalGraphView';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
 import { Button } from './ui/button';
@@ -90,15 +91,33 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
     }));
   }, [initialData, brand]);
 
-  const activeCategoryName = useMemo(() => {
-      if (viewState.level === 'category') return viewState.targetNode.label;
-      if (viewState.level === 'item') return viewState.targetNode.parentAttractor?.label || "Vue d'ensemble";
-      return "Vue d'ensemble";
-  }, [viewState]);
+  const { activeCategoryName, nodeMap, itemNodesForCurrentCategory } = useMemo(() => {
+    const nodeMap = new Map<string, Node>();
+    // This is a simplified way to get nodes. In a real scenario, this would come from the simulation.
+    // For now, we just create a map for lookup.
+    finalData.forEach(item => {
+      const activities = item.Activity?.split(',').map(c => c.trim()) || [];
+      activities.forEach(activity => {
+          nodeMap.set(`${item.id}-${activity}`, {
+              id: `${item.id}-${activity}`,
+              type: 'item',
+              label: item.title,
+              // Other properties are not needed for this logic
+          } as Node);
+      });
+    });
+
+    let catName = "Vue d'ensemble";
+    if (viewState.level === 'category') catName = viewState.targetNode.label;
+    if (viewState.level === 'item') catName = viewState.targetNode.parentAttractor?.label || "Vue d'ensemble";
+    
+    const itemNodes = Array.from(nodeMap.values()).filter(node => node.parentAttractor?.label === catName);
+
+    return { activeCategoryName: catName, nodeMap, itemNodesForCurrentCategory: itemNodes };
+  }, [viewState, finalData]);
 
   const activeItem = useMemo(() => {
       if (viewState.level === 'item') {
-          // The node ID is constructed as `${item.id}-${activityName}`. We need to find the original item.
           const originalItemId = viewState.targetNode.id.split('-')[0];
           return finalData.find(item => item.id === originalItemId) || null;
       }
@@ -133,6 +152,25 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
     });
   }, [finalData, activeCategoryName]);
 
+  const handleItemNavigation = (direction: 'next' | 'prev') => {
+    if (!activeItem || itemsForCurrentCategory.length <= 1) return;
+
+    const currentIndex = itemsForCurrentCategory.findIndex(item => item.id === activeItem.id);
+    if (currentIndex === -1) return;
+
+    const newIndex = (currentIndex + (direction === 'next' ? 1 : -1) + itemsForCurrentCategory.length) % itemsForCurrentCategory.length;
+    const newItem = itemsForCurrentCategory[newIndex];
+    
+    // Find the corresponding node for the new item in the current category
+    const newNodeId = `${newItem.id}-${activeCategoryName}`;
+    const newNode = nodeMap.get(newNodeId);
+
+    if (newNode) {
+        setViewState({ level: 'item', targetNode: newNode });
+    }
+  };
+
+
   const cyberClubLogo = useMemo(() => {
       const brand = brands.find(b => b.Brand === 'Cyber Club');
       return brand?.Logo || null;
@@ -144,12 +182,8 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
     : currentCategoryBrand?.Logo || null;
 
   const handleCategorySelect = useCallback((categoryName: string) => {
-      // This function is now mainly for the navigation buttons, as the graph manages its own state
-      const targetNode = viewState.level === 'category' ? viewState.targetNode : null;
-      if (targetNode?.label !== categoryName) {
-        // This could trigger a search for the category node and a zoom, if desired
-      }
-  }, [viewState]);
+      // This is now handled by the graph view's internal logic
+  }, []);
   
   const navigateCategories = (direction: 'next' | 'prev') => {
       const currentIndex = navigationCategories.indexOf(activeCategoryName);
@@ -158,7 +192,6 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
           : (currentIndex - 1 + navigationCategories.length) % navigationCategories.length;
       
       handleCategorySelect(navigationCategories[newIndex]);
-      // In the new architecture, we'd need to find the node and set the view state
   };
 
   const handleOpenApp = (url: string) => {
@@ -205,7 +238,7 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
             </TabsList>
 
             <TabsContent value="list" className="mt-0 h-full">
-                <div className="absolute top-24 left-4 md:left-8 z-10 max-w-sm w-[calc(100%-2rem)] md:w-auto">
+                 <div className="absolute top-24 left-4 md:left-8 z-10 max-w-sm w-[calc(100%-2rem)] md:w-auto">
                     <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl capitalize">
                         {category?.Name || 'Recherche'}
                     </h1>
@@ -245,7 +278,7 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
             
         {viewMode === 'graph' && (
             <>
-                <div className="absolute top-24 left-4 md:left-8 z-10 max-w-sm w-[calc(100%-2rem)] md:w-auto flex flex-col">
+                <div className="absolute top-24 left-4 md:left-8 z-10 max-w-sm w-[calc(100%-2rem)] md:w-auto">
                     {/* Bloc Titre + Slogan */}
                     <div className="mb-4">
                         <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl capitalize">
@@ -310,7 +343,14 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
 
                 {activeItem && viewMode === 'graph' && (
                     <div className="absolute top-1/2 -translate-y-1/2 right-8 z-10">
-                        <ItemDetailPanel item={activeItem} onOpenApp={handleOpenApp} />
+                        <ItemDetailPanel 
+                            item={activeItem} 
+                            onOpenApp={handleOpenApp}
+                            onNextItem={() => handleItemNavigation('next')}
+                            onPrevItem={() => handleItemNavigation('prev')}
+                            hasNext={itemsForCurrentCategory.length > 1}
+                            hasPrev={itemsForCurrentCategory.length > 1}
+                        />
                     </div>
                 )}
             </>
