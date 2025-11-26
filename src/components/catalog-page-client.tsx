@@ -107,7 +107,7 @@ export function CatalogPageClient({ initialData, category, brand, types, materia
   };
 
   if (isMobile) {
-    return <MobileCatalogView initialData={finalData} onSelectItem={setSelectedItem} />;
+    return <MobileCatalogView initialData={finalData} />;
   }
 
   return (
