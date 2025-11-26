@@ -256,6 +256,11 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, v
     return null;
   }, [viewState]);
 
+  const activeItemId = useMemo(() => {
+    if (viewState.level === 'item') return viewState.targetNode.id;
+    return null;
+  }, [viewState]);
+
   const itemLinks = useMemo(() => {
     if (!activeCategoryId) return new Set();
     const items = new Set<string>();
@@ -333,6 +338,8 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, v
             isLocked={activeCategoryId === node.id}
             isAnotherNodeLocked={!!activeCategoryId && activeCategoryId !== node.id && node.type === 'category'}
             isEmphasized={itemLinks.has(node.id)}
+            isSelectedItem={activeItemId === node.id}
+            isAnotherItemSelected={!!activeItemId && activeItemId !== node.id && node.type === 'item'}
             onClick={onNodeClick}
             onHover={setHoveredNodeId}
           />

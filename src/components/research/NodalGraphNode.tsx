@@ -12,13 +12,25 @@ interface NodalGraphNodeProps {
   isLocked: boolean;
   isEmphasized: boolean; // For item nodes when their category is locked
   isAnotherNodeLocked: boolean; // True if a different node is locked
+  isSelectedItem: boolean; // True if this specific item node is the one selected
+  isAnotherItemSelected: boolean; // True if another item node is selected
   onClick: (node: Node) => void;
   onHover: (id: string | null) => void;
 }
 
 const ITEM_RADIUS_FOR_GLOW = 60; // Should match itemRadius in NodalGraphView
 
-const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovered, isLocked, isEmphasized, isAnotherNodeLocked, onClick, onHover }) => {
+const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ 
+  node, 
+  isHovered, 
+  isLocked, 
+  isEmphasized, 
+  isAnotherNodeLocked,
+  isSelectedItem,
+  isAnotherItemSelected,
+  onClick, 
+  onHover 
+}) => {
   const { x, y, label, type, color, href, logoUrl, parentAttractor } = node;
   let { radius } = node;
 
@@ -40,9 +52,17 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
   const isCenter = type === 'center';
   const isCategory = type === 'category';
 
-  if (isItem && isEmphasized) {
-    radius *= 3;
+  if (isItem) {
+    if (isEmphasized && !isAnotherItemSelected) {
+        radius *= 3; // Emphasized within a category view
+    }
+    if (isSelectedItem) {
+        radius *= 1.2; // The selected item gets bigger
+    } else if (isAnotherItemSelected) {
+        radius *= 0.8; // Other items get smaller
+    }
   }
+
 
   // --- Label Positioning ---
   let labelXOffset = -50;
