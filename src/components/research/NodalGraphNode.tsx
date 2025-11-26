@@ -52,6 +52,7 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
   let textAlign: 'center' | 'left' | 'right' = 'center';
   let labelFontSize = '12px';
   let labelIsVisible = true;
+  let whiteSpace: 'normal' | 'nowrap' = 'normal';
 
   const glowRadius = radius + ITEM_RADIUS_FOR_GLOW + 20;
 
@@ -61,26 +62,29 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
     labelXOffset = -labelWidth / 2;
     labelYOffset = radius + 8;
     labelFontSize = '14px';
+    whiteSpace = 'nowrap';
     // Center label is always visible and below the node
   } else if (isCategory) {
     if (isLocked) {
       // **CATEGORY LOCKED VIEW**
-      labelWidth = 220; // Increased width
-      labelHeight = 50; // Increased height
+      labelWidth = 220;
+      labelHeight = 50;
       labelXOffset = -labelWidth / 2;
-      labelYOffset = -glowRadius - labelHeight - 10; // Position above the glow
+      labelYOffset = -glowRadius - labelHeight - 10;
       textAlign = 'center';
       labelFontSize = '24px';
+      whiteSpace = 'nowrap';
     } else if (isAnotherNodeLocked) {
       // **ANOTHER CATEGORY IS LOCKED VIEW**
-      labelIsVisible = false; // Hide label if another category is locked
+      labelIsVisible = false;
     } else {
       // **GENERAL OVERVIEW**
-      const deltaX = x; // position relative to (0,0) center
+      const deltaX = x;
       const deltaY = y;
-      labelWidth = 200; // Increased width
-      labelHeight = 80; // Increased height for wrapping
-      labelFontSize = '64px'; // Increased font size for overview
+      labelWidth = 200; // Increased width to prevent wrapping
+      labelHeight = 80;
+      labelFontSize = '64px';
+      whiteSpace = 'nowrap'; // Force single line
       
       if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5) { // More horizontal
         textAlign = deltaX > 0 ? 'left' : 'right';
@@ -100,6 +104,7 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
           labelWidth = 80;
           labelHeight = 24;
           labelFontSize = '10px';
+          whiteSpace = 'nowrap';
 
           if (Math.abs(deltaX) > Math.abs(deltaY)) {
             // Horizontally dominant
@@ -206,8 +211,7 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
               borderRadius: isItem ? '4px' : '8px',
               textAlign: textAlign,
               width: '100%',
-              whiteSpace: 'normal', // Allow wrapping
-              wordWrap: 'break-word', // Break long words if necessary
+              whiteSpace: whiteSpace,
               fontSize: labelFontSize,
               fontFamily: (isCenter || isCategory) ? 'Orbitron, sans-serif' : 'Kode Mono, monospace',
               fontWeight: (isCenter || isCategory) ? 'bold' : 'normal',
