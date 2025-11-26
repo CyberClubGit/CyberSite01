@@ -8,13 +8,10 @@ import { useTheme } from 'next-themes';
 import { Menu, User, Settings, LogOut, Shield, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -200,7 +197,7 @@ export function Header({ categories, brands }: HeaderProps) {
                 key={category.Name}
                 href={linkHref}
                 onClick={() => isMobile && setIsMobileMenuOpen(false)}
-                className={`text-sm font-medium transition-colors hover:text-primary menu-link ${isActive ? 'active' : ''} ${isMobile ? 'block w-full text-left p-2' : ''}`}
+                className={`text-sm font-medium transition-colors hover:text-primary menu-link ${isActive ? 'active' : ''} ${isMobile ? 'block w-full text-left p-2 rounded-md hover:bg-muted' : ''}`}
             >
                 <div className="flex items-center gap-2">
                   {category.Url.toLowerCase() === 'home' ? <Home className="w-5 h-5" /> : (
@@ -374,74 +371,61 @@ export function Header({ categories, brands }: HeaderProps) {
 
       {/* Floating Action Button for Mobile Menu */}
       <div className="md:hidden fixed bottom-20 left-4 z-50">
-         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-            <SheetTrigger asChild>
-                <Button variant="default" size="icon" className="rounded-full w-14 h-14 shadow-lg">
-                  <Menu className="h-6 w-6" />
-                  <span className="sr-only">Open navigation menu</span>
-                </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0">
-                <SheetHeader className="p-4 border-b">
-                    <SheetTitle className="sr-only">Menu</SheetTitle>
-                    <SheetDescription className="sr-only">Main navigation menu and brand selector.</SheetDescription>
-                      <Link href="/" className="flex items-center space-x-2" onClick={() => setIsMobileMenuOpen(false)}>
-                          {cyberClubLogo && (
-                            <Image
-                              src={cyberClubLogo}
-                              alt="Cyber Club Logo"
-                              width={32}
-                              height={32}
-                              className="object-contain dark:invert"
-                            />
-                          )}
-                          <span className="font-bold">CYBER CLUB</span>
+        <Popover open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="default" size="icon" className="rounded-full w-14 h-14 shadow-lg">
+              <Menu className="h-6 w-6" />
+              <span className="sr-only">Open navigation menu</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent 
+            side="top" 
+            align="start" 
+            className="w-80 bg-background/90 backdrop-blur-md p-2 border-border"
+            sideOffset={10}
+          >
+            <div className="flex flex-col gap-4">
+              <Select onValueChange={(value) => { handleBrandChange(value); setIsMobileMenuOpen(false); }} value={selectedBrand}>
+                <SelectTrigger className="w-full brand-selector font-headline">
+                  <SelectValue placeholder="Select Brand" className="uppercase" />
+                </SelectTrigger>
+                <SelectContent>
+                  {brands && brands.map((brand) => (
+                    <SelectItem key={brand.Brand} value={brand.Brand}>
+                      <div className="flex items-center gap-2 whitespace-nowrap font-headline">
+                        {brand.Logo && (
+                          <Image
+                            src={brand.Logo}
+                            alt={`${brand.Brand} logo`}
+                            width={24}
+                            height={24}
+                            className="object-contain dark:invert"
+                          />
+                        )}
+                        <span>{brand.Brand}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <nav className="flex flex-col gap-1 mt-2 border-t border-border/50 pt-2">
+                {renderNavLinks(true)}
+              </nav>
+              <div className="mt-2 border-t border-border/50 pt-2">
+                {user?.isAdmin && (
+                  <Button asChild variant="ghost" className="w-full justify-start mb-2">
+                    <Link href="/admin/orders" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Shield className="mr-2 h-4 w-4" />
+                      Admin
                     </Link>
-                </SheetHeader>
-                <div className="flex flex-col gap-4 p-4">
-                    <Select onValueChange={(value) => { handleBrandChange(value); setIsMobileMenuOpen(false); }} value={selectedBrand}>
-                      <SelectTrigger className="w-full brand-selector font-headline">
-                        <SelectValue placeholder="Select Brand" className="uppercase" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {brands && brands.map((brand) => (
-                          <SelectItem key={brand.Brand} value={brand.Brand}>
-                            <div className="flex items-center gap-2 whitespace-nowrap font-headline">
-                              {brand.Logo && (
-                                <Image
-                                  src={brand.Logo}
-                                  alt={`${brand.Brand} logo`}
-                                  width={24}
-                                  height={24}
-                                  className="object-contain dark:invert"
-                                />
-                              )}
-                              <span>{brand.Brand}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  <nav className="flex flex-col gap-2 mt-4 border-t pt-4">
-                    {renderNavLinks(true)}
-                  </nav>
-                    <div className="mt-auto border-t pt-4">
-                    {user?.isAdmin && (
-                      <Button asChild variant="outline" className="w-full justify-start mb-2">
-                        <Link href="/admin/orders" onClick={() => setIsMobileMenuOpen(false)}>
-                          <Shield className="mr-2 h-4 w-4" />
-                          Admin
-                        </Link>
-                      </Button>
-                    )}
-                    {renderAuthSection()}
-                    </div>
-                </div>
-            </SheetContent>
-          </Sheet>
+                  </Button>
+                )}
+                {renderAuthSection()}
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
     </>
   );
 }
-
-    
