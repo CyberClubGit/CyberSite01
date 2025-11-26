@@ -60,7 +60,7 @@ const getNodeColor = (theme: string | undefined, type: 'center' | 'category' | '
 
 const ZOOM_LEVEL_CATEGORY = 1.2;
 const ZOOM_LEVEL_OVERVIEW = 0.4;
-const ATTRACTION_RADIUS = 50; // Screen pixels
+const ATTRACTION_RADIUS = 30; // Screen pixels - REDUCED from 50 to make escaping easier
 
 export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands }) => {
   const { resolvedTheme } = useTheme();

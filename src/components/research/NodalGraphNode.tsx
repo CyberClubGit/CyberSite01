@@ -83,7 +83,7 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
       const deltaY = y;
       labelWidth = 220; // Increased width to prevent wrapping
       labelHeight = 60;
-      labelFontSize = '44px'; // Reduced font size (was 64px)
+      labelFontSize = '44px';
       whiteSpace = 'nowrap'; // Force single line
       
       const HORIZONTALITY_THRESHOLD = 1.2;
@@ -189,7 +189,7 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
                 alt={`${label} logo`}
                 width={logoSize}
                 height={logoSize}
-                className="rounded-full object-contain"
+                className="object-contain"
                 style={{ filter: 'brightness(0) invert(1)' }}
             />
         </foreignObject>
