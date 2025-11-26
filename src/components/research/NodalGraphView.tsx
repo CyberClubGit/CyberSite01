@@ -256,8 +256,9 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
   
   const handleManualPan = useCallback(() => {
       setIsUserPanning(true);
-      onCategorySelect("Vue d'ensemble");
-  }, [onCategorySelect]);
+      // Optional: uncomment the line below if panning should always return to overview
+      // onCategorySelect("Vue d'ensemble");
+  }, []);
 
   const nodeMap = useMemo(() => {
     const map = new Map<string, Node>();

@@ -65,13 +65,14 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
 
   // Debounced callback for transform changes
   const debouncedOnTransformChange = useDebouncedCallback((state: PanZoomState) => {
-    if (!isAnimatingRef.current) {
-        onTransformChange?.(state);
-    }
+    onTransformChange?.(state);
   }, 100);
   
   useEffect(() => {
-    debouncedOnTransformChange(getCurrentState());
+    // We only call the debounced function if not animating to avoid interference
+    if (!isAnimatingRef.current) {
+        debouncedOnTransformChange(getCurrentState());
+    }
   }, [transform, getCurrentState, debouncedOnTransformChange]);
 
   useImperativeHandle(ref, () => ({
@@ -79,7 +80,6 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
       const parent = containerRef.current?.parentElement;
       if (!parent || !contentRef.current) return;
 
-      isAnimatingRef.current = true;
       
       const clampedZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
 
@@ -90,6 +90,7 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
       const newY = centerY - y * clampedZoom;
       
       if (animate) {
+        isAnimatingRef.current = true;
         contentRef.current.style.transition = 'transform 700ms cubic-bezier(0.25, 1, 0.5, 1)';
         setTransform({
           x: newX,
@@ -114,7 +115,10 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
 
   const onWheel = useCallback((e: WheelEvent<SVGSVGElement>) => {
     e.preventDefault();
-    if (isAnimatingRef.current) isAnimatingRef.current = false;
+    if (isAnimatingRef.current) {
+        isAnimatingRef.current = false;
+        if(contentRef.current) contentRef.current.style.transition = '';
+    };
     onManualPan?.();
 
     const rect = e.currentTarget.getBoundingClientRect();
@@ -132,7 +136,10 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
 
   const onMouseDown = useCallback((e: ReactMouseEvent<SVGSVGElement> | TouchEvent) => {
     e.preventDefault();
-    if (isAnimatingRef.current) isAnimatingRef.current = false;
+    if (isAnimatingRef.current) {
+        isAnimatingRef.current = false;
+        if(contentRef.current) contentRef.current.style.transition = '';
+    };
     onManualPan?.();
     
     setIsPanning(true);
