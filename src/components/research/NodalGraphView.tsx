@@ -22,7 +22,6 @@ interface Link {
 }
 
 // Catégories fixes et leurs positions angulaires pour une disposition radiale
-// CORRECTION: Utilisation des noms corrects ("Mecatronics", "Multimedias")
 const CATEGORY_ANGLES: Record<string, number> = {
   'Design': 0,
   'Architecture': 60,
@@ -52,6 +51,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
   const { resolvedTheme } = useTheme();
   const [links, setLinks] = useState<Link[]>([]);
   const panZoomRef = useRef<PanZoomApi>(null);
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
   const { simulatedNodes, setNodes: setSimulationNodes } = useSimulation();
 
@@ -68,14 +68,12 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     // Ensure all predefined categories exist for stable layout
     Object.keys(CATEGORY_ANGLES).forEach(cat => categories.add(cat));
     
-    // CORRECTION: Filtrer les catégories non désirées ("Other", "Cybernetics") ici
-    // pour qu'elles ne soient pas incluses dans les calculs de disposition.
     return Array.from(categories).filter(cat => cat !== 'Cybernetics' && cat !== 'Other');
   }, [items]);
 
   useEffect(() => {
     const categoryRadius = 350; 
-    const itemRadius = 60;     // RAPPROCHÉ: Réduit de 80 à 60
+    const itemRadius = 60;
     
     const newNodes: Node[] = [];
     const newLinks: Link[] = [];
@@ -97,11 +95,10 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     const categoryNodes: Record<string, Node> = {};
     const mainCategories = allCategories.filter(cat => cat !== 'Cyber Club');
     
-    // CORRECTION: Trier les catégories visibles pour une disposition stable.
-    const sortedCategories = mainCategories.sort((a, b) => (CATEGORY_ANGLES[a] ?? 999) - (CATEGORY_ANGLES[b] ?? 999));
+    const sortedCategories = mainCategories.filter(cat => CATEGORY_ANGLES[cat] !== undefined).sort((a, b) => CATEGORY_ANGLES[a] - CATEGORY_ANGLES[b]);
     
     sortedCategories.forEach(cat => {
-      const angle = (CATEGORY_ANGLES[cat] ?? Math.random() * 360) * (Math.PI / 180);
+      const angle = (CATEGORY_ANGLES[cat]) * (Math.PI / 180);
       const attractor = {
         x: categoryRadius * Math.cos(angle),
         y: categoryRadius * Math.sin(angle),
@@ -139,19 +136,17 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
         const activityItems = itemsByActivity[activityName];
         if (!activityItems || activityItems.length === 0) return;
         
-        // CORRECTION: Répartition radiale parfaite des éléments
         const angleStep = (2 * Math.PI) / activityItems.length;
         
-        // CORRECTION: Gestion spéciale pour les articles "Cyber Club"
         if (activityName === 'Cyber Club') {
             activityItems.forEach((item, index) => {
                 const angle = index * angleStep;
                 const attractor = {
-                    x: centerNode.x + itemRadius * 1.5 * Math.cos(angle), // Un peu plus loin du centre
+                    x: centerNode.x + itemRadius * 1.5 * Math.cos(angle),
                     y: centerNode.y + itemRadius * 1.5 * Math.sin(angle),
                 };
                 const itemNode: Node = {
-                    id: `${item.id}-${activityName}`, // ID unique pour chaque instance d'item-activité
+                    id: `${item.id}-${activityName}`,
                     x: attractor.x, y: attractor.y,
                     vx: 0, vy: 0, radius: 6, label: item.title, type: 'item',
                     attractor,
@@ -162,7 +157,6 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
                 newLinks.push({ source: centerNode.id, target: itemNode.id });
             });
         } else {
-            // Logique pour les catégories normales
             const categoryNode = categoryNodes[activityName];
             if (!categoryNode) return;
 
@@ -173,11 +167,11 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
                     y: categoryNode.attractor.y + itemRadius * Math.sin(angle),
                 };
                 const itemNode: Node = {
-                    id: `${item.id}-${activityName}`, // ID unique
+                    id: `${item.id}-${activityName}`,
                     x: attractor.x, y: attractor.y,
                     vx: 0, vy: 0, radius: 6, label: item.title, type: 'item',
                     attractor,
-                    color: getNodeColor(resolvedTheme, 'item', categoryNode.color),
+                    color: categoryNode.color,
                     href: item.pdfUrl || '#'
                 };
                 newNodes.push(itemNode);
@@ -189,7 +183,6 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     setLinks(newLinks);
     setSimulationNodes(newNodes);
 
-    // Auto-frame on load
     const timeout = setTimeout(() => {
         panZoomRef.current?.zoomTo(0, 0, 0.4, false);
     }, 500);
@@ -232,6 +225,9 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
             const source = nodeMap.get(link.source);
             const target = nodeMap.get(link.target);
             if (!source || !target) return null;
+
+            const isHovered = hoveredNodeId === source.id || hoveredNodeId === target.id;
+
             return (
               <line
                 key={i}
@@ -240,8 +236,9 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
                 x2={target.x}
                 y2={target.y}
                 stroke={source.color}
-                strokeWidth="0.5"
-                strokeOpacity="0.4"
+                strokeWidth={isHovered ? "1.5" : "0.5"}
+                strokeOpacity={isHovered ? 1 : 0.4}
+                className="transition-all duration-300"
               />
             );
           })}
@@ -252,7 +249,9 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
           <NodalGraphNode
             key={node.id}
             node={node}
+            isHovered={hoveredNodeId === node.id}
             onClick={onNodeClick}
+            onHover={setHoveredNodeId}
           />
         ))}
       </PanZoom>

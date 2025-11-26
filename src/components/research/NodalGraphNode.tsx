@@ -1,37 +1,50 @@
 
 'use client';
 
-import React, { memo } from 'react';
+import React, { memo, useCallback } from 'react';
 import type { Node } from './use-simulation';
 import { cn } from '@/lib/utils';
 
 interface NodalGraphNodeProps {
   node: Node;
+  isHovered: boolean;
   onClick: (node: Node) => void;
+  onHover: (id: string | null) => void;
 }
 
-const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, onClick }) => {
+const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovered, onClick, onHover }) => {
   const { x, y, radius, label, type, color, href } = node;
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     onClick(node);
-  };
+  }, [node, onClick]);
+
+  const handleMouseEnter = useCallback(() => {
+    onHover(node.id);
+  }, [node.id, onHover]);
+  
+  const handleMouseLeave = useCallback(() => {
+    onHover(null);
+  }, [onHover]);
 
   const isClickable = !!href;
-
-  const commonProps = {
-    onClick: handleClick,
-    className: cn('transition-all duration-300 group', isClickable ? 'cursor-pointer' : 'cursor-default'),
-  };
   
   const isItem = type === 'item';
   const labelYOffset = radius + 4;
   const labelWidth = 80;
   const labelHeight = 24;
 
+  const scale = isHovered ? 1.5 : 1;
+
   return (
-    <g transform={`translate(${x}, ${y})`} {...commonProps}>
+    <g 
+      transform={`translate(${x}, ${y}) scale(${scale})`} 
+      onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className={cn('transition-all duration-300 group', isClickable ? 'cursor-pointer' : 'cursor-default')}
+    >
       {/* Circle Elements */}
       <circle
         r={radius}
@@ -52,7 +65,6 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, onClick 
       
       {/* Label Elements */}
       {isItem ? (
-        // For 'item' nodes, use foreignObject to render a styled HTML div
         <foreignObject 
           x={-labelWidth / 2} 
           y={labelYOffset} 
@@ -80,7 +92,6 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, onClick 
           </div>
         </foreignObject>
       ) : (
-        // For 'center' and 'category' nodes, use standard SVG text
         <text
           textAnchor="middle"
           dy=".3em"
