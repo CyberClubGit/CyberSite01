@@ -52,6 +52,24 @@ export function ProjectReelView({ projects, brands }: ProjectReelViewProps) {
     };
   }, [scrollPrev, scrollNext]);
 
+  // EFFECT TO CLOSE OVERLAY ON SCROLL
+  useEffect(() => {
+    if (!emblaApi) return;
+
+    const handleSelect = () => {
+      // When a new slide is selected (i.e., scrolled to), close any open overlay.
+      setActiveOverlay(null);
+    };
+
+    emblaApi.on('select', handleSelect);
+
+    // Cleanup the event listener on component unmount
+    return () => {
+      emblaApi.off('select', handleSelect);
+    };
+  }, [emblaApi]);
+
+
   return (
     <div className="fixed inset-0 bg-black z-0" ref={emblaRef}>
       <div className="flex flex-col h-full">
