@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Button } from '../ui/button';
+import Image from 'next/image';
 
 
 interface NodalGraphViewProps {
@@ -28,6 +29,7 @@ interface NodalGraphViewProps {
 interface Link {
   source: string; // ID of source node
   target: string; // ID of target node
+  gradientId?: string; // Optional ID for gradient
 }
 
 // Catégories fixes et leurs positions angulaires pour une disposition radiale
@@ -157,7 +159,11 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
       };
       categoryNodes[cat] = catNode;
       newNodes.push(catNode);
-      newLinks.push({ source: 'center', target: catNode.id });
+      newLinks.push({ 
+        source: 'center', 
+        target: catNode.id,
+        gradientId: `grad-${catNode.id}`
+      });
     });
     
     // 3. Group items by their activities
@@ -321,6 +327,11 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
   }, [links, lockedCategoryId]);
 
   const hasSimulated = simulatedNodes.length > 0;
+  
+  const currentCategoryName = navigationCategories[currentCategoryIndex];
+  const currentCategoryLogo = currentCategoryName === 'Vue d\'ensemble' 
+    ? cyberClubLogo
+    : activityLogoMap[currentCategoryName];
 
   return (
     <div className="relative w-full h-full bg-background/50 backdrop-blur-sm overflow-hidden">
@@ -333,14 +344,14 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
       
       <div className="absolute top-4 right-4 z-20">
           <Select 
-            onValueChange={handleCategorySelect} 
-            value={navigationCategories[currentCategoryIndex] === 'Vue d\'ensemble' ? 'all' : navigationCategories[currentCategoryIndex]}
+            onValueChange={(value) => handleCategorySelect(value === 'all' ? 'Vue d\'ensemble' : value)} 
+            value={navigationCategories[currentCategoryIndex]}
           >
               <SelectTrigger className="w-[220px] bg-background/70 backdrop-blur-md">
                   <SelectValue placeholder="Naviguer vers une catégorie" />
               </SelectTrigger>
               <SelectContent>
-                   <SelectItem value="all">Vue d'ensemble</SelectItem>
+                   <SelectItem value="Vue d'ensemble">Vue d'ensemble</SelectItem>
                   {sortedVisibleCategories.map((cat) => (
                       <SelectItem key={`select-${cat}`} value={cat}>
                           {cat}
@@ -351,13 +362,38 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
       </div>
       
        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
-          <Button variant="outline" size="icon" className="h-10 w-10 rounded-full bg-background/70 backdrop-blur-md" onClick={() => navigateCategories('prev')}>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="h-10 w-10 rounded-full bg-background/70 backdrop-blur-md" 
+            onClick={() => navigateCategories('prev')}
+            style={{ color: 'var(--brand-color)' }}
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="px-4 py-2 rounded-full bg-background/70 backdrop-blur-md font-mono text-center min-w-[220px]">
-            {navigationCategories[currentCategoryIndex]}
+          <div 
+            className="px-6 py-2 rounded-full bg-background/70 backdrop-blur-md font-headline uppercase text-center min-w-[250px] flex items-center justify-center gap-3"
+            style={{ color: 'var(--brand-color)', borderColor: 'var(--brand-color)' }}
+          >
+            {currentCategoryLogo && (
+              <Image 
+                src={currentCategoryLogo} 
+                alt={`${currentCategoryName} logo`}
+                width={20}
+                height={20}
+                className="dark:invert"
+                style={{ filter: resolvedTheme === 'dark' ? 'invert(1)' : 'none' }}
+              />
+            )}
+            <span>{currentCategoryName}</span>
           </div>
-          <Button variant="outline" size="icon" className="h-10 w-10 rounded-full bg-background/70 backdrop-blur-md" onClick={() => navigateCategories('next')}>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="h-10 w-10 rounded-full bg-background/70 backdrop-blur-md" 
+            onClick={() => navigateCategories('next')}
+            style={{ color: 'var(--brand-color)' }}
+          >
             <ArrowRight className="h-5 w-5" />
           </Button>
       </div>
@@ -370,6 +406,20 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
         onManualPan={handleManualPan}
         onTransformChange={handleTransformChange}
       >
+        <defs>
+          {links.filter(l => l.gradientId).map(link => {
+            const source = nodeMap.get(link.source);
+            const target = nodeMap.get(link.target);
+            if (!source || !target) return null;
+            return (
+              <linearGradient key={link.gradientId} id={link.gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style={{ stopColor: source.color, stopOpacity: 0.5 }} />
+                <stop offset="100%" style={{ stopColor: target.color, stopOpacity: 1 }} />
+              </linearGradient>
+            );
+          })}
+        </defs>
+        
         {/* Render Links */}
         <g>
           {links.map((link, i) => {
@@ -379,20 +429,21 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
 
             const isHovered = hoveredNodeId === source.id || hoveredNodeId === target.id;
             const isRelatedToLocked = (lockedCategoryId === source.id && itemLinks.has(target.id)) || (lockedCategoryId === target.id);
+            const isGradientLink = !!link.gradientId;
+            
+            const lineProps = {
+                key: i,
+                x1: source.x,
+                y1: source.y,
+                x2: target.x,
+                y2: target.y,
+                stroke: isGradientLink ? `url(#${link.gradientId})` : source.color,
+                strokeWidth: isHovered || isRelatedToLocked ? "1.5" : "0.5",
+                strokeOpacity: isHovered || isRelatedToLocked ? (isGradientLink ? 1 : 1) : (isGradientLink ? 0.8 : 0.4),
+                className: "transition-all duration-300",
+            };
 
-            return (
-              <line
-                key={i}
-                x1={source.x}
-                y1={source.y}
-                x2={target.x}
-                y2={target.y}
-                stroke={source.color}
-                strokeWidth={isHovered || isRelatedToLocked ? "1.5" : "0.5"}
-                strokeOpacity={isHovered || isRelatedToLocked ? 1 : 0.4}
-                className="transition-all duration-300"
-              />
-            );
+            return <line {...lineProps} />;
           })}
         </g>
         
@@ -412,3 +463,5 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     </div>
   );
 };
+
+    
