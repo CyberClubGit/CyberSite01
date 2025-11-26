@@ -33,6 +33,7 @@ export function MobileCatalogView({ initialData, onSelectItem }: MobileCatalogVi
   };
 
   const currentItem = initialData[discoverIndex];
+  const isCurrentItemFavorite = currentItem ? isFavorite(currentItem.id) : false;
 
   return (
     <div className="h-screen w-screen flex flex-col bg-background md:hidden">
@@ -40,9 +41,18 @@ export function MobileCatalogView({ initialData, onSelectItem }: MobileCatalogVi
       <div className="flex-shrink-0 p-4 border-b">
         <Tabs value={view} onValueChange={(v) => setView(v as any)} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="discover">Découvrir</TabsTrigger>
-            <TabsTrigger value="favorites">Favoris</TabsTrigger>
-            <TabsTrigger value="grid">Grille</TabsTrigger>
+            <TabsTrigger value="discover">
+                <Rows className="w-4 h-4 mr-2"/>
+                Découvrir
+            </TabsTrigger>
+            <TabsTrigger value="favorites">
+                <Heart className="w-4 h-4 mr-2"/>
+                Favoris
+            </TabsTrigger>
+            <TabsTrigger value="grid">
+                <Grid className="w-4 h-4 mr-2"/>
+                Grille
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -78,8 +88,21 @@ export function MobileCatalogView({ initialData, onSelectItem }: MobileCatalogVi
                 <Button variant="outline" size="icon" className="h-20 w-20 rounded-full border-4 border-destructive text-destructive bg-background/50 backdrop-blur-sm shadow-2xl" onClick={(e) => { e.stopPropagation(); handleNext(); }}>
                     <X className="h-10 w-10" />
                 </Button>
-                <Button variant="outline" size="icon" className="h-20 w-20 rounded-full border-4 border-green-500 text-green-500 bg-background/50 backdrop-blur-sm shadow-2xl" onClick={(e) => { e.stopPropagation(); handleLike(currentItem); }}>
-                    <Heart className="h-10 w-10" fill={isFavorite(currentItem.id) ? "currentColor" : "none"} />
+                <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className={cn(
+                        "h-20 w-20 rounded-full border-4 bg-background/50 backdrop-blur-sm shadow-2xl transition-all duration-300",
+                        isCurrentItemFavorite
+                            ? "border-green-500 text-green-500 shadow-[0_0_20px_5px] shadow-green-500/50"
+                            : "border-muted-foreground text-muted-foreground"
+                    )}
+                    onClick={(e) => { e.stopPropagation(); handleLike(currentItem); }}
+                >
+                    <Heart 
+                        className={cn("h-10 w-10 transition-transform duration-300", isCurrentItemFavorite && "scale-125")} 
+                        fill={isCurrentItemFavorite ? "currentColor" : "none"} 
+                    />
                 </Button>
             </div>
           </div>
