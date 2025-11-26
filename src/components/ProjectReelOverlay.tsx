@@ -94,7 +94,7 @@ export function ProjectReelOverlay({ project, onClose }: ProjectReelOverlayProps
         </div>
       </div>
       
-      {/* Slide Navigation */}
+      {/* Slide Navigation & Close Button */}
       <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-4 z-20">
         <button 
           onClick={() => setActiveSlide('info')}
@@ -116,16 +116,16 @@ export function ProjectReelOverlay({ project, onClose }: ProjectReelOverlayProps
         >
           <Images className="h-6 w-6" />
         </button>
+        {/* CLOSE BUTTON MOVED HERE */}
+        <button
+          onClick={onClose}
+          className="rounded-full p-3 bg-white/20 text-white hover:bg-white/30 transition-colors"
+        >
+          <X className="h-6 w-6" />
+          <span className="sr-only">Fermer les détails</span>
+        </button>
       </div>
 
-      {/* Close button fixed at the top right */}
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 text-white rounded-full bg-white/20 p-2 hover:bg-white/30 transition-colors z-20"
-      >
-        <X className="h-6 w-6" />
-        <span className="sr-only">Fermer les détails</span>
-      </button>
     </div>
   );
 }
