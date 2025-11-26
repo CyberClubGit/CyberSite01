@@ -12,95 +12,40 @@ Ce document retrace les décisions techniques et les fonctionnalités implément
 
 **Cause Racine :** Le hook `useUser` (qui gère l'état de l'utilisateur) était "trop zélé". Il tentait de lire des informations de profil supplémentaires depuis la base de données Firestore (`/users/{userId}`) pour chaque visiteur, dès l'initialisation de l'application. Pour un visiteur non authentifié, cette lecture était systématiquement bloquée par les règles de sécurité, déclenchant l'erreur. Le problème n'était donc lié ni aux commandes, ni aux favoris, mais à cette lecture prématurée et non autorisée.
 
-**Solution :** La gestion des données utilisateur a été drastiquement simplifiée.
-1.  **Suppression de la Lecture Automatique :** La logique qui lisait automatiquement Firestore depuis le hook `useUser` a été complètement retirée.
-2.  **Source de Vérité Unique :** Le hook `useUser` se contente désormais des informations de base fournies par **Firebase Authentication** (UID, email, etc.) au moment de la connexion.
-3.  **Aucune lecture de Firestore au démarrage :** L'application ne tente plus aucune opération sur la base de données tant qu'un utilisateur n'est pas connecté et n'effectue pas une action explicite (comme passer une commande).
-
-Cette correction a stabilisé l'application en éliminant la cause fondamentale de l'erreur de permission.
-
 ---
 
-## Architecture Fondamentale (Data-Driven)
+## Migration de Firebase Hosting vers App Hosting
 
-L'application repose sur une architecture entièrement pilotée par des données externes hébergées sur **Google Sheets**. C'est le principe fondamental du projet.
+L'objectif était de migrer le site de la solution classique Firebase Hosting vers la nouvelle plateforme **Firebase App Hosting**, spécialisée pour les applications dynamiques comme Next.js. Cette migration a nécessité plusieurs ajustements techniques pour s'adapter au nouvel environnement de build.
 
-- **Source de Vérité** : Deux Google Sheets principaux dictent la structure et le style du site.
-  1.  **Master Sheet** : Définit les catégories (pages) du site, leurs URLs (slugs), et les liens vers les feuilles de données spécifiques à chaque catégorie.
-  2.  **Brand Sheet** : Définit les "marques" ou thèmes visuels, incluant leurs noms, logos, et couleurs d'accentuation pour les modes clair (Light) et sombre (Dark).
+### Étape 1 : Résolution de l'erreur de build "routes-manifest.json"
 
-- **Navigation Dynamique** : Le menu de navigation principal dans le `Header` est généré automatiquement à partir des entrées du Master Sheet. Ajouter une nouvelle catégorie dans le Sheet ajoute automatiquement une nouvelle page au site, sans toucher au code.
+**Problème :** Le premier déploiement sur App Hosting a échoué avec une erreur `ENOENT: no such file or directory, open '/workspace/.next/standalone/.next/routes-manifest.json'`. L'environnement de build ne trouvait pas un fichier essentiel de Next.js à son emplacement attendu.
 
-- **Parsing CSV Robuste** : Un analyseur CSV personnalisé et fiable (`src/lib/sheets-parser.ts`) a été implémenté pour gérer les données complexes, y compris les cellules contenant des sauts de ligne ou des virgules, ce qui a résolu les problèmes de parsing initiaux.
+**Cause Racine :** La configuration de Next.js (`next.config.js`) n'était pas explicitement définie pour le mode `standalone`, qui est requis par l'environnement de build d'App Hosting pour créer un serveur autonome.
 
----
+**Solution :**
+1.  Modification du fichier `next.config.js` pour y inclure `output: "standalone"`.
+2.  Par mesure de précaution et d'optimisation, la génération des "source maps" en production a également été désactivée via `productionBrowserSourceMaps: false`.
 
-## Synchronisation des Produits avec Stripe et Firestore (Désactivée)
+### Étape 2 : Résolution du conflit de dépendances "ERESOLVE"
 
-**Statut : L'intégration avec Stripe et la synchronisation Firestore pour le catalogue sont actuellement désactivées pour privilégier une architecture 100% basée sur Google Sheets.**
+**Problème :** Après la première correction, le build échouait toujours, mais à une étape antérieure : l'installation des dépendances. Le log affichait une erreur `npm error ERESOLVE could not resolve`, indiquant un conflit de versions entre le package `@genkit-ai/next` (qui exigeait Next.js v15) et la version du projet (Next.js v14).
 
-Pour le catalogue, les données des produits suivaient initialement un flux de synchronisation pour garantir la cohérence entre la gestion de l'inventaire, le paiement et l'affichage. Cette logique est conservée dans le code mais n'est pas active.
+**Cause Racine :** L'environnement de build de Firebase utilise une version stricte de `npm` qui, par défaut, refuse d'installer des dépendances dont les "peer dependencies" ne correspondent pas exactement.
 
-- **Source de Données (Google Sheets)** : Une feuille de calcul dédiée contient la liste complète des produits.
-- **Affichage sur le Site** : La page "Catalogue" de l'application lit désormais les données **directement depuis le Google Sheet** via la fonction `getCategoryData`, et non plus depuis Firestore.
+**Solution :**
+1.  Création d'un fichier `.npmrc` à la racine du projet.
+2.  Ajout de la ligne `legacy-peer-deps=true` dans ce fichier. Cette directive ordonne à `npm` d'ignorer les conflits de "peer dependencies" et de procéder à l'installation, reproduisant ainsi un comportement plus souple des anciennes versions de `npm`.
 
----
+### Étape 3 : Autorisation du domaine pour les images externes
 
-## Gestion des Utilisateurs et Authentification
+**Problème :** Une fois le build et le déploiement réussis, le site se chargeait mais affichait une erreur dans la console du navigateur : `Error: Invalid src prop ... hostname "lh3.googleusercontent.com" is not configured`. Les images provenant de comptes Google (avatars, etc.) ne s'affichaient pas.
 
-Le système gère les membres via Firebase Authentication et stocke les informations de profil dans Firestore lors de la création de compte ou de la soumission d'actions spécifiques (comme passer une commande).
+**Cause Racine :** Par mesure de sécurité, Next.js oblige les développeurs à déclarer explicitement tous les noms de domaine externes autorisés à servir des images via le composant `<Image>`. Le domaine de Google n'était pas dans cette liste blanche.
 
-- **Fournisseurs d'Authentification** :
-  - Inscription et connexion via **Google**.
-  - Inscription et connexion par **Email et Mot de passe**.
-
-- **Base de Données des Utilisateurs (Firestore)** :
-  - Lors de la première connexion ou inscription d'un utilisateur, un document est créé pour lui dans Firestore à l'emplacement `/users/{userId}`.
-  - Ce document stocke des informations telles que : `uid`, `email`, `displayName`, `photoURL`, `nickname`, `firstName`, `lastName`.
-  - La lecture de ce document n'est plus automatique au chargement du site.
-
-- **Suppression des Favoris** : La fonctionnalité de "favoris", qui nécessitait une lecture constante du document utilisateur et était une source d'erreurs de permission, a été entièrement supprimée pour simplifier le système.
+**Solution :**
+1.  Mise à jour du fichier `next.config.js` pour y ajouter une section `images`.
+2.  Configuration de `remotePatterns` pour autoriser spécifiquement le protocole `https` et le nom de domaine `lh3.googleusercontent.com`.
 
 ---
-
-## Système de Branding Adaptatif
-
-Un sélecteur de marque (`Brand Selector`) permet de changer l'identité visuelle de l'ensemble du site en temps réel.
-
-- **Changement de Thème** : La sélection d'une marque dans le `Header` met à jour dynamiquement une variable CSS (`--brand-color`) avec la couleur correspondante (light ou dark) depuis le Brand Sheet. Cette variable est ensuite utilisée pour colorer les éléments d'interface (bordures, liens actifs, etc.).
-
-- **Routage Dynamique** : L'URL du site s'adapte à la marque sélectionnée.
-  - Par défaut (marque "Cyber Club") : `/categorie` (ex: `/projects`)
-  - Avec une marque sélectionnée : `/<brand_activity>/categorie` (ex: `/design/projects`)
-
----
-
-## Gestion des Médias
-
-Des solutions spécifiques ont été mises en place pour gérer les images et les vidéos hébergées sur des services externes.
-
-### Images depuis Google Drive
-
-- **Problème** : Les liens de partage Google Drive ne sont pas des liens d'images directs et ne peuvent pas être utilisés dans les balises `<img>`.
-- **Solution** : Une fonction utilitaire (`convertGoogleDriveLinkToDirect`) a été créée pour transformer les liens de partage en URLs d'images directes (`lh3.googleusercontent.com/d/...`). Cette conversion est appliquée automatiquement lors de la récupération des données.
-- **Configuration** : Le domaine `lh3.googleusercontent.com` a été ajouté à la configuration de Next.js (`next.config.ts`) pour autoriser le chargement des images.
-
-### Vidéos d'Arrière-Plan (Background)
-
-- **Première Tentative (Échec)** : L'utilisation de vidéos hébergées sur Google Drive a échoué. Les serveurs de Google Drive ne supportent pas les requêtes de streaming ("Range Requests") nécessaires à la balise `<video>`, ce qui empêchait la lecture.
-
-- **Solution Viable (Firebase Storage)** : Les vidéos ont été déplacées vers **Firebase Storage**, qui est conçu pour la distribution de contenu et supporte nativement le streaming vidéo. Les liens générés par Firebase Storage sont directement compatibles.
-
-- **Composant `VideoBackground`** :
-  - **Position Fixe** : La vidéo reste fixe et couvre l'intégralité du viewport pendant le défilement (`position: fixed`).
-  - **Adaptation au Thème (Light/Dark)** :
-    - Un **filtre CSS `invert(1)`** est appliqué à la vidéo en mode clair pour inverser ses couleurs (le noir devient blanc et vice-versa).
-    - Ce filtre est désactivé en mode sombre pour afficher les couleurs originales.
-  - **Lisibilité** : Un **calque de surcouche (overlay)** est placé sur la vidéo avec une opacité de 80% pour réduire son intensité et améliorer la lisibilité du contenu au premier plan. Cet overlay est blanc en mode clair et noir en mode sombre.
-
----
-
-## Pages et Mises en Page
-
-- **Layouts Dynamiques** : Les composants `default-page-layout.tsx` et `catalog-page-client.tsx` récupèrent les données de la catégorie correspondante et affichent le contenu.
-- **Fond Vidéo Conditionnel** : Ces layouts affichent le composant `VideoBackground` uniquement si une URL de vidéo est spécifiée dans la colonne `Background` du Master Sheet pour la catégorie en cours.
