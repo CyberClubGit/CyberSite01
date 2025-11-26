@@ -454,6 +454,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
             node={node}
             isHovered={hoveredNodeId === node.id}
             isLocked={lockedCategoryId === node.id}
+            isAnotherNodeLocked={!!lockedCategoryId && lockedCategoryId !== node.id}
             isEmphasized={itemLinks.has(node.id)}
             onClick={onNodeClick}
             onHover={setHoveredNodeId}
@@ -463,5 +464,3 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     </div>
   );
 };
-
-    

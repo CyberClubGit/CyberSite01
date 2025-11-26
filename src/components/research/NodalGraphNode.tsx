@@ -10,14 +10,15 @@ interface NodalGraphNodeProps {
   node: Node;
   isHovered: boolean;
   isLocked: boolean;
-  isEmphasized: boolean; // New prop to indicate if the item node should be enlarged
+  isEmphasized: boolean; // For item nodes when their category is locked
+  isAnotherNodeLocked: boolean; // True if a different node is locked
   onClick: (node: Node) => void;
   onHover: (id: string | null) => void;
 }
 
 const ITEM_RADIUS_FOR_GLOW = 60; // Should match itemRadius in NodalGraphView
 
-const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovered, isLocked, isEmphasized, onClick, onHover }) => {
+const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovered, isLocked, isEmphasized, isAnotherNodeLocked, onClick, onHover }) => {
   const { x, y, label, type, color, href, logoUrl, parentAttractor } = node;
   let { radius } = node;
 
@@ -46,50 +47,77 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
   // --- Label Positioning ---
   let labelXOffset = -50;
   let labelYOffset = radius + 8;
-  let labelWidth = isCenter ? 120 : 100;
+  let labelWidth = 100;
   let labelHeight = 28;
   let textAlign: 'center' | 'left' | 'right' = 'center';
+  let labelFontSize = '12px';
+  let labelIsVisible = true;
 
-  if (isItem && isEmphasized && parentAttractor) {
-      const deltaX = x - parentAttractor.x;
-      const deltaY = y - parentAttractor.y;
-      labelWidth = 80;
-      labelHeight = 24;
+  const glowRadius = radius + ITEM_RADIUS_FOR_GLOW + 20;
 
-      if (Math.abs(deltaX) > Math.abs(deltaY)) {
-        // Horizontally dominant
-        if (deltaX > 0) { // Node is to the right
-            labelXOffset = radius + 8;
-            textAlign = 'left';
-        } else { // Node is to the left
-            labelXOffset = -labelWidth - 8;
-            textAlign = 'right';
-        }
+  if (isCenter) {
+    labelWidth = 120;
+    labelXOffset = -labelWidth / 2;
+    labelFontSize = '14px';
+    // Center label is always visible and below the node
+  } else if (isCategory) {
+    if (isLocked) {
+      // **CATEGORY LOCKED VIEW**
+      labelWidth = 200;
+      labelHeight = 40;
+      labelXOffset = -labelWidth / 2;
+      labelYOffset = -glowRadius - labelHeight - 10; // Position above the glow
+      textAlign = 'center';
+      labelFontSize = '24px';
+    } else if (isAnotherNodeLocked) {
+      // **ANOTHER CATEGORY IS LOCKED VIEW**
+      labelIsVisible = false; // Hide label if another category is locked
+    } else {
+      // **GENERAL OVERVIEW**
+      const deltaX = x; // position relative to (0,0) center
+      const deltaY = y;
+      labelWidth = 150;
+      labelHeight = 32;
+      labelFontSize = '16px';
+      
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5) { // More horizontal
+        textAlign = deltaX > 0 ? 'left' : 'right';
+        labelXOffset = deltaX > 0 ? glowRadius + 10 : -glowRadius - 10 - labelWidth;
         labelYOffset = -labelHeight / 2;
-      } else {
-        // Vertically dominant
+      } else { // More vertical
         textAlign = 'center';
-        if (deltaY > 0) { // Node is below
-            labelYOffset = radius + 8;
-        } else { // Node is above
-            labelYOffset = -labelHeight - 8;
-        }
+        labelYOffset = deltaY > 0 ? glowRadius + 10 : -glowRadius - 10 - labelHeight;
         labelXOffset = -labelWidth / 2;
       }
+    }
   } else if (isItem) {
-    labelWidth = 80;
-    labelHeight = 24;
-    labelXOffset = -labelWidth / 2;
-    labelYOffset = radius + 4;
-  } else { // Center or Category
-    labelXOffset = -labelWidth / 2;
+      labelIsVisible = isEmphasized;
+      if (isEmphasized && parentAttractor) {
+          const deltaX = x - parentAttractor.x;
+          const deltaY = y - parentAttractor.y;
+          labelWidth = 80;
+          labelHeight = 24;
+          labelFontSize = '10px';
+
+          if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            // Horizontally dominant
+            textAlign = deltaX > 0 ? 'left' : 'right';
+            labelXOffset = deltaX > 0 ? radius + 8 : -radius - 8 - labelWidth;
+            labelYOffset = -labelHeight / 2;
+          } else {
+            // Vertically dominant
+            textAlign = 'center';
+            labelXOffset = -labelWidth / 2;
+            labelYOffset = deltaY > 0 ? radius + 8 : -radius - 8 - labelHeight;
+          }
+      } else { // Default item view (not emphasized)
+        labelIsVisible = false;
+      }
   }
   // --- End Label Positioning ---
 
   const scale = isHovered ? 1.2 : 1;
   const logoSize = radius * 1.2;
-
-  const glowRadius = radius + ITEM_RADIUS_FOR_GLOW + 20; // Category radius + item orbit radius + padding
 
   return (
     <g 
@@ -159,33 +187,36 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
       )}
       
       {/* Label Elements */}
-      <foreignObject 
-        x={labelXOffset} 
-        y={labelYOffset} 
-        width={labelWidth} 
-        height={labelHeight}
-        style={{ overflow: 'visible', pointerEvents: 'none' }}
-      >
-        <div 
-          xmlns="http://www.w3.org/1999/xhtml"
-          style={{
-            color: color,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            padding: isItem ? '2px 4px' : '4px 8px',
-            borderRadius: isItem ? '4px' : '8px',
-            textAlign: textAlign,
-            width: '100%',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            fontSize: isCenter ? '14px' : (isItem ? (isEmphasized ? '10px' : '8px') : '10px'),
-            fontFamily: isCenter ? 'Orbitron, sans-serif' : 'Kode Mono, monospace',
-            fontWeight: isCenter ? 'bold' : 'normal',
-          }}
+      {labelIsVisible && (
+        <foreignObject 
+          x={labelXOffset} 
+          y={labelYOffset} 
+          width={labelWidth} 
+          height={labelHeight}
+          style={{ overflow: 'visible', pointerEvents: 'none' }}
         >
-          {label}
-        </div>
-      </foreignObject>
+          <div 
+            xmlns="http://www.w3.org/1999/xhtml"
+            style={{
+              color: color,
+              backgroundColor: isCategory ? 'transparent' : 'rgba(0, 0, 0, 0.5)',
+              padding: isItem ? '2px 4px' : (isCategory ? '0' : '4px 8px'),
+              borderRadius: isItem ? '4px' : '8px',
+              textAlign: textAlign,
+              width: '100%',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              fontSize: labelFontSize,
+              fontFamily: (isCenter || isCategory) ? 'Orbitron, sans-serif' : 'Kode Mono, monospace',
+              fontWeight: (isCenter || isCategory) ? 'bold' : 'normal',
+              textTransform: isCategory ? 'uppercase' : 'none',
+            }}
+          >
+            {label}
+          </div>
+        </foreignObject>
+      )}
     </g>
   );
 };
