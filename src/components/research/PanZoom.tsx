@@ -13,9 +13,19 @@ import React, {
   useEffect,
 } from 'react';
 import { cn } from '@/lib/utils';
+import { useDebouncedCallback } from 'use-debounce';
+
+export interface PanZoomState {
+  x: number;
+  y: number;
+  zoom: number;
+  centerX: number; // world coordinate
+  centerY: number; // world coordinate
+}
 
 export interface PanZoomApi {
   zoomTo: (x: number, y: number, zoom: number, animate?: boolean) => void;
+  getState: () => PanZoomState;
 }
 
 interface PanZoomProps {
@@ -23,38 +33,84 @@ interface PanZoomProps {
   minZoom?: number;
   maxZoom?: number;
   className?: string;
+  onTransformChange?: (state: PanZoomState) => void;
+  onManualPan?: () => void;
 }
 
-export const PanZoom = forwardRef<PanZoomApi, PanZoomProps>(({
+const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
   children,
   minZoom = 0.1,
   maxZoom = 5,
   className,
+  onTransformChange,
+  onManualPan,
 }, ref) => {
   const [transform, setTransform] = useState({ x: 0, y: 0, zoom: 1 });
   const [isPanning, setIsPanning] = useState(false);
   const containerRef = useRef<SVGSVGElement>(null);
+  const contentRef = useRef<SVGGElement>(null);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const isAnimatingRef = useRef(false);
+
+  const getCurrentState = useCallback((): PanZoomState => {
+    const parent = containerRef.current?.parentElement;
+    if (!parent) {
+      return { ...transform, centerX: 0, centerY: 0 };
+    }
+    const { x, y, zoom } = transform;
+    const centerX = (parent.clientWidth / 2 - x) / zoom;
+    const centerY = (parent.clientHeight / 2 - y) / zoom;
+    return { x, y, zoom, centerX, centerY };
+  }, [transform]);
+
+  const debouncedOnTransformChange = useDebouncedCallback((state: PanZoomState) => {
+    onTransformChange?.(state);
+  }, 100);
+
+  useEffect(() => {
+    if (onTransformChange && !isAnimatingRef.current) {
+        debouncedOnTransformChange(getCurrentState());
+    }
+  }, [transform, onTransformChange, getCurrentState, debouncedOnTransformChange]);
 
   useImperativeHandle(ref, () => ({
     zoomTo: (x, y, newZoom, animate = true) => {
       const parent = containerRef.current?.parentElement;
-      if (!parent) return;
+      if (!parent || !contentRef.current) return;
 
       const centerX = parent.clientWidth / 2;
       const centerY = parent.clientHeight / 2;
 
-      setTransform({
-        x: centerX - x * newZoom,
-        y: centerY - y * newZoom,
-        zoom: newZoom,
-      });
+      const newX = centerX - x * newZoom;
+      const newY = centerY - y * newZoom;
+
+      if (animate) {
+        isAnimatingRef.current = true;
+        contentRef.current.style.transition = 'transform 300ms ease-out';
+        setTransform({
+          x: newX,
+          y: newY,
+          zoom: newZoom,
+        });
+        setTimeout(() => {
+          if (contentRef.current) contentRef.current.style.transition = '';
+          isAnimatingRef.current = false;
+        }, 300);
+      } else {
+        setTransform({
+          x: newX,
+          y: newY,
+          zoom: newZoom,
+        });
+      }
     },
+    getState: getCurrentState,
   }));
 
   const onWheel = useCallback((e: WheelEvent<SVGSVGElement>) => {
     e.preventDefault();
-    if (!containerRef.current) return;
+    if (!containerRef.current || isAnimatingRef.current) return;
+    onManualPan?.();
 
     const rect = containerRef.current.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
@@ -67,17 +123,20 @@ export const PanZoom = forwardRef<PanZoomApi, PanZoomProps>(({
     const newY = mouseY - (mouseY - transform.y) * (newZoom / transform.zoom);
 
     setTransform({ x: newX, y: newY, zoom: newZoom });
-  }, [transform, minZoom, maxZoom]);
+  }, [transform, minZoom, maxZoom, onManualPan]);
 
   const onMouseDown = useCallback((e: ReactMouseEvent<SVGSVGElement> | TouchEvent) => {
     e.preventDefault();
+    if (isAnimatingRef.current) return;
+    onManualPan?.();
+
     setIsPanning(true);
     const point = 'touches' in e ? e.touches[0] : e;
     lastPointRef.current = { x: point.clientX, y: point.clientY };
     if (e.currentTarget instanceof Element) {
       e.currentTarget.classList.add('cursor-grabbing');
     }
-  }, []);
+  }, [onManualPan]);
 
   const onMouseUp = useCallback((e: ReactMouseEvent<SVGSVGElement> | MouseEvent | TouchEvent) => {
     setIsPanning(false);
@@ -88,7 +147,7 @@ export const PanZoom = forwardRef<PanZoomApi, PanZoomProps>(({
   }, []);
 
   const onMouseMove = useCallback((e: ReactMouseEvent<SVGSVGElement> | MouseEvent | TouchEvent) => {
-    if (!isPanning || !lastPointRef.current) return;
+    if (!isPanning || !lastPointRef.current || isAnimatingRef.current) return;
     
     const point = 'touches' in e ? e.touches[0] : e;
     const dx = point.clientX - lastPointRef.current.x;
@@ -98,7 +157,6 @@ export const PanZoom = forwardRef<PanZoomApi, PanZoomProps>(({
     lastPointRef.current = { x: point.clientX, y: point.clientY };
   }, [isPanning]);
 
-  // Add global event listeners to handle mouse up/move outside the SVG
   useEffect(() => {
     if (isPanning) {
       window.addEventListener('mousemove', onMouseMove);
@@ -115,18 +173,32 @@ export const PanZoom = forwardRef<PanZoomApi, PanZoomProps>(({
   }, [isPanning, onMouseMove, onMouseUp]);
 
   return (
-    <svg
-      ref={containerRef}
-      onWheel={onWheel}
-      onMouseDown={onMouseDown}
-      onTouchStart={onMouseDown}
-      className={cn('w-full h-full cursor-grab', className)}
-    >
-      <g style={{ transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.zoom})` }}>
-        {children}
-      </g>
-    </svg>
+    <>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 z-10 pointer-events-none">
+        <div className="w-full h-px bg-current absolute top-1/2"></div>
+        <div className="h-full w-px bg-current absolute left-1/2"></div>
+      </div>
+      <svg
+        ref={containerRef}
+        onWheel={onWheel}
+        onMouseDown={onMouseDown}
+        onTouchStart={onMouseDown}
+        className={cn('w-full h-full cursor-grab', className)}
+      >
+        <g 
+          ref={contentRef}
+          style={{ transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.zoom})` }}
+        >
+          {children}
+        </g>
+      </svg>
+    </>
   );
 });
 
-PanZoom.displayName = 'PanZoom';
+PanZoomComponent.displayName = 'PanZoom';
+
+// I need to add use-debounce to dependencies
+const useDebouncedCallbackImport = `import { useDebouncedCallback } from 'use-debounce';`;
+
+export const PanZoom = PanZoomComponent;

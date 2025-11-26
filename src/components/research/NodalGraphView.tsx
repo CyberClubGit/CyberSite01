@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
@@ -6,7 +7,7 @@ import { useSimulation, type Node } from './use-simulation';
 import { NodalGraphNode } from './NodalGraphNode';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
-import { PanZoom, type PanZoomApi } from './PanZoom';
+import { PanZoom, type PanZoomApi, type PanZoomState } from './PanZoom';
 import { Loader2 } from 'lucide-react';
 import { createActivityColorMap } from '@/lib/color-utils';
 import {
@@ -54,11 +55,17 @@ const getNodeColor = (theme: string | undefined, type: 'center' | 'category' | '
   }
 };
 
+const ZOOM_LEVEL_CATEGORY = 1.2;
+const ZOOM_LEVEL_OVERVIEW = 0.4;
+const ATTRACTION_RADIUS = 50; // Screen pixels
+
 export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands }) => {
   const { resolvedTheme } = useTheme();
   const [links, setLinks] = useState<Link[]>([]);
   const panZoomRef = useRef<PanZoomApi>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const [isLocked, setIsLocked] = useState(false);
+  const interactionTimeoutRef = useRef<NodeJS.Timeout>();
 
   const { simulatedNodes, setNodes: setSimulationNodes } = useSimulation();
 
@@ -195,7 +202,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     setSimulationNodes(newNodes);
 
     const timeout = setTimeout(() => {
-        panZoomRef.current?.zoomTo(0, 0, 0.4, false);
+        panZoomRef.current?.zoomTo(0, 0, ZOOM_LEVEL_OVERVIEW, false);
     }, 500);
 
     return () => clearTimeout(timeout);
@@ -209,15 +216,52 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
   }, []);
 
   const handleCategorySelect = (categoryId: string) => {
-      if (!categoryId || categoryId === 'all') {
-          panZoomRef.current?.zoomTo(0, 0, 0.4, true);
+      if (!categoryId) return;
+      if (categoryId === 'all') {
+          panZoomRef.current?.zoomTo(0, 0, ZOOM_LEVEL_OVERVIEW, true);
+          setIsLocked(false);
           return;
       }
       const nodeToZoom = simulatedNodes.find(n => n.id === categoryId);
       if (nodeToZoom) {
-          panZoomRef.current?.zoomTo(nodeToZoom.x, nodeToZoom.y, 1.2, true);
+          panZoomRef.current?.zoomTo(nodeToZoom.x, nodeToZoom.y, ZOOM_LEVEL_CATEGORY, true);
+          setIsLocked(true);
       }
   };
+
+  const handleManualPan = () => {
+    setIsLocked(false); // Unlock on manual interaction
+    // Debounce the re-enabling of the auto-zoom
+    clearTimeout(interactionTimeoutRef.current);
+    interactionTimeoutRef.current = setTimeout(() => {
+      // The state will re-enable auto-zoom after a pause
+    }, 1500);
+  };
+  
+  const handleTransformChange = useCallback((state: PanZoomState) => {
+    if (isLocked) return;
+
+    // Find the category node closest to the center
+    const { centerX, centerY } = state;
+    let closestNode: Node | null = null;
+    let minDistance = Infinity;
+
+    for (const node of simulatedNodes) {
+      if (node.type !== 'category') continue;
+      
+      const distance = Math.sqrt(Math.pow(node.x - centerX, 2) + Math.pow(node.y - centerY, 2));
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestNode = node;
+      }
+    }
+
+    // Check if the closest node is within the attraction radius (in screen space)
+    if (closestNode && minDistance * state.zoom < ATTRACTION_RADIUS) {
+      handleCategorySelect(closestNode.id);
+    }
+  }, [isLocked, simulatedNodes, handleCategorySelect]);
   
   const nodeMap = useMemo(() => {
     const map = new Map<string, Node>();
@@ -273,6 +317,8 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
         minZoom={0.05}
         maxZoom={3}
         className={cn("w-full h-full transition-opacity duration-500", hasSimulated ? 'opacity-100' : 'opacity-0')}
+        onManualPan={handleManualPan}
+        onTransformChange={handleTransformChange}
       >
         {/* Render Links */}
         <g>
@@ -313,5 +359,3 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     </div>
   );
 };
-
-    
