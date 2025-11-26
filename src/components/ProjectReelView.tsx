@@ -1,23 +1,28 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import type { Project } from '@/lib/sheets';
 import Image from 'next/image';
-import { cn } from '@/lib/utils';
 import { getEmbeddableVideoUrl } from '@/lib/linkConverter';
+import { ProjectReelOverlay } from './ProjectReelOverlay';
 
 interface ProjectReelViewProps {
   projects: Project[];
-  onProjectClick: (project: Project) => void;
 }
 
-export function ProjectReelView({ projects, onProjectClick }: ProjectReelViewProps) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({
+export function ProjectReelView({ projects }: ProjectReelViewProps) {
+  const [emblaRef] = useEmblaCarousel({
     axis: 'y',
     loop: false,
     align: 'start',
   });
+  
+  const [activeOverlay, setActiveOverlay] = useState<string | null>(null);
+
+  const toggleOverlay = (projectId: string) => {
+    setActiveOverlay(prev => (prev === projectId ? null : projectId));
+  };
 
   return (
     <div className="fixed inset-0 bg-black z-0" ref={emblaRef}>
@@ -26,10 +31,9 @@ export function ProjectReelView({ projects, onProjectClick }: ProjectReelViewPro
           <div
             className="relative flex-shrink-0 w-full h-full"
             key={project.id || index}
-            onClick={() => onProjectClick(project)}
           >
             {/* Media (Video or Image) */}
-            <div className="absolute inset-0 w-full h-full">
+            <div className="absolute inset-0 w-full h-full" onClick={() => toggleOverlay(project.id)}>
               {project.reelUrl ? (
                 <video
                   key={project.reelUrl}
@@ -53,16 +57,21 @@ export function ProjectReelView({ projects, onProjectClick }: ProjectReelViewPro
               )}
             </div>
 
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20"></div>
+            {/* Gradient Overlay for Text */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none"></div>
 
             {/* Text Content Overlay */}
-            <div className="absolute bottom-24 left-4 right-4 text-white p-4">
+            <div className="absolute bottom-24 left-4 right-4 text-white p-4 pointer-events-none">
               <h2 className="text-xl font-bold font-headline">{project.title}</h2>
               {project.Activity && (
                 <p className="text-sm opacity-80 mt-1">{project.Activity}</p>
               )}
             </div>
+            
+            {/* The new interactive overlay */}
+            {activeOverlay === project.id && (
+              <ProjectReelOverlay project={project} onClose={() => toggleOverlay(project.id)} />
+            )}
           </div>
         ))}
       </div>

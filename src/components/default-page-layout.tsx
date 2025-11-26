@@ -70,27 +70,7 @@ export default function DefaultPageLayout({ category, brand, initialData, brands
   
   // Conditional rendering for the projects page on mobile
   if (isProjectsPage && isMobile) {
-    return (
-       <>
-        <ProjectReelView projects={finalData} onProjectClick={setSelectedProject} />
-        <Dialog open={!!selectedProject} onOpenChange={(isOpen) => !isOpen && setSelectedProject(null)}>
-            <DialogContent 
-                className="max-w-7xl w-full h-[90vh] p-0 border-0 bg-background/90 backdrop-blur-sm flex flex-col overflow-hidden"
-                onPointerDownOutside={(e) => e.preventDefault()}
-            >
-                 <DialogHeader className="sr-only">
-                    <DialogTitle>{selectedProject?.title || 'Project Details'}</DialogTitle>
-                    <DialogDescription>
-                        Explore project details and switch between projects using the tabs.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="flex-1 min-h-0">
-                    {selectedProject && <ProjectExplorer projects={finalData} initialProject={selectedProject} getActivityBadgeStyle={getActivityBadgeStyle} />}
-                </div>
-            </DialogContent>
-        </Dialog>
-      </>
-    );
+    return <ProjectReelView projects={finalData} />;
   }
 
   return (
