@@ -3,9 +3,9 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTheme } from 'next-themes';
-import { Menu, User, Settings, LogOut, Shield } from 'lucide-react';
+import { Menu, User, Settings, LogOut, Shield, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -182,10 +182,16 @@ export function Header({ categories, brands }: HeaderProps) {
 
   const currentCategorySlug = getCurrentCategorySlug();
 
+  const cyberClubLogo = useMemo(() => {
+    const brand = brands.find(b => b.Brand === 'Cyber Club');
+    return brand?.Logo || null;
+  }, [brands]);
+
+
   const renderNavLinks = (isMobile = false) => (
     categories && categories
       .filter(category => category.Name && category.Url && category.Url.trim() !== '')
-      .map((category) => {
+      .map((category, index) => {
           const linkHref = getLinkHref(category.Url.toLowerCase());
           const isActive = (currentCategorySlug || 'home').toLowerCase() === category.Url.toLowerCase();
           
@@ -197,7 +203,7 @@ export function Header({ categories, brands }: HeaderProps) {
                 className={`text-sm font-medium transition-colors hover:text-primary menu-link ${isActive ? 'active' : ''} ${isMobile ? 'block w-full text-left p-2' : ''}`}
             >
                 <div className="flex items-center gap-2">
-                  {category['Url Logo Png'] && (
+                  {category['Url Logo Png'] ? (
                     <Image
                       src={category['Url Logo Png']}
                       alt={`${category.Name} logo`}
@@ -205,6 +211,8 @@ export function Header({ categories, brands }: HeaderProps) {
                       height={20}
                       className="object-contain dark:invert"
                     />
+                  ): (
+                    category.Url.toLowerCase() === 'home' ? <Home className="w-5 h-5" /> : null
                   )}
                   <span>{category.Name}</span>
                 </div>
@@ -306,9 +314,20 @@ export function Header({ categories, brands }: HeaderProps) {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
         <div className="mr-auto flex items-center gap-2">
-          <Link href="/" className="mr-6 flex items-center space-x-2">
-          </Link>
-        
+           <div className="md:hidden">
+            <Link href="/" className="flex items-center gap-2 font-headline">
+              {cyberClubLogo && (
+                <Image
+                  src={cyberClubLogo}
+                  alt="Cyber Club Logo"
+                  width={32}
+                  height={32}
+                  className="object-contain dark:invert"
+                />
+              )}
+              <span className="font-bold">CYBER CLUB</span>
+            </Link>
+          </div>
           <div className="hidden md:flex">
              <Select onValueChange={handleBrandChange} value={selectedBrand}>
                 <SelectTrigger className="w-auto brand-selector font-headline h-14 px-4 text-lg">
