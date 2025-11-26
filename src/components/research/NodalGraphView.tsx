@@ -228,7 +228,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
 
 
   useEffect(() => {
-    if (isUserPanning || !simulatedNodes.length) return;
+    if (isUserPanning) return;
     
     let nodeToZoom: Node | undefined;
     let zoomLevel = ZOOM_LEVEL_OVERVIEW;
@@ -240,7 +240,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
         nodeToZoom = simulatedNodes.find(n => n.type === 'center');
     }
 
-    if (nodeToZoom) {
+    if (nodeToZoom && simulatedNodes.length > 0) {
         panZoomRef.current?.zoomTo(nodeToZoom.x, nodeToZoom.y, zoomLevel, true);
     }
   }, [activeCategoryName, isUserPanning, simulatedNodes]);
