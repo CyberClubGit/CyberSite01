@@ -84,7 +84,7 @@ export function ProjectReelView({ projects, brands }: ProjectReelViewProps) {
               key={project.id || index}
             >
               {/* Media (Video or Image) */}
-              <div className="absolute inset-0 w-full h-full" onClick={() => toggleOverlay(project.id)}>
+              <div className="absolute inset-0 w-full h-full">
                 {isYouTube ? (
                    <iframe
                       src={videoSrc!}
@@ -92,7 +92,7 @@ export function ProjectReelView({ projects, brands }: ProjectReelViewProps) {
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                       allowFullScreen
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover pointer-events-none"
                    ></iframe>
                 ) : videoSrc ? (
                    <video
@@ -117,6 +117,13 @@ export function ProjectReelView({ projects, brands }: ProjectReelViewProps) {
                   )
                 )}
               </div>
+              
+              {/* Transparent Clickable Overlay */}
+              <div
+                className="absolute inset-0 z-10"
+                onClick={() => toggleOverlay(project.id)}
+              ></div>
+
 
               {/* Gradient Overlay for Text */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-black/40 pointer-events-none"></div>
