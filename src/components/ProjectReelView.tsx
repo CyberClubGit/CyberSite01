@@ -57,6 +57,7 @@ export function ProjectReelView({ projects, brands }: ProjectReelViewProps) {
       <div className="flex flex-col h-full">
         {projects.map((project, index) => {
           const videoSrc = getEmbeddableVideoUrl(project.reelUrl);
+          const isYouTube = videoSrc && videoSrc.includes('youtube-nocookie.com');
           const activities = project.Activity?.split(',').map((t: string) => t.trim()).filter(Boolean) || [];
           
           return (
@@ -66,7 +67,16 @@ export function ProjectReelView({ projects, brands }: ProjectReelViewProps) {
             >
               {/* Media (Video or Image) */}
               <div className="absolute inset-0 w-full h-full" onClick={() => toggleOverlay(project.id)}>
-                {videoSrc ? (
+                {isYouTube ? (
+                   <iframe
+                      src={videoSrc!}
+                      title={project.title}
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      className="w-full h-full object-cover"
+                   ></iframe>
+                ) : videoSrc ? (
                    <video
                     key={videoSrc}
                     className="w-full h-full object-cover"
