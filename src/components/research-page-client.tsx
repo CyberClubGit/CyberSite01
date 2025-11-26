@@ -368,8 +368,9 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
             
         {viewMode === 'graph' && (
             <>
-                <div className="absolute top-[13rem] left-4 md:left-8 z-10 space-y-4">
-                     <div className="p-4 rounded-lg bg-background/50 backdrop-blur-md border border-border/50 max-w-sm w-[calc(100%-2rem)] md:w-auto flex flex-col flex-1 min-h-0 max-h-[calc(100vh-14rem-6rem)]">
+                <div className="absolute top-[13rem] left-4 md:left-8 z-10 space-y-4 max-w-sm w-[calc(100%-2rem)] md:w-auto">
+                    <div className="p-4 rounded-lg bg-background/50 backdrop-blur-md border border-border/50 flex flex-col flex-1 min-h-0 max-h-[calc(100vh-14rem-6rem)]">
+                        <h3 className="font-headline text-lg mb-2 border-b border-border/50 pb-2">Projets</h3>
                         <ScrollArea className="flex-1">
                             <ul className="space-y-1 text-xs">
                             {itemsForCurrentCategory.map(item => (
@@ -409,3 +410,5 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
     </div>
   );
 }
+
+    
