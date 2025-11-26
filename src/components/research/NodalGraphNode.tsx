@@ -81,18 +81,20 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
       // **GENERAL OVERVIEW**
       const deltaX = x;
       const deltaY = y;
-      labelWidth = 200; // Increased width to prevent wrapping
-      labelHeight = 80;
-      labelFontSize = '64px';
+      labelWidth = 220; // Increased width to prevent wrapping
+      labelHeight = 60;
+      labelFontSize = '44px'; // Reduced font size (was 64px)
       whiteSpace = 'nowrap'; // Force single line
       
-      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5) { // More horizontal
+      const HORIZONTALITY_THRESHOLD = 1.2;
+      
+      if (Math.abs(deltaX) > Math.abs(deltaY) * HORIZONTALITY_THRESHOLD) { // More horizontal
         textAlign = deltaX > 0 ? 'left' : 'right';
-        labelXOffset = deltaX > 0 ? glowRadius + 10 : -glowRadius - 10 - labelWidth;
+        labelXOffset = deltaX > 0 ? glowRadius + 20 : -glowRadius - 20 - labelWidth;
         labelYOffset = -labelHeight / 2;
       } else { // More vertical
         textAlign = 'center';
-        labelYOffset = deltaY > 0 ? glowRadius + 10 : -glowRadius - 10 - labelHeight;
+        labelYOffset = deltaY > 0 ? glowRadius + 20 : -glowRadius - 20 - labelHeight;
         labelXOffset = -labelWidth / 2;
       }
     }
