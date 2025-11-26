@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import type { Project } from '@/lib/sheets';
 import Image from 'next/image';
@@ -12,7 +12,7 @@ interface ProjectReelViewProps {
 }
 
 export function ProjectReelView({ projects }: ProjectReelViewProps) {
-  const [emblaRef] = useEmblaCarousel({
+  const [emblaRef, emblaApi] = useEmblaCarousel({
     axis: 'y',
     loop: false,
     align: 'start',
@@ -23,6 +23,29 @@ export function ProjectReelView({ projects }: ProjectReelViewProps) {
   const toggleOverlay = (projectId: string) => {
     setActiveOverlay(prev => (prev === projectId ? null : projectId));
   };
+  
+  const scrollPrev = useCallback(() => {
+    if (emblaApi) emblaApi.scrollPrev();
+  }, [emblaApi]);
+
+  const scrollNext = useCallback(() => {
+    if (emblaApi) emblaApi.scrollNext();
+  }, [emblaApi]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowUp') {
+        scrollPrev();
+      } else if (event.key === 'ArrowDown') {
+        scrollNext();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [scrollPrev, scrollNext]);
 
   return (
     <div className="fixed inset-0 bg-black z-0" ref={emblaRef}>
