@@ -87,7 +87,7 @@ const NodalGraph: React.FC<{ members: NetworkMember[] }> = ({ members }) => {
     // Group nodes by actor
     const actorsMap: { [key: string]: Node[] } = {};
     nodes.forEach(node => {
-        node.actors.forEach(actor => {
+        (node.actors || []).forEach(actor => {
             if (!actorsMap[actor]) {
                 actorsMap[actor] = [];
             }
@@ -359,27 +359,43 @@ export function HomePageClient({ category, brand, network }: HomePageClientProps
       if (!samuel) return null;
 
       return (
-        <section className="w-full h-full py-12 md:py-24 bg-background flex items-center justify-center">
-          <div className="container px-4 md:px-6 flex flex-col items-center">
-            <h2 className="text-3xl font-headline font-bold tracking-tighter sm:text-5xl text-center mb-8">The Architect</h2>
-            <Card className="w-full max-w-sm">
-                <CardContent className="flex flex-col items-center text-center p-6">
-                    <Avatar className="w-32 h-32 mb-4 border-4 border-primary">
-                        <AvatarImage src={samuel.profilePictureUrl} alt={samuel.Name} />
-                        <AvatarFallback>{samuel.Name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <CardTitle className="font-headline text-2xl">{samuel.Name}</CardTitle>
-                    <p className="text-muted-foreground mt-1">{samuel.Role}</p>
-                    {samuel.Contact && (
-                        <Button asChild className="mt-6">
-                            <Link href={samuel.Contact} target="_blank" rel="noopener noreferrer">
-                                <Instagram className="mr-2 h-4 w-4" />
-                                Contact
-                            </Link>
-                        </Button>
-                    )}
-                </CardContent>
-            </Card>
+        <section className="w-full h-full relative flex items-center justify-center overflow-hidden">
+          {/* Background Image */}
+          {samuel.profilePictureUrl && (
+            <Image
+              src={samuel.profilePictureUrl}
+              alt="Background"
+              fill
+              className="object-cover object-top blur-md scale-110"
+              quality={50}
+            />
+          )}
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent"></div>
+
+          {/* Content */}
+          <div className="relative z-10 flex flex-col items-center justify-center h-full text-center p-4">
+              <div className="flex-grow flex flex-col items-center justify-center">
+                  <h2 className="text-xl font-headline font-light tracking-widest uppercase text-muted-foreground mb-4">The Architect</h2>
+                  <Avatar className="w-40 h-40 mb-6 border-4 border-background shadow-2xl">
+                      <AvatarImage src={samuel.profilePictureUrl} alt={samuel.Name} />
+                      <AvatarFallback>{samuel.Name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <h3 className="font-headline text-4xl font-bold">{samuel.Name}</h3>
+                  <p className="text-muted-foreground mt-1 text-lg">{samuel.Role}</p>
+              </div>
+              
+              <div className="flex-shrink-0 pb-16">
+                  {samuel.Bio && <p className="max-w-md text-sm text-foreground/80 mb-8">{samuel.Bio}</p>}
+                  {samuel.Contact && (
+                      <Button asChild variant="outline" className="bg-background/50 backdrop-blur-sm border-foreground/30">
+                          <Link href={samuel.Contact} target="_blank" rel="noopener noreferrer">
+                              <Instagram className="mr-2 h-4 w-4" />
+                              Contact
+                          </Link>
+                      </Button>
+                  )}
+              </div>
           </div>
         </section>
       );
