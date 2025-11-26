@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -6,9 +5,10 @@ import type { Brand, Category } from '@/lib/sheets';
 import { filterItemsByBrandActivity } from '@/lib/activity-filter';
 import { VideoBackground } from './video-background';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { List, LayoutGrid, Share2 } from 'lucide-react';
+import { List, Share2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import Link from 'next/link';
+import { NodalGraphView } from './research/NodalGraphView';
 
 type ProcessedItem = ReturnType<typeof import('@/lib/sheets').processGalleryLinks>;
 
@@ -35,30 +35,6 @@ const ListView = ({ items }: { items: ProcessedItem[] }) => (
     ))}
   </div>
 );
-
-const NodalGraphView = ({ items }: { items: ProcessedItem[] }) => {
-  const positions = useMemo(() => {
-    return items.map(() => ({
-      top: `${Math.random() * 80 + 10}%`,
-      left: `${Math.random() * 80 + 10}%`,
-    }));
-  }, [items]);
-
-  return (
-    <div className="relative w-full h-[60vh] border rounded-lg bg-background/50">
-      {items.map((item, index) => (
-        <Link href={item.pdfUrl || '#'} key={item.id} target="_blank" rel="noopener noreferrer">
-          <div
-            className="absolute p-2 rounded-lg bg-background border shadow-lg hover:scale-110 hover:shadow-primary/50 transition-transform duration-300 ease-in-out"
-            style={{ top: positions[index].top, left: positions[index].left, transform: 'translate(-50%, -50%)' }}
-          >
-            <p className="text-xs font-semibold whitespace-nowrap">{item.title}</p>
-          </div>
-        </Link>
-      ))}
-    </div>
-  );
-};
 
 
 export function ResearchPageClient({ category, brand, initialData }: ResearchPageClientProps) {
