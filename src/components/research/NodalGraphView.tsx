@@ -123,7 +123,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
       id: 'center',
       x: 0, y: 0,
       vx: 0, vy: 0,
-      radius: 24, // Increased size by 20% from 20
+      radius: 33.6, // Original: 20 -> 24 (20% increase) -> 33.6 (40% increase from 24)
       label: 'Cyber Club',
       type: 'center',
       attractor: { x: 0, y: 0 },
@@ -146,7 +146,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
         x: attractor.x + (Math.random() - 0.5) * 50,
         y: attractor.y + (Math.random() - 0.5) * 50,
         vx: 0, vy: 0,
-        radius: 12,
+        radius: 36, // Original: 12 -> Tripled to 36
         label: cat,
         type: 'category',
         attractor,
