@@ -13,7 +13,7 @@ export interface Node {
   label: string;
   type: 'center' | 'category' | 'item';
   attractor: { x: number; y: number };
-  parentAttractor: { x: number; y: number } | null;
+  parentAttractor: Node | null; // Changed to Node reference
   color: string;
   href?: string;
   logoUrl?: string | null;
@@ -102,12 +102,12 @@ export const useSimulation = (options: SimulationOptions = {}) => {
         forceUpdate(); // Force re-render if nodes moved
     }
     animationFrameRef.current = requestAnimationFrame(runSimulation);
-  }, [attractionStiffness, repulsionStiffness, damping]);
+  }, [attractionStiffness, repulsionStiffness, damping, forceUpdate]);
   
   const setNodes = useCallback((newNodes: Node[]) => {
       nodesRef.current = newNodes;
       forceUpdate();
-  }, []);
+  }, [forceUpdate]);
 
   const forceUpdate = useCallback(() => {
     setTick(t => t + 1);

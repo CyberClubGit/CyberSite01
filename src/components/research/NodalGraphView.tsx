@@ -12,12 +12,18 @@ import { Loader2 } from 'lucide-react';
 import { createActivityColorMap } from '@/lib/color-utils';
 import { useDebouncedCallback } from 'use-debounce';
 
+export type ViewState = 
+  | { level: 'overview' }
+  | { level: 'category', targetNode: Node }
+  | { level: 'item', targetNode: Node };
+
 interface NodalGraphViewProps {
   items: ProcessedItem[];
   brands: Brand[];
-  onCategorySelect: (categoryName: string) => void;
-  activeCategoryName: string;
+  viewState: ViewState;
+  onViewStateChange: (newState: ViewState) => void;
 }
+
 
 interface Link {
   source: string;
@@ -25,14 +31,10 @@ interface Link {
   gradientId?: string;
 }
 
-type ViewState = 
-  | { level: 'overview' }
-  | { level: 'category', targetId: string }
-  | { level: 'item', targetId: string };
 
 const ZOOM_LEVELS = {
   overview: 0.35,
-  category: 2,
+  category: 0.8,
   item: 2,
 };
 
@@ -55,15 +57,14 @@ const getNodeColor = (theme: string | undefined, type: 'center' | 'category' | '
   }
 };
 
-const ATTRACTION_RADIUS = 150; // Screen pixels
+const ATTRACTION_RADIUS = 250; // Screen pixels for auto-snap
 
-export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, onCategorySelect }) => {
+export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, viewState, onViewStateChange }) => {
   const { resolvedTheme } = useTheme();
   const [links, setLinks] = useState<Link[]>([]);
   const panZoomRef = useRef<PanZoomApi>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-  const [viewState, setViewState] = useState<ViewState>({ level: 'overview' });
-
+  
   const { simulatedNodes, setNodes: setSimulationNodes, forceUpdate } = useSimulation();
 
   const activityColorMap = useMemo(() => createActivityColorMap(brands, resolvedTheme === 'dark' ? 'dark' : 'light'), [brands, resolvedTheme]);
@@ -140,7 +141,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
         const attractor = { x: parentNode.attractor.x + itemRadius * Math.cos(angle), y: parentNode.attractor.y + itemRadius * Math.sin(angle) };
         const itemNode: Node = {
           id: `${item.id}-${activityName}`, x: attractor.x, y: attractor.y, vx: 0, vy: 0, radius: 6, label: item.title, type: 'item',
-          attractor, parentAttractor: parentNode.attractor, color: parentNode.color, href: item.pdfUrl || '#'
+          attractor, parentAttractor: parentNode, color: parentNode.color, href: item.pdfUrl || '#'
         };
         newNodes.push(itemNode);
         newLinks.push({ source: parentNode.id, target: itemNode.id });
@@ -152,54 +153,53 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
   }, [items, sortedVisibleCategories, resolvedTheme, setSimulationNodes, activityColorMap, activityLogoMap, cyberClubLogo]);
   
   const onNodeClick = useCallback((node: Node) => {
-    if (viewState.level === 'category' && node.id === viewState.targetId) {
-        setViewState({ level: 'overview' });
+    if (viewState.level === 'category' && viewState.targetNode.id === node.id) {
+      onViewStateChange({ level: 'overview' });
     } else if (node.type === 'category') {
-        setViewState({ level: 'category', targetId: node.id });
+      onViewStateChange({ level: 'category', targetNode: node });
     } else if (node.type === 'center') {
-        setViewState({ level: 'overview' });
+      onViewStateChange({ level: 'overview' });
     } else if (node.type === 'item') {
-        setViewState({ level: 'item', targetId: node.id });
+      onViewStateChange({ level: 'item', targetNode: node });
     }
-  }, [viewState]);
+  }, [viewState, onViewStateChange]);
 
-  const handleZoomRequest = useCallback((deltaY: number, mouseX: number, mouseY: number) => {
-    // Zooming Out
-    if (deltaY > 0) {
+
+  const handleZoomRequest = useDebouncedCallback((deltaY: number, mouseX: number, mouseY: number) => {
+    if (deltaY > 0) { // Zooming out
       if (viewState.level === 'item') {
-        const itemNode = nodeMap.get(viewState.targetId);
-        const parentId = links.find(l => l.target === itemNode?.id)?.source;
-        if (parentId) setViewState({ level: 'category', targetId: parentId });
+        const parentNode = viewState.targetNode.parentAttractor;
+        if(parentNode) onViewStateChange({ level: 'category', targetNode: parentNode });
       } else if (viewState.level === 'category') {
-        setViewState({ level: 'overview' });
+        onViewStateChange({ level: 'overview' });
       }
-      return;
-    }
-    
-    // Zooming In: find closest node to mouse
-    let closestNode: Node | null = null;
-    let minDistance = Infinity;
+    } else { // Zooming in
+      let closestNode: Node | null = null;
+      let minDistance = Infinity;
 
-    for (const node of simulatedNodes) {
-      if (node.type === 'center') continue; // Don't snap to center
-      const distance = Math.sqrt(Math.pow(node.x - mouseX, 2) + Math.pow(node.y - mouseY, 2));
-      if (distance < node.radius * 2 && distance < minDistance) {
-        minDistance = distance;
-        closestNode = node;
+      for (const node of simulatedNodes) {
+        if (viewState.level === 'overview' && node.type !== 'category') continue;
+        if (viewState.level === 'category' && node.type !== 'item') continue;
+
+        const distance = Math.sqrt(Math.pow(node.x - mouseX, 2) + Math.pow(node.y - mouseY, 2));
+        if (distance < node.radius * 2 && distance < minDistance) {
+          minDistance = distance;
+          closestNode = node;
+        }
+      }
+      
+      if (closestNode) {
+        if (closestNode.type === 'category') {
+          onViewStateChange({ level: 'category', targetNode: closestNode });
+        } else if (closestNode.type === 'item') {
+          onViewStateChange({ level: 'item', targetNode: closestNode });
+        }
       }
     }
-
-    if (closestNode) {
-       if (closestNode.type === 'category') {
-            setViewState({ level: 'category', targetId: closestNode.id });
-       } else if (closestNode.type === 'item' && viewState.level === 'category') {
-            setViewState({ level: 'item', targetId: closestNode.id });
-       }
-    }
-  }, [viewState, simulatedNodes, links, nodeMap]);
+  }, 100);
 
   const handlePan = useDebouncedCallback((state: PanZoomState, isPanning: boolean) => {
-    if (isPanning) {
+    if (isPanning && viewState.level === 'overview') {
         const centerX = -state.x / state.zoom + (panZoomRef.current?.getDimensions().width ?? 0) / (2 * state.zoom);
         const centerY = -state.y / state.zoom + (panZoomRef.current?.getDimensions().height ?? 0) / (2 * state.zoom);
 
@@ -216,7 +216,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
         }
         
         if (closestCatNode && minDistance < ATTRACTION_RADIUS) {
-            setViewState({ level: 'category', targetId: closestCatNode.id });
+            onViewStateChange({ level: 'category', targetNode: closestCatNode });
         }
     }
   }, 200);
@@ -227,39 +227,32 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
 
     switch (viewState.level) {
         case 'category':
-            targetNode = nodeMap.get(viewState.targetId);
+            targetNode = viewState.targetNode;
             zoomLevel = ZOOM_LEVELS.category;
-            onCategorySelect(targetNode?.label || "Vue d'ensemble");
             break;
         case 'item':
-            targetNode = nodeMap.get(viewState.targetId);
+            targetNode = viewState.targetNode;
             zoomLevel = ZOOM_LEVELS.item;
-            const parentId = links.find(l => l.target === targetNode?.id)?.source;
-            const parentNode = nodeMap.get(parentId || '');
-            onCategorySelect(parentNode?.label || "Vue d'ensemble");
             break;
         case 'overview':
         default:
             targetNode = simulatedNodes.find(n => n.type === 'center');
             zoomLevel = ZOOM_LEVELS.overview;
-            onCategorySelect("Vue d'ensemble");
             break;
     }
     
     if (targetNode) {
       panZoomRef.current?.zoomTo(targetNode.x, targetNode.y, zoomLevel, true);
     }
-  }, [viewState, nodeMap, onCategorySelect, links, simulatedNodes]);
+  }, [viewState, simulatedNodes]);
 
   const activeCategoryId = useMemo(() => {
-    if (viewState.level === 'category') return viewState.targetId;
+    if (viewState.level === 'category') return viewState.targetNode.id;
     if (viewState.level === 'item') {
-        const itemNode = nodeMap.get(viewState.targetId);
-        const parentId = links.find(l => l.target === itemNode?.id)?.source;
-        return parentId;
+        return viewState.targetNode.parentAttractor?.id;
     }
     return null;
-  }, [viewState, links, nodeMap]);
+  }, [viewState]);
 
   const itemLinks = useMemo(() => {
     if (!activeCategoryId) return new Set();

@@ -6,7 +6,7 @@ import type { Brand, Category } from '@/lib/sheets';
 import { filterItemsByBrandActivity } from '@/lib/activity-filter';
 import { VideoBackground } from './video-background';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { List, Share2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { List, Share2, AppWindow, ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import Link from 'next/link';
 import { NodalGraphView } from './research/NodalGraphView';
@@ -15,15 +15,10 @@ import { useTheme } from 'next-themes';
 import { Button } from './ui/button';
 import Image from 'next/image';
 import { ScrollArea } from './ui/scroll-area';
+import { ItemDetailPanel } from './research/ItemDetailPanel';
 
 type ProcessedItem = ReturnType<typeof import('@/lib/sheets').processGalleryLinks>;
-
-interface ResearchPageClientProps {
-  category: Category;
-  brand?: Brand;
-  initialData: ProcessedItem[];
-  brands: Brand[];
-}
+type ViewState = import('./research/NodalGraphView').ViewState;
 
 const CATEGORY_ANGLES: Record<string, number> = {
   'Design': 0,
@@ -66,8 +61,10 @@ const ListView = ({ items, category, brand }: { items: ProcessedItem[], category
 
 
 export function ResearchPageClient({ category, brand, initialData, brands }: ResearchPageClientProps) {
-  const [viewMode, setViewMode] = useState<'list' | 'graph'>('graph');
-  const [activeCategoryName, setActiveCategoryName] = useState("Vue d'ensemble");
+  const [viewMode, setViewMode] = useState<'list' | 'graph' | 'app'>('graph');
+  const [viewState, setViewState] = useState<ViewState>({ level: 'overview' });
+  const [appUrl, setAppUrl] = useState<string | null>(null);
+
   const { resolvedTheme } = useTheme();
 
   const finalData = useMemo(() => {
@@ -76,9 +73,25 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
       ...item,
       title: item.Title || item.Name || item.Item || 'Untitled',
       description: item.Description || item.Content || '',
+      appUrl: item['Url app'] || null,
     }));
   }, [initialData, brand]);
-  
+
+  const activeCategoryName = useMemo(() => {
+      if (viewState.level === 'category') return viewState.targetNode.label;
+      if (viewState.level === 'item') return viewState.targetNode.parentAttractor?.label || "Vue d'ensemble";
+      return "Vue d'ensemble";
+  }, [viewState]);
+
+  const activeItem = useMemo(() => {
+      if (viewState.level === 'item') {
+          // The node ID is constructed as `${item.id}-${activityName}`. We need to find the original item.
+          const originalItemId = viewState.targetNode.id.split('-')[0];
+          return finalData.find(item => item.id === originalItemId) || null;
+      }
+      return null;
+  }, [viewState, finalData]);
+
   const allCategories = useMemo(() => {
     const categories = new Set<string>();
     initialData.forEach(item => {
@@ -118,8 +131,12 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
     : currentCategoryBrand?.Logo || null;
 
   const handleCategorySelect = useCallback((categoryName: string) => {
-    setActiveCategoryName(categoryName);
-  }, []);
+      // This function is now mainly for the navigation buttons, as the graph manages its own state
+      const targetNode = viewState.level === 'category' ? viewState.targetNode : null;
+      if (targetNode?.label !== categoryName) {
+        // This could trigger a search for the category node and a zoom, if desired
+      }
+  }, [viewState]);
   
   const navigateCategories = (direction: 'next' | 'prev') => {
       const currentIndex = navigationCategories.indexOf(activeCategoryName);
@@ -128,10 +145,17 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
           : (currentIndex - 1 + navigationCategories.length) % navigationCategories.length;
       
       handleCategorySelect(navigationCategories[newIndex]);
+      // In the new architecture, we'd need to find the node and set the view state
+  };
+
+  const handleOpenApp = (url: string) => {
+    setAppUrl(url);
+    setViewMode('app');
   };
 
   useEffect(() => {
-    if (viewMode === 'graph') {
+    const isGraphRelatedView = viewMode === 'graph' || viewMode === 'app';
+    if (isGraphRelatedView) {
       document.body.style.overflow = 'hidden';
       document.documentElement.classList.add('graph-view-active');
     } else {
@@ -149,7 +173,7 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
     <div className="relative h-full min-h-[calc(100vh-4rem)] w-full">
         {category.Background && <VideoBackground src={category.Background} />}
         
-        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'list' | 'graph')} className="absolute inset-0">
+        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'list' | 'graph' | 'app')} className="absolute inset-0">
             <TabsList className="absolute top-8 w-full flex justify-center z-20 bg-transparent border-0">
                 <div className="p-1 rounded-full bg-background/50 backdrop-blur-md border">
                     <TabsTrigger value="list" className="rounded-full px-4">
@@ -159,6 +183,10 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
                     <TabsTrigger value="graph" className="rounded-full px-4">
                         <Share2 className="mr-2 h-4 w-4" />
                         Graphe
+                    </TabsTrigger>
+                    <TabsTrigger value="app" className="rounded-full px-4" disabled={!appUrl}>
+                        <AppWindow className="mr-2 h-4 w-4" />
+                        Application
                     </TabsTrigger>
                 </div>
             </TabsList>
@@ -172,76 +200,99 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
                     <NodalGraphView 
                         items={finalData} 
                         brands={brands}
-                        onCategorySelect={handleCategorySelect}
-                        activeCategoryName={activeCategoryName}
+                        viewState={viewState}
+                        onViewStateChange={setViewState}
                     />
                 </div>
+            </TabsContent>
+            
+            <TabsContent value="app" className="mt-0 h-full w-full">
+               {appUrl ? (
+                    <iframe
+                        src={appUrl}
+                        className="w-full h-full border-0"
+                        title="Embedded Application"
+                        allow="camera; microphone; geolocation; vr"
+                    />
+                ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                        <p>Aucune application sélectionnée. Zoomez sur un item dans le graphe et cliquez sur "Ouvrir".</p>
+                    </div>
+                )}
             </TabsContent>
         </Tabs>
             
         {viewMode === 'graph' && (
-            <div className="absolute top-24 left-4 md:left-8 z-10 max-w-sm w-[calc(100%-2rem)] md:w-auto flex flex-col max-h-[calc(100vh-7rem-6rem)]">
-                {/* Bloc Titre + Slogan */}
-                <div className="mb-4">
-                    <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl capitalize">
-                        {category?.Name || 'Recherche'}
-                    </h1>
-                    <p className="max-w-[700px] text-muted-foreground md:text-xl mt-2">
-                        {category?.Description || ''}
-                    </p>
-                </div>
-                
-                {/* Boîte Flottante avec sélecteur et liste */}
-                 <div className="p-4 rounded-lg bg-background/50 backdrop-blur-md border border-border/50 flex flex-col flex-1 min-h-0">
-                    <div className="flex items-center justify-center gap-2">
-                        <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-md" 
-                            onClick={() => navigateCategories('prev')}
-                            style={{ color: 'var(--brand-color)' }}
-                        >
-                            <ArrowLeft className="h-4 w-4" />
-                        </Button>
-                        <div 
-                            className="px-4 py-1 rounded-full bg-transparent border font-headline uppercase text-center min-w-[200px] flex items-center justify-center gap-3 text-sm flex-1"
-                            style={{ color: 'var(--brand-color)', borderColor: 'var(--brand-color)' }}
-                        >
-                            {currentCategoryLogo && (
-                            <Image 
-                                src={currentCategoryLogo} 
-                                alt={`${activeCategoryName} logo`}
-                                width={16}
-                                height={16}
-                                className={cn(resolvedTheme === 'dark' && activeCategoryName !== "Vue d'ensemble" && 'invert')}
-                            />
-                            )}
-                            <span>{activeCategoryName}</span>
-                        </div>
-                        <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-md" 
-                            onClick={() => navigateCategories('next')}
-                            style={{ color: 'var(--brand-color)' }}
-                        >
-                            <ArrowRight className="h-4 w-4" />
-                        </Button>
+            <>
+                <div className="absolute top-24 left-4 md:left-8 z-10 max-w-sm w-[calc(100%-2rem)] md:w-auto flex flex-col">
+                    {/* Bloc Titre + Slogan */}
+                    <div className="mb-4">
+                        <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl capitalize">
+                            {category?.Name || 'Recherche'}
+                        </h1>
+                        <p className="max-w-[700px] text-muted-foreground md:text-xl mt-2">
+                            {category?.Description || ''}
+                        </p>
                     </div>
                     
-                    <ScrollArea className="flex-1 mt-4 pt-4 border-t border-border/50">
-                        <ul className="space-y-1 text-xs text-muted-foreground">
-                        {itemsForCurrentCategory.map(item => (
-                            <li key={item.id} className="truncate">
-                            <Link href={item.pdfUrl || '#'} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                                {item.title}
-                            </Link>
-                            </li>
-                        ))}
-                        </ul>
-                    </ScrollArea>
+                    {/* Boîte Flottante avec sélecteur et liste */}
+                     <div className="p-4 rounded-lg bg-background/50 backdrop-blur-md border border-border/50 flex flex-col flex-1 min-h-0 max-h-[calc(100vh-14rem-6rem)]">
+                        <div className="flex items-center justify-center gap-2">
+                            <Button 
+                                variant="outline" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-md" 
+                                onClick={() => navigateCategories('prev')}
+                                style={{ color: 'var(--brand-color)' }}
+                            >
+                                <ArrowLeft className="h-4 w-4" />
+                            </Button>
+                            <div 
+                                className="px-4 py-1 rounded-full bg-transparent border font-headline uppercase text-center min-w-[200px] flex items-center justify-center gap-3 text-sm flex-1"
+                                style={{ color: 'var(--brand-color)', borderColor: 'var(--brand-color)' }}
+                            >
+                                {currentCategoryLogo && (
+                                <Image 
+                                    src={currentCategoryLogo} 
+                                    alt={`${activeCategoryName} logo`}
+                                    width={16}
+                                    height={16}
+                                    className={cn(resolvedTheme === 'dark' && activeCategoryName !== "Vue d'ensemble" && 'invert')}
+                                />
+                                )}
+                                <span>{activeCategoryName}</span>
+                            </div>
+                            <Button 
+                                variant="outline" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-md" 
+                                onClick={() => navigateCategories('next')}
+                                style={{ color: 'var(--brand-color)' }}
+                            >
+                                <ArrowRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        
+                        <ScrollArea className="flex-1 mt-4 pt-4 border-t border-border/50">
+                            <ul className="space-y-1 text-xs text-muted-foreground">
+                            {itemsForCurrentCategory.map(item => (
+                                <li key={item.id} className="truncate">
+                                <Link href={item.pdfUrl || '#'} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                                    {item.title}
+                                </Link>
+                                </li>
+                            ))}
+                            </ul>
+                        </ScrollArea>
+                    </div>
                 </div>
-            </div>
+
+                {activeItem && viewMode === 'graph' && (
+                    <div className="absolute top-1/2 -translate-y-1/2 right-8 z-10">
+                        <ItemDetailPanel item={activeItem} onOpenApp={handleOpenApp} />
+                    </div>
+                )}
+            </>
         )}
     </div>
   );
