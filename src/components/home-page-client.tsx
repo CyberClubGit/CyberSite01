@@ -12,7 +12,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import Link from 'next/link';
-import { Instagram } from 'lucide-react';
+import { Instagram, ArrowLeft, ArrowRight } from 'lucide-react';
 import { DotButton } from './ui/carousel'; // Assurez-vous d'importer ce composant s'il existe
 
 // NodalGraph component to be included in this file
@@ -263,37 +263,77 @@ interface HomePageClientProps {
 const HorizontalCarousel = ({ children }: { children: React.ReactNode }) => {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false });
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
+  const isMobile = useIsMobile();
 
   const scrollTo = useCallback((index: number) => emblaApi && emblaApi.scrollTo(index), [emblaApi]);
+  const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi]);
 
   const onSelect = useCallback(() => {
-    if (emblaApi) setSelectedIndex(emblaApi.selectedScrollSnap());
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+    setCanScrollPrev(emblaApi.canScrollPrev());
+    setCanScrollNext(emblaApi.canScrollNext());
   }, [emblaApi]);
 
   useEffect(() => {
-    if (emblaApi) emblaApi.on('select', onSelect);
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on('select', onSelect);
+    emblaApi.on('reInit', onSelect);
     return () => {
-      if (emblaApi) emblaApi.off('select', onSelect);
+      emblaApi.off('select', onSelect);
+      emblaApi.off('reInit', onSelect);
     };
   }, [emblaApi, onSelect]);
 
   const handleWheel = (event: React.WheelEvent) => {
-    if (event.deltaY > 50) { // Scroll down
-      emblaApi?.scrollNext();
-    } else if (event.deltaY < -50) { // Scroll up
-      emblaApi?.scrollPrev();
+    if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+        if (event.deltaY > 50) {
+            emblaApi?.scrollNext();
+        } else if (event.deltaY < -50) {
+            emblaApi?.scrollPrev();
+        }
     }
   };
 
   return (
-    <div className="overflow-hidden h-screen" ref={emblaRef} onWheel={handleWheel}>
-      <div className="flex h-full">
-        {React.Children.map(children, (child, index) => (
-          <div className="relative h-screen w-screen flex-shrink-0" key={index}>
-            {child}
-          </div>
-        ))}
+    <div className="relative h-screen w-screen">
+      <div className="overflow-hidden h-full" ref={emblaRef} onWheel={handleWheel}>
+        <div className="flex h-full">
+          {React.Children.map(children, (child, index) => (
+            <div className="relative h-full w-full flex-shrink-0" key={index}>
+              {child}
+            </div>
+          ))}
+        </div>
       </div>
+      
+      {!isMobile && (
+        <>
+            <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80 backdrop-blur-sm z-20"
+                onClick={scrollPrev}
+                disabled={!canScrollPrev}
+            >
+                <ArrowLeft />
+            </Button>
+            <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80 backdrop-blur-sm z-20"
+                onClick={scrollNext}
+                disabled={!canScrollNext}
+            >
+                <ArrowRight />
+            </Button>
+        </>
+      )}
+
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-2">
         {React.Children.map(children, (_, index) => (
           <DotButton
