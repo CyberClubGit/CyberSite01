@@ -10,6 +10,7 @@ import React, {
   ReactNode,
   WheelEvent,
   MouseEvent as ReactMouseEvent,
+  useEffect,
 } from 'react';
 import { cn } from '@/lib/utils';
 
