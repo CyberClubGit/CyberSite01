@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -56,33 +57,33 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
         {category.Background && <VideoBackground src={category.Background} />}
         <section className="w-full py-8 md:py-12 relative z-10">
           <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center space-y-4 text-center mb-12">
-              <div className="space-y-2">
-                <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none capitalize">
-                  {category?.Name || 'Recherche'}
-                </h1>
-                <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-                  {category?.Description || `Explorez nos publications et nos travaux.`}
-                </p>
-              </div>
-            </div>
-
             <Tabs defaultValue="list" className="w-full" onValueChange={(value) => setViewMode(value as 'list' | 'graph')}>
-              <div className="flex justify-center mb-8">
-                <TabsList>
-                  <TabsTrigger value="list">
-                    <List className="mr-2 h-4 w-4" />
-                    Liste
-                  </TabsTrigger>
-                  <TabsTrigger value="graph">
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Graphe Nodal
-                  </TabsTrigger>
-                  <TabsTrigger value="z" disabled>
-                    (à venir)
-                  </TabsTrigger>
-                </TabsList>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
+                <div className="space-y-2 mb-4 md:mb-0">
+                  <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl capitalize">
+                    {category?.Name || 'Recherche'}
+                  </h1>
+                  <p className="max-w-[700px] text-muted-foreground">
+                    {category?.Description || `Explorez nos publications et nos travaux.`}
+                  </p>
+                </div>
+                <div className="flex-shrink-0">
+                  <TabsList>
+                    <TabsTrigger value="list">
+                      <List className="mr-2 h-4 w-4" />
+                      Liste
+                    </TabsTrigger>
+                    <TabsTrigger value="graph">
+                      <Share2 className="mr-2 h-4 w-4" />
+                      Graphe Nodal
+                    </TabsTrigger>
+                    <TabsTrigger value="z" disabled>
+                      (à venir)
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
               </div>
+              
               <TabsContent value="list">
                 <ListView items={finalData} />
               </TabsContent>
