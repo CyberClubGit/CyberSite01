@@ -19,6 +19,7 @@ interface Node {
   label: string;
   img?: string;
   proximity: number;
+  actors: string[];
 }
 
 const NodalGraph: React.FC<{ members: NetworkMember[] }> = ({ members }) => {
@@ -39,7 +40,8 @@ const NodalGraph: React.FC<{ members: NetworkMember[] }> = ({ members }) => {
         radius: 40,
         label: samuel.Name,
         img: samuel.profilePictureUrl,
-        proximity: 1
+        proximity: 1,
+        actors: (samuel.Actors || '').split(',').map(a => a.trim()).filter(Boolean),
       });
     }
 
@@ -54,7 +56,8 @@ const NodalGraph: React.FC<{ members: NetworkMember[] }> = ({ members }) => {
         radius: 20,
         label: member.Name,
         img: member.profilePictureUrl,
-        proximity: parseInt(member.Proximity, 10)
+        proximity: parseInt(member.Proximity, 10),
+        actors: (member.Actors || '').split(',').map(a => a.trim()).filter(Boolean),
       });
     });
     setNodes(initialNodes);
@@ -73,26 +76,60 @@ const NodalGraph: React.FC<{ members: NetworkMember[] }> = ({ members }) => {
     context.scale(window.devicePixelRatio, window.devicePixelRatio);
 
     let animationFrameId: number;
+    
+    // Group nodes by actor
+    const actorsMap: { [key: string]: Node[] } = {};
+    nodes.forEach(node => {
+        node.actors.forEach(actor => {
+            if (!actorsMap[actor]) {
+                actorsMap[actor] = [];
+            }
+            actorsMap[actor].push(node);
+        });
+    });
+
 
     const render = () => {
       context.clearRect(0, 0, width, height);
       const center = { x: width / 2, y: height / 2 };
       
       const foregroundColor = resolvedTheme === 'dark' ? '#FFFFFF' : '#000000';
-      const mutedColor = resolvedTheme === 'dark' ? '#888888' : '#888888';
+      const mutedColor = resolvedTheme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)';
+      const strongMutedColor = resolvedTheme === 'dark' ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)';
+
 
       // --- Draw links ---
-      nodes.forEach(node => {
-        if (node.proximity > 1) { // Don't draw link for center node
-            const centerNode = nodes[0];
-            context.beginPath();
-            context.moveTo(center.x + centerNode.x, center.y + centerNode.y);
-            context.lineTo(center.x + node.x, center.y + node.y);
-            context.strokeStyle = mutedColor;
-            context.lineWidth = 0.5;
-            context.stroke();
-        }
+      const centerNode = nodes.find(n => n.proximity === 1);
+      if (centerNode) {
+          nodes.forEach(node => {
+              if (node.proximity > 1) { // Links from center to others
+                  context.beginPath();
+                  context.moveTo(center.x + centerNode.x, center.y + centerNode.y);
+                  context.lineTo(center.x + node.x, center.y + node.y);
+                  context.strokeStyle = strongMutedColor;
+                  context.lineWidth = 1; // Thicker line for direct connections
+                  context.stroke();
+              }
+          });
+      }
+      
+      // Draw links for common actors
+      context.setLineDash([2, 4]); // Dashed line for secondary connections
+      context.lineWidth = 0.5;
+      context.strokeStyle = mutedColor;
+      Object.values(actorsMap).forEach(group => {
+          if (group.length > 1) {
+              for (let i = 0; i < group.length; i++) {
+                  for (let j = i + 1; j < group.length; j++) {
+                      context.beginPath();
+                      context.moveTo(center.x + group[i].x, center.y + group[i].y);
+                      context.lineTo(center.x + group[j].x, center.y + group[j].y);
+                      context.stroke();
+                  }
+              }
+          }
       });
+      context.setLineDash([]); // Reset line dash
 
 
       // --- Draw nodes ---
