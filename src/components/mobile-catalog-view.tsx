@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Heart, Home, X, Rows } from 'lucide-react';
+import { Heart, Home, X, Rows, Grid } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card';
 import Image from 'next/image';
 import { Button } from './ui/button';
@@ -28,9 +28,7 @@ export function MobileCatalogView({ initialData, onSelectItem }: MobileCatalogVi
   };
   
   const handleLike = (item: CatalogItem) => {
-    if (!isFavorite(item.id)) {
-        toggleFavorite(item);
-    }
+    toggleFavorite(item); // Like or unlike
     handleNext();
   };
 
@@ -52,23 +50,23 @@ export function MobileCatalogView({ initialData, onSelectItem }: MobileCatalogVi
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto">
         {view === 'discover' && currentItem && (
-          <div className="flex flex-col items-center justify-center p-4 h-full">
-            <Card className="w-full max-w-sm h-[70vh] flex flex-col" onClick={() => onSelectItem(currentItem)}>
-              <CardContent className="relative flex-1 p-0">
+          <div className="relative w-full h-full flex flex-col items-center justify-center p-4 overflow-hidden">
+            <Card className="w-full max-w-sm h-[70vh] flex flex-col shadow-lg" onClick={() => onSelectItem(currentItem)}>
+              <CardContent className="relative flex-1 p-0 rounded-lg overflow-hidden">
                 {currentItem.displayImageUrl ? (
                   <Image
                     src={currentItem.displayImageUrl}
                     alt={currentItem.title}
                     fill
-                    className="object-cover rounded-t-lg"
+                    className="object-cover"
                     sizes="(max-width: 640px) 100vw, 384px"
                   />
                 ) : (
-                  <div className="w-full h-full bg-muted rounded-t-lg flex items-center justify-center">
+                  <div className="w-full h-full bg-muted flex items-center justify-center">
                     <span className="text-muted-foreground">Pas d'image</span>
                   </div>
                 )}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 rounded-b-lg">
+                <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/60 to-transparent p-4">
                     <h3 className="font-headline text-2xl font-bold text-white">{currentItem.title}</h3>
                     {currentItem.Price_Print && (
                         <Badge variant="secondary" className="mt-1">{currentItem.Price_Print} €</Badge>
@@ -76,12 +74,12 @@ export function MobileCatalogView({ initialData, onSelectItem }: MobileCatalogVi
                 </div>
               </CardContent>
             </Card>
-             <div className="flex gap-4 mt-6">
-                <Button variant="outline" size="icon" className="h-16 w-16 rounded-full border-4 border-red-500 text-red-500" onClick={handleNext}>
-                    <X className="h-8 w-8" />
+             <div className="absolute bottom-16 flex gap-8">
+                <Button variant="outline" size="icon" className="h-20 w-20 rounded-full border-4 border-destructive text-destructive bg-background/50 backdrop-blur-sm shadow-2xl" onClick={(e) => { e.stopPropagation(); handleNext(); }}>
+                    <X className="h-10 w-10" />
                 </Button>
-                <Button variant="outline" size="icon" className="h-16 w-16 rounded-full border-4 border-green-500 text-green-500" onClick={() => handleLike(currentItem)}>
-                    <Heart className="h-8 w-8" />
+                <Button variant="outline" size="icon" className="h-20 w-20 rounded-full border-4 border-green-500 text-green-500 bg-background/50 backdrop-blur-sm shadow-2xl" onClick={(e) => { e.stopPropagation(); handleLike(currentItem); }}>
+                    <Heart className="h-10 w-10" fill={isFavorite(currentItem.id) ? "currentColor" : "none"} />
                 </Button>
             </div>
           </div>
@@ -94,8 +92,12 @@ export function MobileCatalogView({ initialData, onSelectItem }: MobileCatalogVi
                 <div className="grid grid-cols-2 gap-4">
                     {favorites.map(item => (
                         <Card key={item.id} className="group" onClick={() => onSelectItem(item)}>
-                            <CardContent className="relative aspect-square p-0">
-                                <Image src={item.displayImageUrl || ''} alt={item.title} fill className="object-cover rounded-t-lg" />
+                            <CardContent className="relative aspect-[3/4] p-0">
+                                {item.displayImageUrl ? (
+                                    <Image src={item.displayImageUrl} alt={item.title} fill className="object-cover rounded-t-lg" />
+                                ) : (
+                                    <div className="w-full h-full bg-muted rounded-t-lg"></div>
+                                )}
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </CardContent>
                             <CardFooter className="p-2">
