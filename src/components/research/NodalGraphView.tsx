@@ -113,7 +113,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, v
       const attractor = { x: categoryRadius * Math.cos(angle), y: categoryRadius * Math.sin(angle) };
       const catNode: Node = {
         id: `cat-${cat}`, x: attractor.x, y: attractor.y, vx: 0, vy: 0, radius: 36, label: cat, type: 'category',
-        attractor, parentAttractor: centerNode.attractor, color: getNodeColor(resolvedTheme, 'category', activityColorMap[cat]), logoUrl: activityLogoMap[cat] || null,
+        attractor, parentAttractor: centerNode, color: getNodeColor(resolvedTheme, 'category', activityColorMap[cat]), logoUrl: activityLogoMap[cat] || null,
       };
       categoryNodesMap[cat] = catNode;
       newNodes.push(catNode);

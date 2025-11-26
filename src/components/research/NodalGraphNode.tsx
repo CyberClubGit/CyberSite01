@@ -204,7 +204,6 @@ const NodalGraphNodeComponent: React.FC<NodalGraphNodeProps> = ({ node, isHovere
           height={labelHeight}
           style={{ overflow: 'visible', pointerEvents: 'none' }}
         >
-          {/* @ts-ignore */}
           <div 
             xmlns="http://www.w3.org/1999/xhtml"
             style={{

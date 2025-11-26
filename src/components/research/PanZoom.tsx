@@ -10,10 +10,10 @@ import React, {
   ReactNode,
   WheelEvent,
   MouseEvent as ReactMouseEvent,
+  TouchEvent as ReactTouchEvent,
   useEffect,
 } from 'react';
 import { cn } from '@/lib/utils';
-import { useDebouncedCallback } from 'use-debounce';
 
 export interface PanZoomState {
   x: number;
@@ -133,8 +133,7 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
     }
   }, [minZoom, maxZoom, onZoomRequest]);
 
-
-  const onMouseDown = useCallback((e: ReactMouseEvent<SVGSVGElement> | TouchEvent) => {
+  const startPan = useCallback((e: ReactMouseEvent<SVGSVGElement> | ReactTouchEvent<SVGSVGElement>) => {
     e.preventDefault();
     if (isAnimatingRef.current) {
       if (ref && 'current' in ref && ref.current) {
@@ -151,7 +150,15 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
     }
   }, [onManualPanStart, ref]);
 
-  const onMouseUp = useCallback((e: ReactMouseEvent<SVGSVGElement> | MouseEvent | TouchEvent) => {
+  const handleMouseDown = useCallback((e: ReactMouseEvent<SVGSVGElement>) => {
+    startPan(e);
+  }, [startPan]);
+
+  const handleTouchStart = useCallback((e: ReactTouchEvent<SVGSVGElement>) => {
+    startPan(e);
+  }, [startPan]);
+
+  const onMouseUp = useCallback(() => {
     setIsPanning(false);
     lastPointRef.current = null;
     if (containerRef.current) {
@@ -159,7 +166,7 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
     }
   }, []);
 
-  const onMouseMove = useCallback((e: ReactMouseEvent<SVGSVGElement> | MouseEvent | TouchEvent) => {
+  const onMouseMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!isPanning || !lastPointRef.current) return;
     
     const point = 'touches' in e ? e.touches[0] : e;
@@ -172,10 +179,9 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
     lastPointRef.current = { x: point.clientX, y: point.clientY };
   }, [isPanning]);
 
-
   useEffect(() => {
     const handleMove = (e: MouseEvent | TouchEvent) => onMouseMove(e);
-    const handleUp = (e: MouseEvent | TouchEvent) => onMouseUp(e);
+    const handleUp = () => onMouseUp();
 
     if (isPanning) {
       window.addEventListener('mousemove', handleMove);
@@ -195,8 +201,8 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
     <svg
       ref={containerRef}
       onWheel={onWheel}
-      onMouseDown={onMouseDown}
-      onTouchStart={onMouseDown}
+      onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
       className={cn('w-full h-full cursor-grab', className)}
     >
       <g 

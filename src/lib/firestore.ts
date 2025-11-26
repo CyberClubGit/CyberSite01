@@ -1,7 +1,6 @@
 
 'use server';
 
-import { collection, getDocs, query } from 'firebase/firestore';
 import { initializeAdminApp } from '@/firebase/admin-config';
 
 // Define the interface for the product data
@@ -35,10 +34,8 @@ export async function getProducts(): Promise<Product[]> {
     }
 
     const db = admin.firestore();
-    const productsCol = collection(db, 'products');
-    const q = query(productsCol);
-    
-    const productSnapshot = await getDocs(q);
+    const productsCol = db.collection('products');
+    const productSnapshot = await productsCol.get();
     
     if (productSnapshot.empty) {
       console.log('[Firestore Admin] No products found in the collection.');
