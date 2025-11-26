@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import type { Node } from './use-simulation';
 import { cn } from '@/lib/utils';
 
