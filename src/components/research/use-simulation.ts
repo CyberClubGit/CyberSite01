@@ -36,6 +36,10 @@ export const useSimulation = (options: SimulationOptions = {}) => {
   const [, setTick] = useState(0); // Used to force re-render
   const animationFrameRef = useRef<number>();
 
+  const forceUpdate = useCallback(() => {
+    setTick(t => t + 1);
+  }, []);
+
   const runSimulation = useCallback(() => {
     if (nodesRef.current.length === 0) {
       animationFrameRef.current = requestAnimationFrame(runSimulation);
@@ -108,10 +112,6 @@ export const useSimulation = (options: SimulationOptions = {}) => {
       nodesRef.current = newNodes;
       forceUpdate();
   }, [forceUpdate]);
-
-  const forceUpdate = useCallback(() => {
-    setTick(t => t + 1);
-  }, []);
 
   useEffect(() => {
     animationFrameRef.current = requestAnimationFrame(runSimulation);
