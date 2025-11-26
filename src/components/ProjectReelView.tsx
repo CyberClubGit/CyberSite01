@@ -2,16 +2,17 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
-import type { Project } from '@/lib/sheets';
+import type { Brand, Project } from '@/lib/sheets';
 import Image from 'next/image';
 import { getEmbeddableVideoUrl } from '@/lib/linkConverter';
 import { ProjectReelOverlay } from './ProjectReelOverlay';
 
 interface ProjectReelViewProps {
   projects: Project[];
+  brands: Brand[];
 }
 
-export function ProjectReelView({ projects }: ProjectReelViewProps) {
+export function ProjectReelView({ projects, brands }: ProjectReelViewProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel({
     axis: 'y',
     loop: false,
@@ -81,17 +82,17 @@ export function ProjectReelView({ projects }: ProjectReelViewProps) {
             </div>
 
             {/* Gradient Overlay for Text */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none"></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/50 pointer-events-none"></div>
 
-            {/* Text Content Overlay */}
-            <div className="absolute bottom-24 left-4 right-4 text-white p-4 pointer-events-none">
-              <h2 className="text-xl font-bold font-headline">{project.title}</h2>
+            {/* Text Content Overlay - NOW AT THE TOP */}
+            <div className="absolute top-4 left-4 right-4 text-white p-4 pointer-events-none">
+              <h2 className="text-2xl font-bold font-headline drop-shadow-lg">{project.title}</h2>
               {project.Activity && (
-                <p className="text-sm opacity-80 mt-1">{project.Activity}</p>
+                <p className="text-sm opacity-90 mt-1 drop-shadow-md">{project.Activity}</p>
               )}
             </div>
             
-            {/* The new interactive overlay */}
+            {/* The interactive overlay for details */}
             {activeOverlay === project.id && (
               <ProjectReelOverlay project={project} onClose={() => toggleOverlay(project.id)} />
             )}

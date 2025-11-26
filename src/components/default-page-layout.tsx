@@ -70,7 +70,7 @@ export default function DefaultPageLayout({ category, brand, initialData, brands
   
   // Conditional rendering for the projects page on mobile
   if (isProjectsPage && isMobile) {
-    return <ProjectReelView projects={finalData} />;
+    return <ProjectReelView projects={finalData} brands={brands} />;
   }
 
   return (
