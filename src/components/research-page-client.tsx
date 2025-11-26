@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
 import { Button } from './ui/button';
 import Image from 'next/image';
+import { ScrollArea } from './ui/scroll-area';
 
 type ProcessedItem = ReturnType<typeof import('@/lib/sheets').processGalleryLinks>;
 
@@ -162,96 +163,96 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
         onValueChange={(value) => setViewMode(value as 'list' | 'graph')}
         className="relative h-full min-h-[calc(100vh-4rem)] w-full"
     >
-      {category.Background && <VideoBackground src={category.Background} />}
-      
-      <TabsList className="absolute top-8 w-full flex justify-center z-20 bg-transparent border-0">
-          <div className="p-1 rounded-full bg-background/50 backdrop-blur-md border">
-            <TabsTrigger value="list" className="rounded-full px-4">
-              <List className="mr-2 h-4 w-4" />
-              Liste
-            </TabsTrigger>
-            <TabsTrigger value="graph" className="rounded-full px-4">
-              <Share2 className="mr-2 h-4 w-4" />
-              Graphe
-            </TabsTrigger>
-          </div>
-      </TabsList>
+        {category.Background && <VideoBackground src={category.Background} />}
+        
+        <TabsList className="absolute top-8 w-full flex justify-center z-20 bg-transparent border-0">
+            <div className="p-1 rounded-full bg-background/50 backdrop-blur-md border">
+                <TabsTrigger value="list" className="rounded-full px-4">
+                <List className="mr-2 h-4 w-4" />
+                Liste
+                </TabsTrigger>
+                <TabsTrigger value="graph" className="rounded-full px-4">
+                <Share2 className="mr-2 h-4 w-4" />
+                Graphe
+                </TabsTrigger>
+            </div>
+        </TabsList>
 
-      <TabsContent value="list" className="mt-0">
-          <ListView items={finalData} category={category} brand={brand}/>
-      </TabsContent>
+        <TabsContent value="list" className="mt-0">
+            <ListView items={finalData} category={category} brand={brand}/>
+        </TabsContent>
 
-      <TabsContent value="graph" className="mt-0 h-full min-h-[calc(100vh-4rem)] w-full">
-          <div className="absolute inset-0 z-0">
-            <NodalGraphView 
-              items={finalData} 
-              brands={brands}
-              onCategorySelect={handleCategorySelect}
-              lockedCategoryId={lockedCategoryId}
-            />
-          </div>
-          
-          <div className="relative z-10 w-full p-4 md:p-8">
-            <div className="p-4 rounded-lg bg-background/50 backdrop-blur-md border border-border/50 max-w-sm">
-                <div>
-                    <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl md:text-5xl capitalize">
-                        {category?.Name || 'Recherche'}
-                    </h1>
-                     <p className="max-w-[700px] text-muted-foreground md:text-xl mt-2">
-                        {category?.Description || ''}
-                    </p>
-                </div>
-                
-                <div className="mt-4 flex items-center gap-2">
-                    <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-md" 
-                        onClick={() => navigateCategories('prev')}
-                        style={{ color: 'var(--brand-color)' }}
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <div 
-                        className="px-4 py-1 rounded-full bg-transparent border font-headline uppercase text-center min-w-[200px] flex items-center justify-center gap-3 text-sm flex-1"
-                        style={{ color: 'var(--brand-color)', borderColor: 'var(--brand-color)' }}
-                    >
-                        {currentCategoryLogo && (
-                        <Image 
-                            src={currentCategoryLogo} 
-                            alt={`${currentCategoryName} logo`}
-                            width={16}
-                            height={16}
-                            className={cn(resolvedTheme === 'dark' && currentCategoryName !== 'Vue d\'ensemble' && 'invert')}
-                        />
-                        )}
-                        <span>{currentCategoryName}</span>
+        <TabsContent value="graph" className="mt-0 h-full min-h-[calc(100vh-4rem)] w-full">
+            <div className="absolute inset-0 z-0">
+                <NodalGraphView 
+                    items={finalData} 
+                    brands={brands}
+                    onCategorySelect={handleCategorySelect}
+                    lockedCategoryId={lockedCategoryId}
+                />
+            </div>
+            
+            <div className="absolute top-24 left-4 md:left-8 z-10 w-[calc(100%-2rem)] md:w-auto">
+                 <div className="p-4 rounded-lg bg-background/50 backdrop-blur-md border border-border/50 max-w-sm flex flex-col max-h-[calc(100vh-8rem)]">
+                    <div>
+                        <h1 className="text-3xl font-headline font-bold tracking-tighter sm:text-4xl capitalize">
+                            {category?.Name || 'Recherche'}
+                        </h1>
+                        <p className="max-w-[700px] text-muted-foreground md:text-xl mt-2">
+                            {category?.Description || ''}
+                        </p>
                     </div>
-                    <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-md" 
-                        onClick={() => navigateCategories('next')}
-                        style={{ color: 'var(--brand-color)' }}
-                    >
-                        <ArrowRight className="h-4 w-4" />
-                    </Button>
-                </div>
-                
-                <div className="pt-4 text-xs text-muted-foreground">
-                    <ul className="space-y-1 columns-2 gap-4">
-                      {itemsForCurrentCategory.map(item => (
-                        <li key={item.id} className="truncate">
-                           <Link href={item.pdfUrl || '#'} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                            {item.title}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
+                    
+                    <div className="mt-4 flex items-center justify-center gap-2">
+                        <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-md" 
+                            onClick={() => navigateCategories('prev')}
+                            style={{ color: 'var(--brand-color)' }}
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                        <div 
+                            className="px-4 py-1 rounded-full bg-transparent border font-headline uppercase text-center min-w-[200px] flex items-center justify-center gap-3 text-sm flex-1"
+                            style={{ color: 'var(--brand-color)', borderColor: 'var(--brand-color)' }}
+                        >
+                            {currentCategoryLogo && (
+                            <Image 
+                                src={currentCategoryLogo} 
+                                alt={`${currentCategoryName} logo`}
+                                width={16}
+                                height={16}
+                                className={cn(resolvedTheme === 'dark' && currentCategoryName !== 'Vue d\'ensemble' && 'invert')}
+                            />
+                            )}
+                            <span>{currentCategoryName}</span>
+                        </div>
+                        <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="h-8 w-8 rounded-full bg-background/50 backdrop-blur-md" 
+                            onClick={() => navigateCategories('next')}
+                            style={{ color: 'var(--brand-color)' }}
+                        >
+                            <ArrowRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    
+                    <ScrollArea className="flex-1 mt-4 pt-4 border-t border-border/50">
+                        <ul className="space-y-1 text-xs text-muted-foreground">
+                        {itemsForCurrentCategory.map(item => (
+                            <li key={item.id} className="truncate">
+                            <Link href={item.pdfUrl || '#'} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                                {item.title}
+                            </Link>
+                            </li>
+                        ))}
+                        </ul>
+                    </ScrollArea>
                 </div>
             </div>
-          </div>
-      </TabsContent>
+        </TabsContent>
     </Tabs>
   );
 }
