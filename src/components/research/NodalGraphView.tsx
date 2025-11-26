@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
@@ -34,9 +35,9 @@ interface Link {
 
 
 const ZOOM_LEVELS = {
-  overview: 0.525, // 0.35 * 1.5
-  category: 1.6, // 0.8 * 2
-  item: 3, // 2 * 1.5
+  overview: 0.525 * 1.5,
+  category: 0.8 * 2.0,
+  item: 2 * 1.5,
 };
 
 const CATEGORY_ANGLES: Record<string, number> = {
@@ -228,16 +229,16 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, v
 
     switch (viewState.level) {
         case 'category':
-            targetNode = viewState.targetNode;
+            targetNode = nodeMap.get(viewState.targetNode.id);
             zoomLevel = ZOOM_LEVELS.category;
             break;
         case 'item':
-            targetNode = viewState.targetNode;
+            targetNode = nodeMap.get(viewState.targetNode.id);
             zoomLevel = ZOOM_LEVELS.item;
             break;
         case 'overview':
         default:
-            targetNode = simulatedNodes.find(n => n.type === 'center');
+            targetNode = nodeMap.get('center');
             zoomLevel = ZOOM_LEVELS.overview;
             break;
     }
@@ -245,7 +246,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, v
     if (targetNode) {
       panZoomRef.current?.zoomTo(targetNode.x, targetNode.y, zoomLevel, true);
     }
-  }, [viewState, simulatedNodes]);
+  }, [viewState, nodeMap]);
 
   const activeCategoryId = useMemo(() => {
     if (viewState.level === 'category') return viewState.targetNode.id;
