@@ -63,12 +63,16 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
     return { x, y, zoom, centerX, centerY };
   }, [transform]);
 
-  // CRITICAL CHANGE: Removed debounce for real-time transform updates
+  // Debounced callback for transform changes
+  const debouncedOnTransformChange = useDebouncedCallback((state: PanZoomState) => {
+    onTransformChange?.(state);
+  }, 100);
+
   useEffect(() => {
     if (onTransformChange && !isAnimatingRef.current) {
-        onTransformChange(getCurrentState());
+        debouncedOnTransformChange(getCurrentState());
     }
-  }, [transform, onTransformChange, getCurrentState]);
+  }, [transform, onTransformChange, getCurrentState, debouncedOnTransformChange]);
 
   useImperativeHandle(ref, () => ({
     zoomTo: (x, y, newZoom, animate = true) => {

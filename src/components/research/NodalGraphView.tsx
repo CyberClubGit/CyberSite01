@@ -53,14 +53,12 @@ const getNodeColor = (theme: string | undefined, type: 'center' | 'category' | '
 
 const ZOOM_LEVEL_CATEGORY = 1.2;
 const ZOOM_LEVEL_OVERVIEW = 0.4;
-const ATTRACTION_RADIUS = 30; // Screen pixels - REDUCED from 50 to make escaping easier
 
 export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, onCategorySelect, lockedCategoryId }) => {
   const { resolvedTheme } = useTheme();
   const [links, setLinks] = useState<Link[]>([]);
   const panZoomRef = useRef<PanZoomApi>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-  const isLocked = !!lockedCategoryId;
 
   const { simulatedNodes, setNodes: setSimulationNodes } = useSimulation();
 
@@ -232,38 +230,16 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
   }, [lockedCategoryId, simulatedNodes]);
 
   const onNodeClick = useCallback((node: Node) => {
-    if (node.href && node.href !== '#') {
+    if (node.type === 'category' || node.type === 'center') {
+      onCategorySelect(node.label);
+    } else if (node.href && node.href !== '#') {
       window.open(node.href, '_blank');
     }
-  }, []);
+  }, [onCategorySelect]);
   
   const handleManualPan = () => {
     onCategorySelect('Vue d\'ensemble');
   };
-  
-  const handleTransformChange = useCallback((state: PanZoomState) => {
-    if (isLocked) return;
-
-    // Find the category node closest to the center
-    const { centerX, centerY } = state;
-    let closestNode: Node | null = null;
-    let minDistance = Infinity;
-
-    for (const node of simulatedNodes) {
-      if (node.type !== 'category') continue;
-      
-      const distance = Math.sqrt(Math.pow(node.x - centerX, 2) + Math.pow(node.y - centerY, 2));
-
-      if (distance < minDistance) {
-        minDistance = distance;
-        closestNode = node;
-      }
-    }
-
-    if (closestNode && minDistance * state.zoom < ATTRACTION_RADIUS) {
-      onCategorySelect(closestNode.label);
-    }
-  }, [isLocked, simulatedNodes, onCategorySelect]);
   
   const nodeMap = useMemo(() => {
     const map = new Map<string, Node>();
@@ -299,7 +275,6 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
         maxZoom={3}
         className={cn("w-full h-full transition-opacity duration-500", hasSimulated ? 'opacity-100' : 'opacity-0')}
         onManualPan={handleManualPan}
-        onTransformChange={handleTransformChange}
       >
         <defs>
           {links.filter(l => l.gradientId).map(link => {
@@ -345,10 +320,9 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands, o
             // Hack to apply gradient to line, needs to be calculated
             const angle = Math.atan2(target.y - source.y, target.x - source.x) * 180 / Math.PI;
             if (isGradientLink) {
-              const gradientTransform = `rotate(${angle}, ${source.x}, ${source.y})`;
-               const gradRef = document.getElementById(link.gradientId!);
+              const gradRef = document.getElementById(link.gradientId!);
                if (gradRef) {
-                 gradRef.setAttribute('gradientTransform', gradientTransform);
+                 gradRef.setAttribute('gradientTransform', `rotate(${angle}, ${source.x}, ${source.y})`);
                }
             }
             
