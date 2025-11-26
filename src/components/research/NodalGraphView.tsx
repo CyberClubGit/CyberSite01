@@ -76,12 +76,12 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     // Ensure all predefined categories exist for stable layout
     Object.keys(CATEGORY_ANGLES).forEach(cat => categories.add(cat));
     
-    return Array.from(categories).filter(cat => cat !== 'Cybernetics' && cat !== 'Other');
+    return Array.from(categories);
   }, [items]);
 
   const sortedVisibleCategories = useMemo(() => {
       return allCategories
-          .filter(cat => cat !== 'Cyber Club' && CATEGORY_ANGLES[cat] !== undefined)
+          .filter(cat => cat !== 'Cyber Club' && cat !== 'Cybernetics' && cat !== 'Other' && CATEGORY_ANGLES[cat] !== undefined)
           .sort((a, b) => CATEGORY_ANGLES[a] - CATEGORY_ANGLES[b]);
   }, [allCategories]);
 
@@ -210,7 +210,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
   }, []);
 
   const handleCategorySelect = (categoryId: string) => {
-      if (!categoryId) {
+      if (!categoryId || categoryId === 'all') {
           panZoomRef.current?.zoomTo(0, 0, 0.4, true);
           return;
       }
@@ -243,7 +243,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
                   <SelectValue placeholder="Zoom sur catégorie" />
               </SelectTrigger>
               <SelectContent>
-                  <SelectItem value="">Vue d'ensemble</SelectItem>
+                  <SelectItem value="all">Vue d'ensemble</SelectItem>
                   {sortedVisibleCategories.map(cat => (
                       <SelectItem key={`select-${cat}`} value={`cat-${cat}`}>
                           {cat}
