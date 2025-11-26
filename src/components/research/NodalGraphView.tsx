@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
@@ -8,7 +7,7 @@ import { NodalGraphNode } from './NodalGraphNode';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { PanZoom, type PanZoomApi, type PanZoomState } from './PanZoom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { createActivityColorMap } from '@/lib/color-utils';
 import {
   Select,
@@ -17,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Button } from '../ui/button';
 
 
 interface NodalGraphViewProps {
@@ -65,6 +65,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
   const panZoomRef = useRef<PanZoomApi>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
+  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(-1); // -1 for overview
   const interactionTimeoutRef = useRef<NodeJS.Timeout>();
 
   const { simulatedNodes, setNodes: setSimulationNodes } = useSimulation();
@@ -91,6 +92,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
           .sort((a, b) => CATEGORY_ANGLES[a] - CATEGORY_ANGLES[b]);
   }, [allCategories]);
 
+  const navigationCategories = useMemo(() => ['Vue d\'ensemble', ...sortedVisibleCategories], [sortedVisibleCategories]);
 
   useEffect(() => {
     const categoryRadius = 350; 
@@ -202,7 +204,7 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     setSimulationNodes(newNodes);
 
     const timeout = setTimeout(() => {
-        panZoomRef.current?.zoomTo(0, 0, ZOOM_LEVEL_OVERVIEW, false);
+        panZoomRef.current?.zoomTo(0, 0, ZOOM_LEVEL_OVERVIEW, true);
     }, 500);
 
     return () => clearTimeout(timeout);
@@ -215,13 +217,18 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
     }
   }, []);
 
-  const handleCategorySelect = (categoryId: string) => {
-      if (!categoryId) return;
-      if (categoryId === 'all') {
+  const handleCategorySelect = (categoryName: string) => {
+      const index = navigationCategories.findIndex(c => c === categoryName);
+      if (index === -1) return;
+      setCurrentCategoryIndex(index);
+
+      if (index === 0) { // "Vue d'ensemble"
           panZoomRef.current?.zoomTo(0, 0, ZOOM_LEVEL_OVERVIEW, true);
           setIsLocked(false);
           return;
       }
+      
+      const categoryId = `cat-${categoryName}`;
       const nodeToZoom = simulatedNodes.find(n => n.id === categoryId);
       if (nodeToZoom) {
           panZoomRef.current?.zoomTo(nodeToZoom.x, nodeToZoom.y, ZOOM_LEVEL_CATEGORY, true);
@@ -229,12 +236,19 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
       }
   };
 
+  const navigateCategories = (direction: 'next' | 'prev') => {
+      const newIndex = direction === 'next'
+          ? (currentCategoryIndex + 1) % navigationCategories.length
+          : (currentCategoryIndex - 1 + navigationCategories.length) % navigationCategories.length;
+      
+      handleCategorySelect(navigationCategories[newIndex]);
+  };
+
   const handleManualPan = () => {
     setIsLocked(false); // Unlock on manual interaction
-    // Debounce the re-enabling of the auto-zoom
+    setCurrentCategoryIndex(0); // Go back to overview state
     clearTimeout(interactionTimeoutRef.current);
     interactionTimeoutRef.current = setTimeout(() => {
-      // The state will re-enable auto-zoom after a pause
     }, 1500);
   };
   
@@ -257,9 +271,8 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
       }
     }
 
-    // Check if the closest node is within the attraction radius (in screen space)
     if (closestNode && minDistance * state.zoom < ATTRACTION_RADIUS) {
-      handleCategorySelect(closestNode.id);
+      handleCategorySelect(closestNode.label);
     }
   }, [isLocked, simulatedNodes, handleCategorySelect]);
   
@@ -281,14 +294,13 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
       )}
       
       <div className="absolute top-4 right-4 z-20">
-          <Select onValueChange={handleCategorySelect}>
+          <Select onValueChange={handleCategorySelect} value={navigationCategories[currentCategoryIndex] || 'Vue d\'ensemble'}>
               <SelectTrigger className="w-[180px] bg-background/70 backdrop-blur-md">
                   <SelectValue placeholder="Zoom sur catégorie" />
               </SelectTrigger>
               <SelectContent>
-                  <SelectItem value="all">Vue d'ensemble</SelectItem>
-                  {sortedVisibleCategories.map(cat => (
-                      <SelectItem key={`select-${cat}`} value={`cat-${cat}`}>
+                  {navigationCategories.map((cat, index) => (
+                      <SelectItem key={`select-${index}`} value={cat}>
                           {cat}
                       </SelectItem>
                   ))}
@@ -296,20 +308,16 @@ export const NodalGraphView: React.FC<NodalGraphViewProps> = ({ items, brands })
           </Select>
       </div>
       
-       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
-          <Select onValueChange={handleCategorySelect}>
-              <SelectTrigger className="w-[220px] bg-background/70 backdrop-blur-md">
-                  <SelectValue placeholder="Naviguer vers une catégorie" />
-              </SelectTrigger>
-              <SelectContent>
-                  <SelectItem value="all">Vue d'ensemble</SelectItem>
-                  {sortedVisibleCategories.map(cat => (
-                      <SelectItem key={`bottom-select-${cat}`} value={`cat-${cat}`}>
-                          {cat}
-                      </SelectItem>
-                  ))}
-              </SelectContent>
-          </Select>
+       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+          <Button variant="outline" size="icon" className="h-10 w-10 rounded-full bg-background/70 backdrop-blur-md" onClick={() => navigateCategories('prev')}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="px-4 py-2 rounded-full bg-background/70 backdrop-blur-md font-mono text-center min-w-[180px]">
+            {navigationCategories[currentCategoryIndex] || 'Vue d\'ensemble'}
+          </div>
+          <Button variant="outline" size="icon" className="h-10 w-10 rounded-full bg-background/70 backdrop-blur-md" onClick={() => navigateCategories('next')}>
+            <ArrowRight className="h-5 w-5" />
+          </Button>
       </div>
 
       <PanZoom

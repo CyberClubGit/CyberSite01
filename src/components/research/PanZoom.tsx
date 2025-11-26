@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, {
@@ -78,29 +77,31 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
       const parent = containerRef.current?.parentElement;
       if (!parent || !contentRef.current) return;
 
+      const clampedZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
+
       const centerX = parent.clientWidth / 2;
       const centerY = parent.clientHeight / 2;
 
-      const newX = centerX - x * newZoom;
-      const newY = centerY - y * newZoom;
+      const newX = centerX - x * clampedZoom;
+      const newY = centerY - y * clampedZoom;
 
       if (animate) {
         isAnimatingRef.current = true;
-        contentRef.current.style.transition = 'transform 300ms ease-out';
+        contentRef.current.style.transition = 'transform 700ms cubic-bezier(0.25, 1, 0.5, 1)';
         setTransform({
           x: newX,
           y: newY,
-          zoom: newZoom,
+          zoom: clampedZoom,
         });
         setTimeout(() => {
           if (contentRef.current) contentRef.current.style.transition = '';
           isAnimatingRef.current = false;
-        }, 300);
+        }, 700);
       } else {
         setTransform({
           x: newX,
           y: newY,
-          zoom: newZoom,
+          zoom: clampedZoom,
         });
       }
     },
@@ -197,8 +198,5 @@ const PanZoomComponent = forwardRef<PanZoomApi, PanZoomProps>(({
 });
 
 PanZoomComponent.displayName = 'PanZoom';
-
-// I need to add use-debounce to dependencies
-const useDebouncedCallbackImport = `import { useDebouncedCallback } from 'use-debounce';`;
 
 export const PanZoom = PanZoomComponent;
