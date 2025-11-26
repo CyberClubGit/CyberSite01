@@ -1,19 +1,17 @@
 
 'use client';
 
-import { useAuth, type UserData } from '@/firebase/auth/use-user';
+import { useAuth, type UserData } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Mail, User, Heart, CreditCard, Box, ChevronRight, Loader2 } from 'lucide-react';
+import { Mail, User, CreditCard, Box } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useFavorites } from '@/hooks/useFavorites';
-import Link from 'next/link';
 
-type View = 'profil' | 'favoris' | 'paiement' | 'espace';
+type View = 'profil' | 'paiement' | 'espace';
 
 const ProfileSkeleton = () => (
   <div className="container py-12">
@@ -72,62 +70,6 @@ const ProfileView = ({ user, onSignOut }: { user: UserData; onSignOut: () => voi
   </Card>
 );
 
-const FavoritesView = ({ userId }: { userId: string }) => {
-    const { favorites, loading: favoritesLoading } = useFavorites(userId);
-
-    if (favoritesLoading) {
-        return (
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-3xl font-headline">Mes Favoris</CardTitle>
-                    <CardDescription>Les articles que vous avez sauvegardés.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="space-y-2">
-                            <Skeleton className="h-40 w-full" />
-                            <Skeleton className="h-6 w-3/4" />
-                        </div>
-                    ))}
-                </CardContent>
-            </Card>
-        );
-    }
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-3xl font-headline">Mes Favoris</CardTitle>
-                <CardDescription>
-                    {favorites.length > 0 ? `Vous avez ${favorites.length} article(s) sauvegardé(s).` : "Vous n'avez pas encore de favoris."}
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                {favorites.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {favorites.map(fav => (
-                            <div key={fav} className="border rounded-lg p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                                <span className="font-medium">{fav}</span>
-                                {/* TODO: Link to item page */}
-                                <Button variant="ghost" size="icon" asChild>
-                                    <Link href="/catalog">
-                                        <ChevronRight className="h-4 w-4" />
-                                    </Link>
-                                </Button>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-12 text-muted-foreground">
-                        <Heart className="mx-auto h-12 w-12 mb-4" />
-                        <p>Parcourez le catalogue et cliquez sur le cœur pour ajouter des articles ici.</p>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    );
-};
-
 const ComingSoonView = ({ title, description }: { title: string; description: string }) => (
     <Card>
         <CardHeader>
@@ -161,7 +103,6 @@ export default function ProfilePage() {
 
   const menuItems = [
     { id: 'profil' as View, label: 'Profil', icon: User },
-    { id: 'favoris' as View, label: 'Favoris', icon: Heart },
     { id: 'paiement' as View, label: 'Moyen de paiement', icon: CreditCard },
     { id: 'espace' as View, label: 'Espace personnel', icon: Box },
   ];
@@ -192,7 +133,6 @@ export default function ProfilePage() {
             {/* Right Content */}
             <main className="w-full md:w-3/4 lg:w-4/5">
                 {activeView === 'profil' && <ProfileView user={user} onSignOut={signOut} />}
-                {activeView === 'favoris' && <FavoritesView userId={user.uid} />}
                 {activeView === 'paiement' && (
                     <ComingSoonView 
                         title="Moyen de paiement"

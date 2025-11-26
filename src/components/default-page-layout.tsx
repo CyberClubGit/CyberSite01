@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { type Brand, type Category, getBrands } from '@/lib/sheets';
+import { type Brand, type Category, getBrands, type Project } from '@/lib/sheets';
 import { filterItemsByBrandActivity, getActivityForBrand } from '@/lib/activity-filter';
 import { processGalleryLinks } from '@/lib/sheets';
 import { cn } from '@/lib/utils';
@@ -22,17 +22,15 @@ const ProjectExplorer = dynamic(() => import('./ProjectExplorer').then(mod => mo
 });
 
 
-type ProcessedItem = ReturnType<typeof processGalleryLinks>;
-
 interface DefaultPageLayoutProps {
   category: Category;
   brand?: Brand;
-  initialData: ProcessedItem[];
+  initialData: Project[];
   brands: Brand[];
 }
 
 export default function DefaultPageLayout({ category, brand, initialData, brands }: DefaultPageLayoutProps) {
-  const [selectedProject, setSelectedProject] = useState<ProcessedItem | null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const { getCardStyle, getActivityBadgeStyle } = useActivityColors(brands);
 
   if (!category.Url) {
@@ -58,14 +56,12 @@ export default function DefaultPageLayout({ category, brand, initialData, brands
       displayImageUrl = item.coverUrl;
     } else if (item.galleryUrls && item.galleryUrls.length > 0) {
       displayImageUrl = item.galleryUrls[0];
-    } else if (item['Url Logo Png']) {
-      displayImageUrl = item['Url Logo Png'];
-    }
+    } 
 
     return {
       ...item,
-      title: item.Title || item.Name || item.Item || 'Untitled',
-      description: item.Description || item.Content || '',
+      title: item.title || 'Untitled',
+      description: item.description || '',
       displayImageUrl,
     };
   });

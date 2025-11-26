@@ -28,6 +28,30 @@ export interface Brand {
   Logo: string;
 }
 
+export interface Project {
+  id: string;
+  title: string;
+  description: string;
+  displayImageUrl: string | null;
+  galleryUrls: string[];
+  threeDRenderUrls: string[];
+  packagingUrls: string[];
+  coverUrl: string | null;
+  stlUrl: string | null;
+  pdfUrl: string | null;
+  reelUrl: string | null;
+  videoUrl: string | null;
+  Activity?: string;
+  Members?: string;
+  Institution?: string;
+  'Liens Institution'?: string;
+  Price_Print?: string;
+  Type?: string;
+  Material?: string;
+  [key: string]: any;
+}
+
+
 // ===== CONFIGURATION =====
 const SPREADSHEET_ID = '2PACX-1vR8LriovOmQutplLgD0twV1nJbX02to87y2rCdXY-oErtwQTIZRp5gi7KIlfSzNA_gDbmJVZ80bD2l1';
 const MASTER_SHEET_GID = '177392102';
@@ -182,19 +206,7 @@ export const getCategoryData = unstable_cache(
  * 
  * Utiliser cette fonction sur les données après getCategoryData()
  */
-export function processGalleryLinks<T extends Record<string, any>>(item: T): T & {
-  galleryUrls: string[];
-  threeDRenderUrls: string[];
-  packagingUrls: string[];
-  coverUrl: string | null;
-  displayImageUrl: string | null; // This will be the definitive image for display
-  stlUrl: string | null;
-  pdfUrl: string | null;
-  reelUrl: string | null;
-  videoUrl: string | null;
-  title: string;
-  description: string;
-} {
+export function processGalleryLinks<T extends Record<string, any>>(item: T): Project {
   const galleryUrls = item.Gallery ? extractAndConvertGalleryLinks(item.Gallery) : [];
   const coverUrl = item.Cover ? convertGoogleDriveLinkToDirect(item.Cover) : null;
   
@@ -206,6 +218,11 @@ export function processGalleryLinks<T extends Record<string, any>>(item: T): T &
     displayImageUrl = galleryUrls[0]; // Priorité 2: La première image de la 'Gallery'
   } else if (item['Url Logo Png']) {
     displayImageUrl = convertGoogleDriveLinkToDirect(item['Url Logo Png']); // Priorité 3: Le logo
+  }
+
+  let validId = (item.ID || item.Id || item.id || '').trim();
+  if (!validId || validId === '#NAME?') {
+    validId = item.Title || item.Name || item.Item || 'Untitled';
   }
 
   return {
@@ -227,6 +244,7 @@ export function processGalleryLinks<T extends Record<string, any>>(item: T): T &
     videoUrl: item.Video ? convertGoogleDriveLinkToDirect(item.Video) : null,
       
     // Normalized Text fields
+    id: validId,
     title: item.Title || item.Name || item.Item || 'Untitled',
     description: item.Description || item.Content || '',
   };

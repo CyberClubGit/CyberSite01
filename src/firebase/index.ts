@@ -28,3 +28,5 @@ export {
   useFirebaseAuth, 
   useAuth,
 };
+
+export type { UserData } from './auth/use-user';

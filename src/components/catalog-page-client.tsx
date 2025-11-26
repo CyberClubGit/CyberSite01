@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, Fragment } from 'react';
-import type { Brand, Category } from '@/lib/sheets';
+import type { Brand, Category, Project } from '@/lib/sheets';
 import { filterItemsByBrandActivity } from '@/lib/activity-filter';
 import Image from 'next/image';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,14 +19,8 @@ import { useCart } from '@/hooks/useCart';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 // The interface of the item processed, to ensure consistency
-type CatalogItem = {
-  id: string; // The normalized, non-optional ID
-  title: string;
-  description: string;
-  galleryUrls: string[];
-  displayImageUrl: string | null;
-  Price_Print: string; // Price is a string from the sheet
-  [key: string]: any; // Allow other properties
+type CatalogItem = Project & {
+  Price_Print?: string; // Price is a string from the sheet
 };
 
 

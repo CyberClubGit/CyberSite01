@@ -10,8 +10,7 @@ import {
 import { useFirebaseAuth } from '@/firebase/provider';
 
 // This is the definitive UserData interface for the entire application.
-// It contains ONLY information from Firebase Authentication.
-// No data from Firestore is included here.
+// It now includes an optional nickname.
 export interface UserData {
   uid: string;
   email: string | null;
@@ -19,6 +18,7 @@ export interface UserData {
   photoURL: string | null;
   emailVerified: boolean;
   isAdmin: boolean;
+  nickname?: string | null;
 }
 
 const ADMIN_EMAIL = 'contact@cyber-club.net';

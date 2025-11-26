@@ -8,8 +8,8 @@ import {
     Paperclip,
     Film,
     Download,
-    Separator,
 } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 import { getEmbeddableVideoUrl } from '@/lib/linkConverter';
 import { DocumentGallery } from './document-gallery';
 import { Button } from './ui/button';
@@ -30,8 +30,8 @@ interface ProjectDetailsProps {
 export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetailsProps) {
   const videoUrl = getEmbeddableVideoUrl(project.reelUrl);
   
-  const members = project.Members?.split(',').map(m => m.trim()).filter(Boolean) || [];
-  const activities = project.Activity?.split(',').map(t => t.trim()).filter(Boolean) || [];
+  const members = project.Members?.split(',').map((m: string) => m.trim()).filter(Boolean) || [];
+  const activities = project.Activity?.split(',').map((t: string) => t.trim()).filter(Boolean) || [];
 
   const mainPdf = project.pdfUrl;
   const institutionLink = project['Liens Institution'];
@@ -100,7 +100,7 @@ export function ProjectDetails({ project, getActivityBadgeStyle }: ProjectDetail
                           {activities.length > 0 && (
                               <div className="flex items-center gap-2 flex-wrap">
                                 <Shapes className="h-4 w-4 mr-2" />
-                                {activities.map(activity => (
+                                {activities.map((activity: string) => (
                                   <Badge 
                                       key={activity} 
                                       variant="outline"

@@ -33,7 +33,7 @@ type CatalogItem = {
   description: string;
   galleryUrls: string[];
   displayImageUrl: string | null;
-  Price_Print: string; // Price is a string from the sheet
+  Price_Print?: string; // Price is a string from the sheet, now optional
   [key: string]: any;
 };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useMouse } from '@uidotdev/usehooks';
 import { cn } from '@/lib/utils';
 
@@ -10,16 +10,21 @@ interface InteractivePanelProps {
 }
 
 export function InteractivePanel({ children, className }: InteractivePanelProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
-  const { elementX, elementY, elementWidth, elementHeight } = useMouse(panelRef);
+  const [mouse, ref] = useMouse<HTMLDivElement>();
 
   const styles = useMemo(() => {
-    if (elementX === null || elementY === null) {
+    if (!ref.current || mouse.elementX === null || mouse.elementY === null) {
       return { cardStyle: {}, glowStyle: {} };
     }
 
-    const mouseX = elementX / elementWidth;
-    const mouseY = elementY / elementHeight;
+    const { offsetWidth: elementWidth, offsetHeight: elementHeight } = ref.current;
+
+    if (elementWidth === 0 || elementHeight === 0) {
+      return { cardStyle: {}, glowStyle: {} };
+    }
+
+    const mouseX = mouse.elementX / elementWidth;
+    const mouseY = mouse.elementY / elementHeight;
     const rotateY = (mouseX - 0.5) * 10;
     const rotateX = -(mouseY - 0.5) * 10;
 
@@ -34,11 +39,11 @@ export function InteractivePanel({ children, className }: InteractivePanelProps)
         background: `radial-gradient(circle at ${glowX}% ${glowY}%, hsl(var(--primary) / 0.1), transparent 40%)`,
       },
     };
-  }, [elementX, elementY, elementWidth, elementHeight]);
+  }, [mouse.elementX, mouse.elementY, ref]);
 
   return (
     <div
-      ref={panelRef}
+      ref={ref}
       style={styles.cardStyle}
       className={cn(
         "relative w-full h-full bg-muted/20 border border-border/50 rounded-lg p-4 transition-transform duration-100 ease-out will-change-transform",
