@@ -34,9 +34,9 @@ interface Link {
 
 
 const ZOOM_LEVELS = {
-  overview: 0.35,
-  category: 0.8,
-  item: 2,
+  overview: 0.525, // 0.35 * 1.5
+  category: 1.6, // 0.8 * 2
+  item: 3, // 2 * 1.5
 };
 
 const CATEGORY_ANGLES: Record<string, number> = {
