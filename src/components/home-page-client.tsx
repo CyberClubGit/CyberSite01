@@ -366,7 +366,7 @@ export function HomePageClient({ category, brand, network }: HomePageClientProps
               src={samuel.profilePictureUrl}
               alt="Background"
               fill
-              className="object-cover object-top blur-md scale-110"
+              className="object-cover object-top scale-110"
               quality={50}
             />
           )}
@@ -377,10 +377,6 @@ export function HomePageClient({ category, brand, network }: HomePageClientProps
           <div className="relative z-10 flex flex-col items-center justify-center h-full text-center p-4">
               <div className="flex-grow flex flex-col items-center justify-center">
                   <h2 className="text-xl font-headline font-light tracking-widest uppercase text-muted-foreground mb-4">The Architect</h2>
-                  <Avatar className="w-40 h-40 mb-6 border-4 border-background shadow-2xl">
-                      <AvatarImage src={samuel.profilePictureUrl} alt={samuel.Name} />
-                      <AvatarFallback>{samuel.Name.charAt(0)}</AvatarFallback>
-                  </Avatar>
                   <h3 className="font-headline text-4xl font-bold">{samuel.Name}</h3>
                   <p className="text-muted-foreground mt-1 text-lg">{samuel.Role}</p>
               </div>
