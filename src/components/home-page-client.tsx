@@ -1,6 +1,5 @@
 
 
-
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -389,7 +388,7 @@ export function HomePageClient({ category, brand, network }: HomePageClientProps
              <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-4 left-4 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80 backdrop-blur-sm z-20"
+                className="absolute top-1/2 -translate-y-1/2 left-4 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80 backdrop-blur-sm z-20"
                 onClick={() => setMobileNetworkView('architect')}
              >
                 <ArrowLeft />
