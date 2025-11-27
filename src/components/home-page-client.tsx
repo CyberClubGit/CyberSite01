@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -374,8 +375,8 @@ export function HomePageClient({ category, brand, network }: HomePageClientProps
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent"></div>
 
           {/* Content */}
-          <div className="relative z-10 flex flex-col items-center justify-center h-full text-center p-4">
-              <div className="flex-grow flex flex-col items-center justify-center">
+          <div className="relative z-10 flex flex-col h-full text-center p-4">
+              <div className="flex-grow flex flex-col items-center justify-start pt-16">
                   <h2 className="text-xl font-headline font-light tracking-widest uppercase text-muted-foreground mb-4">The Architect</h2>
                   <h3 className="font-headline text-4xl font-bold">{samuel.Name}</h3>
                   <p className="text-muted-foreground mt-1 text-lg">{samuel.Role}</p>
