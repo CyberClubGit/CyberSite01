@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -238,16 +239,13 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
 
   useEffect(() => {
     const isGraphRelatedView = viewMode === 'graph' || viewMode === 'app';
-    if (isGraphRelatedView) {
-      document.body.style.overflow = 'hidden';
+    if (isGraphRelatedView || window.location.pathname === '/home') {
       document.documentElement.classList.add('graph-view-active');
     } else {
-      document.body.style.overflow = '';
       document.documentElement.classList.remove('graph-view-active');
     }
 
     return () => {
-      document.body.style.overflow = '';
       document.documentElement.classList.remove('graph-view-active');
     };
   }, [viewMode]);
@@ -263,7 +261,7 @@ export function ResearchPageClient({ category, brand, initialData, brands }: Res
     : currentCategoryBrand?.Logo || null;
 
   return (
-    <div className="relative h-full min-h-[calc(100vh-4rem)] w-full">
+    <div className="relative h-full min-h-screen w-full">
         {category.Background && <VideoBackground src={category.Background} />}
         
         <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'list' | 'graph' | 'app')} className="absolute inset-0">

@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -365,6 +366,15 @@ export function HomePageClient({ category, brand, network }: HomePageClientProps
   const brandName = brand?.Brand || 'CYBER CLUB';
   const isMobile = useIsMobile();
   const [mobileNetworkView, setMobileNetworkView] = useState<'architect' | 'graph'>('architect');
+
+  useEffect(() => {
+    if (window.location.pathname === '/home') {
+      document.documentElement.classList.add('graph-view-active');
+    }
+    return () => {
+      document.documentElement.classList.remove('graph-view-active');
+    }
+  }, []);
   
   const samuel = network.find(m => m.Name === 'Samuel Belaisch');
 
