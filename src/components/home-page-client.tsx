@@ -405,13 +405,13 @@ export function HomePageClient({ category, brand, network }: HomePageClientProps
 
           {/* Content */}
           <div className="relative z-10 flex flex-col h-full text-center p-4">
-              <div className="flex-grow flex flex-col items-center justify-start pt-16">
+              <div className="flex flex-col items-center justify-start pt-16">
                   <h2 className="text-xl font-headline font-light tracking-widest uppercase text-muted-foreground mb-4">The Architect</h2>
                   <h3 className="font-headline text-4xl font-bold">{samuel.Name}</h3>
                   <p className="text-muted-foreground mt-1 text-lg">{samuel.Role}</p>
               </div>
               
-              <div className="flex-shrink-0 pb-16">
+              <div className="flex-grow flex flex-col items-center justify-end pb-16">
                   {samuel.Bio && <p className="max-w-md text-sm text-foreground/80 mb-8">{samuel.Bio}</p>}
                   {samuel.Contact && (
                       <Button asChild size="lg" variant="outline" className="bg-background/50 backdrop-blur-sm border-foreground/30">
