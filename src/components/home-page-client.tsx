@@ -13,7 +13,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import Link from 'next/link';
-import { Instagram, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Instagram, ArrowLeft, ArrowRight, Share2 } from 'lucide-react';
 import { DotButton } from './ui/carousel'; // Assurez-vous d'importer ce composant s'il existe
 
 // NodalGraph component to be included in this file
@@ -352,12 +352,29 @@ const HorizontalCarousel = ({ children }: { children: React.ReactNode }) => {
 export function HomePageClient({ category, brand, network }: HomePageClientProps) {
   const brandName = brand?.Brand || 'CYBER CLUB';
   const isMobile = useIsMobile();
+  const [mobileNetworkView, setMobileNetworkView] = useState<'architect' | 'graph'>('architect');
   
   const samuel = network.find(m => m.Name === 'Samuel Belaisch');
 
   const renderNetworkSection = () => {
     if (isMobile) {
       if (!samuel) return null;
+      
+      if (mobileNetworkView === 'graph') {
+        return (
+          <section className="w-full h-full relative bg-background">
+             <NodalGraph members={network} />
+             <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-4 left-4 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80 backdrop-blur-sm z-20"
+                onClick={() => setMobileNetworkView('architect')}
+             >
+                <ArrowLeft />
+             </Button>
+          </section>
+        )
+      }
 
       return (
         <section className="w-full h-full relative flex items-center justify-center overflow-hidden">
@@ -367,8 +384,8 @@ export function HomePageClient({ category, brand, network }: HomePageClientProps
               src={samuel.profilePictureUrl}
               alt="Background"
               fill
-              className="object-cover object-top scale-110"
-              quality={50}
+              className="object-cover object-top"
+              quality={100}
             />
           )}
           {/* Gradient Overlay */}
@@ -394,6 +411,16 @@ export function HomePageClient({ category, brand, network }: HomePageClientProps
                   )}
               </div>
           </div>
+          
+           <Button
+             variant="ghost"
+             size="icon"
+             className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80 backdrop-blur-sm z-20"
+             onClick={() => setMobileNetworkView('graph')}
+            >
+              <Share2 />
+              <span className="sr-only">Voir le réseau</span>
+            </Button>
         </section>
       );
     }
