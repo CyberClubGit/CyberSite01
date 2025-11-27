@@ -13,7 +13,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import Link from 'next/link';
-import { Instagram, ArrowLeft, ArrowRight, Share2 } from 'lucide-react';
+import { Instagram, ArrowLeft, ArrowRight, Share2, User } from 'lucide-react';
 import { DotButton } from './ui/carousel'; // Assurez-vous d'importer ce composant s'il existe
 
 // NodalGraph component to be included in this file
@@ -147,8 +147,13 @@ const NodalGraph: React.FC<{ members: NetworkMember[] }> = ({ members }) => {
 
         context.beginPath();
         context.arc(center.x + node.x, center.y + node.y, finalRadius, 0, 2 * Math.PI);
-        context.fillStyle = resolvedTheme === 'dark' ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.7)';
-        context.fill();
+        
+        // Don't fill if there is an image to draw
+        if (!node.img) {
+            context.fillStyle = resolvedTheme === 'dark' ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.7)';
+            context.fill();
+        }
+
         context.strokeStyle = foregroundColor;
         context.lineWidth = 2;
         context.stroke();
