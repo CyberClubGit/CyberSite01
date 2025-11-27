@@ -172,6 +172,13 @@ const NodalGraph: React.FC<{ members: NetworkMember[] }> = ({ members }) => {
               // image might not be loaded yet
             }
             context.restore();
+        } else {
+          // Fallback to an icon if no image
+          context.fillStyle = foregroundColor;
+          context.font = `${finalRadius}px "Kode Mono", monospace`;
+          context.textAlign = 'center';
+          context.textBaseline = 'middle';
+          context.fillText('👤', center.x + node.x, center.y + node.y);
         }
         
         // --- Draw label ---
@@ -407,8 +414,8 @@ export function HomePageClient({ category, brand, network }: HomePageClientProps
               <div className="flex-shrink-0 pb-16">
                   {samuel.Bio && <p className="max-w-md text-sm text-foreground/80 mb-8">{samuel.Bio}</p>}
                   {samuel.Contact && (
-                      <Button asChild variant="outline" className="bg-background/50 backdrop-blur-sm border-foreground/30">
-                          <Link href={samuel.Contact} target="_blank" rel="noopener noreferrer">
+                      <Button asChild size="lg" variant="outline" className="bg-background/50 backdrop-blur-sm border-foreground/30">
+                          <Link href="https://www.instagram.com/_le_musa/" target="_blank" rel="noopener noreferrer">
                               <Instagram className="mr-2 h-4 w-4" />
                               Contact
                           </Link>
